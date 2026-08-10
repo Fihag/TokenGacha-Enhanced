@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TokenGacha · LLM API 中转站</title>
+<style>
+:root{
+  --bg:#f2f4fa; --panel:#ffffff; --panel2:#f7f9fd; --line:#e3e8f2; --line2:#edf0f8;
+  --txt:#1c2340; --dim:#67719a; --faint:#9aa4c8;
+  --blue:#2f6bff; --blue-d:#1f53d8; --green:#16a34a; --red:#dc2626; --gold:#d97706; --cyan:#0891b2;
+  --N:#94a3b8; --R:#3b82f6; --SR:#9333ea; --SSR:#f59e0b;
+  --UR1:#ff5f6d; --UR2:#f59e0b; --UR3:#2f6bff;
+  --shadow:0 1px 2px rgba(28,35,64,.05),0 6px 18px rgba(28,35,64,.06);
+  --shadow-lg:0 4px 8px rgba(28,35,64,.06),0 16px 40px rgba(28,35,64,.12);
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{
+  background:var(--bg);color:var(--txt);
+  font-family:"PingFang SC","Microsoft YaHei","Segoe UI",system-ui,sans-serif;
+  min-height:100vh;
+}
+body.shake{animation:shake .45s}
+@keyframes shake{0%,100%{transform:translate(0)}20%{transform:translate(-8px,4px)}40%{transform:translate(7px,-5px)}60%{transform:translate(-5px,-3px)}80%{transform:translate(4px,3px)}}
+::-webkit-scrollbar{width:8px;height:8px}::-webkit-scrollbar-thumb{background:#c6cdea;border-radius:4px}::-webkit-scrollbar-track{background:transparent}
+button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
+img{user-select:none;-webkit-user-drag:none}
+a{color:var(--blue)}
+.mono{font-variant-numeric:tabular-nums;font-family:"Cascadia Code",Consolas,ui-monospace,monospace}
+
+/* ---------- header ---------- */
+header{
+  position:sticky;top:0;z-index:50;display:flex;align-items:center;gap:16px;flex-wrap:wrap;
+  padding:0 22px;height:60px;background:rgba(255,255,255,.92);backdrop-filter:blur(12px);
+  border-bottom:1px solid var(--line);
+}
+.logo{font-size:17px;font-weight:900;letter-spacing:.3px;display:flex;align-items:center;gap:8px;white-space:nowrap}
+.logo .mark{width:26px;height:26px;border-radius:8px;background:linear-gradient(135deg,var(--blue),#7c3aed);display:flex;align-items:center;justify-content:center;font-size:14px}
+.logo small{font-size:11px;color:var(--faint);font-weight:500;letter-spacing:1.5px}
+.top-nav{display:flex;gap:2px;background:var(--panel2);border:1px solid var(--line);border-radius:11px;padding:3px}
+.top-nav button{padding:7px 18px;border-radius:8px;font-size:13.5px;font-weight:700;color:var(--dim);transition:.15s}
+.top-nav button.active{background:var(--panel);color:var(--blue);box-shadow:0 1px 4px rgba(28,35,64,.12)}
+.top-nav button:hover:not(.active){color:var(--txt)}
+.stat-chips{display:flex;gap:8px;align-items:center;margin-left:auto;flex-wrap:wrap}
+.chip{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:5px 12px;font-size:11px;color:var(--faint);display:flex;align-items:center;gap:6px;white-space:nowrap}
+.chip b{font-size:14px;color:var(--txt);font-variant-numeric:tabular-nums}
+.chip.money{background:#fffbeb;border-color:#fde68a}
+.chip.money b{color:var(--gold);font-size:15px}
+.chip b.flash-up{animation:flashUp .5s}
+.chip b.flash-down{animation:flashDown .5s}
+@keyframes flashUp{0%{color:var(--green);transform:scale(1.2)}100%{}}
+@keyframes flashDown{0%{color:var(--red);transform:scale(1.2)}100%{}}
+.hbtn{background:var(--panel2);border:1px solid var(--line);border-radius:9px;padding:7px 11px;font-size:12.5px;color:var(--dim);transition:.15s;white-space:nowrap}
+.hbtn:hover{color:var(--txt);border-color:#c9d2ea;background:#fff}
+
+/* ---------- pages ---------- */
+main{max-width:1180px;margin:0 auto;padding:14px 22px 26px}
+.page{display:none;animation:pageIn .25s}
+.page.active{display:block}
+@keyframes pageIn{from{opacity:0;transform:translateY(8px)}}
+.page-head{margin-bottom:12px;display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
+.page-head h2{font-size:20px;font-weight:900}
+.page-head p{font-size:12.5px;color:var(--dim)}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow)}
+.panel-pad{padding:13px}
+.panel-title{font-size:13px;font-weight:800;color:var(--dim);letter-spacing:1px;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.panel-title .right{margin-left:auto;font-weight:500;font-size:12px;letter-spacing:0;color:var(--faint)}
+
+.notice{background:#fffbeb;border:1px solid #fde68a;color:#92600a;border-radius:12px;padding:7px 13px;font-size:12px;margin-bottom:12px;display:flex;gap:8px;align-items:center}
+.notice .dot{width:7px;height:7px;border-radius:50%;background:var(--gold);animation:pulseDot 1.6s infinite;flex-shrink:0}
+@keyframes pulseDot{50%{opacity:.35}}
+
+/* ---------- 购买Token: 池卡 ---------- */
+.pool-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+@media(max-width:900px){.pool-cards{grid-template-columns:1fr}}
+.pool-card{background:var(--panel);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);overflow:hidden;transition:.18s;position:relative;display:flex;flex-direction:column}
+.pool-card:hover{transform:translateY(-3px);box-shadow:var(--shadow-lg)}
+.pool-card .accent{height:5px;background:var(--pc)}
+.pool-card.rec::after{content:'★ 热门';position:absolute;top:14px;right:14px;background:linear-gradient(135deg,#f59e0b,#f97316);color:#fff;font-size:10.5px;font-weight:800;padding:3px 9px;border-radius:20px}
+.pool-body{padding:13px 14px;gap:7px;flex:1;display:flex;flex-direction:column}
+.pool-name{font-size:16px;font-weight:900;display:flex;align-items:center;gap:8px}
+.pool-sub{font-size:11.5px;color:var(--faint)}
+.pool-price{display:flex;align-items:baseline;gap:6px}
+.pool-price b{font-size:22px;font-weight:900;color:var(--txt);font-variant-numeric:tabular-nums}
+.pool-price span{font-size:12px;color:var(--faint)}
+.rtp-tag{margin-left:auto;font-size:10.5px;background:#ecfdf5;color:#15803d;border:1px solid #bbf7d0;padding:2px 8px;border-radius:8px;font-weight:700}
+.rtp-tag.low{background:#fef2f2;color:#b91c1c;border-color:#fecaca}
+.featured-row{display:flex;gap:6px;align-items:center}
+.featured-row img{width:26px;height:26px;background:var(--panel2);border:1px solid var(--line);border-radius:7px;padding:3px}
+.featured-row span{font-size:10.5px;color:var(--faint);margin-left:2px}
+.rates-bar{display:flex;height:7px;border-radius:5px;overflow:hidden;border:1px solid var(--line)}
+.rates-bar i{display:block;height:100%}
+.rates-legend{display:flex;gap:8px;flex-wrap:wrap;font-size:9.5px;color:var(--faint)}
+.pity-row{display:flex;align-items:center;gap:8px;font-size:10.5px;color:var(--dim)}
+.pity-bar{flex:1;height:7px;background:var(--panel2);border-radius:5px;overflow:hidden;border:1px solid var(--line)}
+.pity-bar i{display:block;height:100%;background:linear-gradient(90deg,var(--SR),var(--SSR));transition:width .3s}
+.pool-btns{display:flex;gap:8px;margin-top:auto}
+.pull-btn{flex:1;padding:9px 6px;border-radius:11px;font-size:13.5px;font-weight:800;transition:.15s;position:relative;border:1px solid transparent}
+.pull-btn small{display:block;font-size:10.5px;font-weight:500;opacity:.75;margin-top:1px}
+.pull-btn.p1{background:#eef4ff;color:var(--blue-d);border-color:#c7d9ff}
+.pull-btn.p1:hover:not(:disabled){background:#dfeaff}
+.pull-btn.p10{background:linear-gradient(135deg,#2f6bff,#7c3aed);color:#fff}
+.pull-btn.p10:hover:not(:disabled){filter:brightness(1.08);transform:translateY(-1px)}
+.pull-btn:disabled{opacity:.38;cursor:not-allowed}
+.pull-btn .free-tag{position:absolute;top:-8px;right:-6px;background:var(--green);color:#fff;font-size:10px;padding:2px 8px;border-radius:12px;font-weight:800}
+.pool-note{font-size:10px;color:var(--faint);line-height:1.5}
+.buy-hint{margin-top:12px;background:var(--panel);border:1px dashed #c9d2ea;border-radius:12px;padding:9px 14px;font-size:12.5px;color:var(--dim);display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.buy-hint b{color:var(--cyan)}
+.buy-hint .go{margin-left:auto;color:var(--blue);font-weight:700;font-size:12.5px}
+.buy-hint .go:hover{text-decoration:underline}
+
+/* ---------- 工作页 ---------- */
+.work-grid{display:grid;grid-template-columns:340px 1fr;gap:14px;align-items:start}
+.stat-row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
+.stat-card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:9px 10px;box-shadow:var(--shadow)}
+.stat-card .lb{font-size:10.5px;color:var(--faint);display:flex;align-items:center;gap:6px}
+.stat-card .vl{font-size:17px;font-weight:900;margin-top:3px;font-variant-numeric:tabular-nums}
+.stat-card .vl small{font-size:10px;color:var(--faint);font-weight:500}
+.stat-card.cyan .vl{color:var(--cyan)}.stat-card.green .vl{color:var(--green)}.stat-card.gold .vl{color:var(--gold)}
+.rarity-rows{display:flex;flex-direction:column;gap:6px}
+.rrow{display:flex;align-items:center;gap:8px;font-size:11.5px}
+.rrow .tag{width:44px;font-weight:900;color:var(--rc);font-size:11px;letter-spacing:1px}
+.rrow .bar{flex:1;height:9px;background:var(--panel2);border-radius:5px;overflow:hidden;border:1px solid var(--line)}
+.rrow .bar i{display:block;height:100%;background:var(--rc);opacity:.75;transition:width .3s}
+.rrow .num{width:92px;text-align:right;color:var(--dim);font-variant-numeric:tabular-nums;white-space:nowrap;font-size:11px}
+.rrow .est{width:78px;text-align:right;color:var(--faint);font-variant-numeric:tabular-nums;white-space:nowrap;font-size:10.5px}
+.terminal{background:#0d1322;border:1px solid #1d2742;border-radius:14px;overflow:hidden;margin:0;box-shadow:var(--shadow);height:clamp(240px,46vh,420px);display:flex;flex-direction:column}
+.terminal .tbar{display:flex;gap:6px;align-items:center;padding:8px 12px;border-bottom:1px solid #1d2742;font-size:11px;color:#5c6a94;background:#101830}
+.terminal .tbar i{width:9px;height:9px;border-radius:50%;display:inline-block}
+.terminal pre{padding:12px 14px;font-family:"Cascadia Code",Consolas,monospace;font-size:12px;line-height:1.6;color:#7ee787;flex:1;min-height:0;overflow-y:auto;white-space:pre-wrap}
+.terminal pre .dimline{color:#4d5a80}
+.terminal .cursor{display:inline-block;width:7px;height:13px;background:#7ee787;animation:blink .8s steps(1) infinite;vertical-align:-2px}
+@keyframes blink{50%{opacity:0}}
+.work-actions{display:flex;gap:10px;margin-top:12px}
+.work-btn{flex:1;padding:12px;border-radius:13px;font-size:14px;font-weight:900;letter-spacing:1px;transition:.15s;border:1px solid transparent;position:relative}
+.work-btn small{display:block;font-size:11px;font-weight:500;opacity:.78;margin-top:2px}
+.work-btn.manual{background:linear-gradient(135deg,#0d9e6e,#0b8a5f);color:#fff}
+.work-btn.auto{background:linear-gradient(135deg,#7c3aed,#4f46e5);color:#fff}
+.work-btn:hover:not(:disabled){filter:brightness(1.08);transform:translateY(-1px)}
+.work-btn:disabled{opacity:.38;cursor:not-allowed}
+.work-log{margin-top:12px;max-height:clamp(64px,13vh,140px);overflow-y:auto;display:flex;flex-direction:column;gap:6px}
+.work-log .row{display:flex;justify-content:space-between;gap:10px;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:8px 12px;font-size:12px;animation:slideIn .25s;box-shadow:var(--shadow)}
+@keyframes slideIn{from{opacity:0;transform:translateY(-6px)}}
+.work-log .row .amt{font-weight:800;font-variant-numeric:tabular-nums;white-space:nowrap}
+.work-log .row .amt.pos{color:var(--green)}.work-log .row .amt.neg{color:var(--red)}
+.work-log .row .evt{color:var(--dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* ---------- 余额页 ---------- */
+.bal-hero{background:linear-gradient(135deg,#ffffff,#f4f7ff);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);padding:20px;display:flex;gap:24px;align-items:center;flex-wrap:wrap;margin-bottom:14px}
+.bal-hero .big .lb{font-size:12px;color:var(--faint)}
+.bal-hero .big .vl{font-size:38px;font-weight:900;color:var(--gold);font-variant-numeric:tabular-nums;line-height:1.15}
+.bal-hero .sub-stats{display:flex;gap:22px;flex-wrap:wrap;margin-left:auto}
+.bal-hero .sub-stats .cell .lb{font-size:11px;color:var(--faint)}
+.bal-hero .sub-stats .cell .vl{font-size:17px;font-weight:800;font-variant-numeric:tabular-nums;margin-top:2px}
+.free-progress{flex-basis:100%}
+.free-progress .lb{display:flex;justify-content:space-between;font-size:11px;color:var(--faint);margin-bottom:5px}
+.free-progress .bar{height:9px;background:var(--panel2);border:1px solid var(--line);border-radius:6px;overflow:hidden}
+.free-progress .bar i{display:block;height:100%;background:linear-gradient(90deg,var(--gold),#f59e0b);transition:width .4s}
+.two-col{display:grid;grid-template-columns:1.15fr .85fr;gap:14px;margin-bottom:14px}
+@media(max-width:860px){.two-col{grid-template-columns:1fr}}
+.ledger-list{display:flex;flex-direction:column;max-height:330px;overflow-y:auto}
+.ledger-list .lrow{display:flex;justify-content:space-between;gap:10px;padding:9px 2px;border-bottom:1px dashed var(--line2);font-size:12.5px}
+.ledger-list .lrow:last-child{border-bottom:none}
+.ledger-list .lrow .lab{color:var(--dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ledger-list .lrow .lab small{color:var(--faint);margin-right:6px;font-size:10.5px}
+.ledger-list .lrow .amt{font-weight:800;font-variant-numeric:tabular-nums;white-space:nowrap}
+.ledger-list .lrow .amt.pos{color:var(--green)}.ledger-list .lrow .amt.neg{color:var(--red)}
+.ledger-empty{color:var(--faint);font-size:12.5px;text-align:center;padding:26px 0}
+.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.stat-grid .cell{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:9px 11px}
+.stat-grid .cell .lb{font-size:10.5px;color:var(--faint)}
+.stat-grid .cell .vl{font-size:15px;font-weight:800;margin-top:2px;font-variant-numeric:tabular-nums}
+.channels{display:flex;flex-direction:column;gap:7px;margin-top:12px}
+.ch-row{display:flex;align-items:center;gap:8px;font-size:11.5px;color:var(--dim)}
+.ch-row img{width:18px;height:18px;border-radius:5px}
+.ch-row .st{margin-left:auto;color:var(--green);font-size:10.5px;white-space:nowrap}
+.ch-row .st.warn{color:var(--gold)}
+.ch-row .lat{width:64px;text-align:right;color:var(--faint);font-variant-numeric:tabular-nums;font-size:10.5px}
+.apikey{display:flex;gap:8px;align-items:center;background:var(--panel2);border:1px dashed #c9d2ea;border-radius:10px;padding:8px 12px;font-size:12px;color:var(--dim);margin-bottom:14px;font-family:monospace}
+.apikey .cp{margin-left:auto;color:var(--blue);font-size:11.5px;font-weight:700;font-family:inherit}
+.apikey .cp:hover{text-decoration:underline}
+.inv-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:9px;max-height:420px;overflow-y:auto;padding-right:2px}
+.inv-card{border-radius:12px;padding:8px 6px;text-align:center;background:var(--panel2);border:1.5px solid var(--rc,var(--line));position:relative}
+.inv-card.dead{opacity:.42;filter:grayscale(.75)}
+.inv-card img{width:36px;height:36px;margin:2px auto 5px;display:block}
+.inv-card .nm{font-size:10.5px;font-weight:700;line-height:1.25;min-height:26px;display:flex;align-items:center;justify-content:center}
+.inv-card .tk{font-size:10px;color:var(--faint);font-variant-numeric:tabular-nums;margin-top:3px}
+.inv-card .rt{position:absolute;top:5px;left:6px;font-size:9px;font-weight:900;color:var(--rc)}
+.inv-card .half{position:absolute;top:5px;right:6px;font-size:8.5px;background:#fef3c7;color:#92600a;padding:1px 5px;border-radius:6px;border:1px solid #fde68a}
+.inv-empty{color:var(--faint);font-size:13px;text-align:center;padding:26px 10px;line-height:1.8}
+.mini-btn{font-size:11.5px;background:var(--panel2);border:1px solid var(--line);border-radius:9px;padding:6px 10px;color:var(--dim)}
+.mini-btn:hover{color:var(--txt);border-color:#c9d2ea;background:#fff}
+
+/* ---------- 抽卡 overlay ---------- */
+#overlay{position:fixed;inset:0;z-index:100;background:rgba(244,246,251,.94);backdrop-filter:blur(10px);display:none;align-items:center;justify-content:center;flex-direction:column;padding:20px;overflow-y:auto}
+#overlay.show{display:flex}
+#overlay h2{font-size:21px;font-weight:900;margin-bottom:16px;letter-spacing:2px;color:var(--txt)}
+.gacha-row{display:flex;flex-wrap:wrap;gap:12px;justify-content:center;width:min(760px,100%)}
+.gcard{width:calc((100% - 48px)/5);aspect-ratio:13/18.4;perspective:900px;cursor:pointer}
+.gcard .inner{position:relative;width:100%;height:100%;transform-style:preserve-3d;transition:transform .55s cubic-bezier(.2,.7,.3,1.15)}
+.gcard.flipped .inner{transform:rotateY(180deg)}
+.gcard .face{position:absolute;inset:0;backface-visibility:hidden;border-radius:12px;overflow:hidden}
+.gcard .back{background:linear-gradient(150deg,#2f6bff,#7c3aed);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:6px;box-shadow:var(--shadow-lg)}
+.gcard .back .q{font-size:clamp(22px,5vw,40px);font-weight:900;color:#ffffffee;animation:pulseQ 1.2s ease-in-out infinite}
+@keyframes pulseQ{50%{transform:scale(1.15);opacity:.75}}
+.gcard .back small{color:#ffffffaa;font-size:clamp(7px,1.2vw,10px);letter-spacing:2px}
+.gcard .front{transform:rotateY(180deg);background:#fff;border:2px solid var(--rc);box-shadow:0 0 0 1px #fff,0 8px 26px -8px var(--rc);display:flex;flex-direction:column;align-items:center;padding:8px 5px;text-align:center}
+.gcard .front .rr{font-size:clamp(7px,1.1vw,10px);font-weight:900;color:var(--rc);letter-spacing:1.5px}
+.gcard .front img{width:clamp(24px,4vw,42px);height:clamp(24px,4vw,42px);margin:8px 0 6px}
+.gcard .front .nm{font-size:clamp(8px,1.3vw,12px);font-weight:800;line-height:1.3}
+.gcard .front .vd{font-size:clamp(6.5px,1vw,9.5px);color:var(--faint);margin-top:2px}
+.gcard .front .idx{font-size:clamp(6.5px,1vw,9px);color:var(--dim);margin-top:auto;background:var(--panel2);border:1px solid var(--line);padding:1px 6px;border-radius:7px}
+.gcard .front .tk{font-size:clamp(7px,1.1vw,10.5px);color:var(--cyan);margin-top:3px;font-weight:800}
+.gcard.pop{animation:pop .5s cubic-bezier(.2,.9,.3,1.4)}
+@keyframes pop{0%{transform:scale(.6)}100%{transform:scale(1)}}
+.gcard.ur .front{animation:urGlow 1.4s linear infinite}
+@keyframes urGlow{0%,100%{box-shadow:0 0 0 1px #fff,0 8px 30px -4px var(--UR1)}50%{box-shadow:0 0 0 1px #fff,0 8px 34px -2px var(--UR3)}}
+.gacha-summary{margin-top:14px;font-size:13.5px;color:var(--dim);opacity:0;transition:.3s;background:#fff;border:1px solid var(--line);border-radius:12px;padding:9px 18px;box-shadow:var(--shadow)}
+.gacha-summary.show{opacity:1}
+.gacha-summary b{color:var(--cyan)}
+#skip-btn{position:absolute;top:18px;right:22px;font-size:12.5px;color:var(--dim);border:1px solid var(--line);border-radius:10px;padding:8px 14px;background:#fff;box-shadow:var(--shadow)}
+#skip-btn:hover{color:var(--txt)}
+#close-overlay{margin-top:12px;padding:11px 34px;border-radius:12px;background:linear-gradient(135deg,#2f6bff,#7c3aed);color:#fff;font-weight:800;font-size:14px;opacity:0;pointer-events:none;transition:.3s;box-shadow:var(--shadow-lg)}
+#close-overlay.show{opacity:1;pointer-events:auto}
+#close-overlay:hover{filter:brightness(1.1)}
+
+/* ---------- modals ---------- */
+.modal-mask{position:fixed;inset:0;z-index:120;background:rgba(30,38,64,.45);backdrop-filter:blur(5px);display:none;align-items:center;justify-content:center;padding:18px}
+.modal-mask.show{display:flex}
+.modal{background:var(--panel);border:1px solid var(--line);border-radius:18px;max-width:640px;width:100%;max-height:84vh;overflow-y:auto;padding:22px;animation:modalIn .25s;box-shadow:var(--shadow-lg)}
+@keyframes modalIn{from{opacity:0;transform:translateY(16px) scale(.97)}}
+.modal h3{font-size:17px;font-weight:900;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.modal .x{margin-left:auto;color:var(--faint);font-size:20px;line-height:1;padding:4px 8px;border-radius:8px}
+.modal .x:hover{color:var(--txt);background:var(--panel2)}
+.modal p{font-size:13px;line-height:1.8;color:#414b78;margin-bottom:10px}
+.modal table{width:100%;border-collapse:collapse;font-size:12.5px;margin:8px 0 14px}
+.modal th,.modal td{border:1px solid var(--line);padding:7px 9px;text-align:center}
+.modal th{background:var(--panel2);color:var(--dim);font-weight:700}
+.rt-N{color:var(--N);font-weight:700}.rt-R{color:var(--R);font-weight:700}.rt-SR{color:var(--SR);font-weight:700}.rt-SSR{color:var(--SSR);font-weight:700}
+.rt-UR{background:linear-gradient(90deg,var(--UR1),var(--UR2),var(--UR3));-webkit-background-clip:text;background-clip:text;color:transparent;font-weight:900}
+.modal .note{font-size:11.5px;color:var(--faint);line-height:1.7}
+.big-btn{display:block;width:100%;padding:13px;border-radius:12px;font-size:15px;font-weight:900;margin-top:12px;background:linear-gradient(135deg,#2f6bff,#7c3aed);color:#fff}
+.big-btn:hover{filter:brightness(1.08)}
+.big-btn.danger{background:linear-gradient(135deg,#dc2626,#b91c1c)}
+.big-btn.ghost{background:var(--panel2);border:1px solid var(--line);color:var(--dim)}
+.dex-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(88px,1fr));gap:8px;margin-top:6px}
+.dex-cell{border-radius:11px;background:var(--panel2);border:1.5px solid var(--rc,var(--line));padding:8px 4px;text-align:center;position:relative}
+.dex-cell.locked{opacity:.35;filter:grayscale(1)}
+.dex-cell img{width:30px;height:30px;margin:0 auto 4px;display:block}
+.dex-cell .nm{font-size:9.5px;font-weight:700;line-height:1.2;min-height:22px}
+.dex-cell .ct{font-size:9px;color:var(--faint)}
+.dex-cell .rr{position:absolute;top:4px;left:5px;font-size:8.5px;font-weight:900;color:var(--rc)}
+.dex-legend{display:flex;gap:10px;flex-wrap:wrap;font-size:11px;color:var(--dim);margin:10px 0 4px}
+.end-stats{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:12px 0}
+.end-stats .cell{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:10px;text-align:center}
+.end-stats .cell .lb{font-size:10.5px;color:var(--faint)}
+.end-stats .cell b{display:block;font-size:17px;margin-top:2px;font-variant-numeric:tabular-nums}
+.end-title{font-size:28px;font-weight:900;text-align:center;margin:6px 0 2px}
+.end-sub{text-align:center;color:var(--dim);font-size:13px;margin-bottom:8px;line-height:1.7}
+
+/* ---------- 移动端适配 & 短屏紧凑 ---------- */
+@media(max-width:900px){
+  .work-grid{grid-template-columns:1fr}
+  .terminal{height:34vh}
+  .pool-cards{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;gap:10px;padding-bottom:4px;scrollbar-width:none}
+  .pool-cards::-webkit-scrollbar{display:none}
+  .pool-card{flex:0 0 86%;scroll-snap-align:center}
+  .pool-card:hover{transform:none}
+}
+@media(max-width:640px){
+  header{height:auto;padding:8px 12px;gap:8px}
+  .logo{font-size:15px}.logo small{display:none}
+  .top-nav{order:5;flex-basis:100%}
+  .top-nav button{flex:1;text-align:center;padding:6px 8px;font-size:12.5px}
+  .stat-chips{margin-left:0}
+  .chip.hide-m{display:none}
+  .hbtn{padding:7px 9px}
+  .hbtn .lbl{display:none}
+  main{padding:10px 12px 18px}
+  .page-head{margin-bottom:10px}
+  .page-head h2{font-size:18px}
+  .page-head p{font-size:11px}
+  .stat-card .lb{font-size:9.5px}
+  .stat-card .vl{font-size:14px}
+  .terminal{height:30vh}
+  .terminal pre{font-size:11px}
+  .work-btn{font-size:12.5px;padding:11px 8px}
+  .work-btn small{font-size:10px}
+  .bal-hero{padding:14px;gap:14px}
+  .bal-hero .big .vl{font-size:28px}
+  .gacha-row{gap:8px}
+  .gcard{width:calc((100% - 32px)/5)}
+  .inv-grid{grid-template-columns:repeat(auto-fill,minmax(80px,1fr))}
+  footer{font-size:10px;padding:14px}
+}
+@media(max-height:740px) and (min-width:901px){
+  .notice{display:none}
+  .terminal{height:clamp(200px,42vh,360px)}
+  .page-head{margin-bottom:10px}
+}
+
+/* floaters & fx */
+#fx{position:fixed;inset:0;pointer-events:none;z-index:200}
+.floater{position:fixed;z-index:210;font-weight:900;font-size:18px;pointer-events:none;animation:floatUp 1.3s ease-out forwards;text-shadow:0 1px 4px rgba(255,255,255,.8)}
+@keyframes floatUp{0%{opacity:0;transform:translateY(8px) scale(.8)}15%{opacity:1;transform:translateY(0) scale(1.1)}100%{opacity:0;transform:translateY(-70px) scale(1)}}
+.big-money{position:fixed;left:50%;top:34%;transform:translate(-50%,-50%);z-index:225;font-size:clamp(34px,6vw,58px);font-weight:900;background:linear-gradient(180deg,#fbbf24,#d97706);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 6px 18px rgba(217,119,6,.4));animation:bigMoney 1.6s cubic-bezier(.2,.9,.3,1.2) forwards;pointer-events:none;font-variant-numeric:tabular-nums;white-space:nowrap}
+.big-money.neg{background:linear-gradient(180deg,#f87171,#dc2626);-webkit-background-clip:text;background-clip:text;filter:drop-shadow(0 6px 18px rgba(220,38,38,.4))}
+@keyframes bigMoney{0%{opacity:0;transform:translate(-50%,-50%) scale(.35)}16%{opacity:1;transform:translate(-50%,-50%) scale(1.1)}28%{transform:translate(-50%,-50%) scale(1)}78%{opacity:1}100%{opacity:0;transform:translate(-50%,-90%) scale(1.05)}}
+.toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);z-index:220;background:#1c2340;color:#fff;border-radius:12px;padding:10px 18px;font-size:13px;animation:toastIn .25s;box-shadow:var(--shadow-lg);max-width:90vw;text-align:center}
+@keyframes toastIn{from{opacity:0;transform:translate(-50%,10px)}}
+.kbd{background:var(--panel2);border:1px solid var(--line);border-radius:6px;padding:1px 7px;font-size:11px;font-family:monospace;color:var(--dim)}
+footer{text-align:center;color:var(--faint);font-size:11px;padding:22px;line-height:1.8}
+
+/* ---------- UTR 超神话 ---------- */
+.rt-UTR{background:linear-gradient(90deg,#ff2d55,#ff7a3c,#ff2d55);-webkit-background-clip:text;background-clip:text;color:transparent;font-weight:900}
+
+/* ---------- 活动页 ---------- */
+.act-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:860px){.act-grid{grid-template-columns:1fr}}
+.sign-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px}
+.sign-day{flex:1;min-width:64px;border:1.5px solid var(--line);border-radius:11px;padding:8px 4px;text-align:center;background:var(--panel2);transition:.15s}
+.sign-day .d{font-size:10px;color:var(--faint)}
+.sign-day .a{font-size:15px;font-weight:900;color:var(--gold);margin-top:2px;font-variant-numeric:tabular-nums}
+.sign-day.cur{border-color:var(--gold);background:#fffbeb;box-shadow:0 0 0 3px rgba(217,119,6,.12)}
+.sign-day.done{border-color:#bbf7d0;background:#f0fdf4;color:var(--green)}
+.task-card{display:flex;align-items:center;gap:10px;border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:8px;background:var(--panel2)}
+.task-card.claimed{opacity:.55;filter:grayscale(.5)}
+.task-card .t-main{flex:1;min-width:0}
+.task-card .t-name{font-size:13px;font-weight:800}
+.task-card .t-name small{display:block;font-size:10.5px;color:var(--faint);font-weight:500;margin-top:1px}
+.task-card .t-prog{display:flex;align-items:center;gap:8px;margin-top:5px}
+.task-card .t-prog .bar{flex:1;height:6px;background:#e5e9f5;border-radius:4px;overflow:hidden}
+.task-card .t-prog .bar i{display:block;height:100%;background:linear-gradient(90deg,var(--blue),var(--SSR));transition:width .3s}
+.task-card .t-prog span{font-size:10.5px;color:var(--dim);font-variant-numeric:tabular-nums;white-space:nowrap}
+.task-card .t-reward{font-size:11px;color:var(--dim);white-space:nowrap}
+.task-card .mini-btn{white-space:nowrap}
+
+/* ---------- 皮肤中心 ---------- */
+.skin-list{display:flex;flex-direction:column;gap:8px;margin-bottom:10px}
+.skin-row{display:flex;align-items:center;gap:10px;border:1.5px solid var(--line);border-radius:12px;padding:9px 12px;background:var(--panel2);transition:.15s}
+.skin-row.using{border-color:var(--green);background:#f0fdf4}
+.skin-row .sk-ic{font-size:24px}
+.skin-row .sk-info{flex:1;min-width:0}
+.skin-row .sk-name{font-size:13px;font-weight:800}
+.skin-row .sk-desc{font-size:10.5px;color:var(--faint);margin-top:2px}
+.skin-row .mini-btn{white-space:nowrap}
+
+/* ---------- 数据页 ---------- */
+.data-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:860px){.data-grid{grid-template-columns:1fr}}
+.data-grid .panel-pad canvas{width:100%;display:block}
+#wrap-chart-bar,#wrap-chart-line,#wrap-chart-donut,#wrap-chart-dex,#wrap-chart-vendor{position:relative}
+#wrap-chart-bar canvas,#wrap-chart-line canvas,#wrap-chart-donut canvas,#wrap-chart-dex canvas,#wrap-chart-vendor canvas{width:100%}
+</style>
+</head>
+<body>
+<canvas id="fx"></canvas>
+
+<header>
+  <div class="logo"><span class="mark">🎰</span>TokenGacha<small>LLM API 中转站</small></div>
+  <nav class="top-nav">
+    <button data-page="buy">购买Token</button>
+    <button data-page="work">工作</button>
+    <button data-page="balance">余额</button>
+    <button data-page="activity">活动</button>
+    <button data-page="data">数据</button>
+  </nav>
+  <div class="stat-chips">
+    <div class="chip money">余额 <b id="h-money">¥0</b></div>
+    <div class="chip">⚡ <b id="h-tokens">0</b></div>
+    <div class="chip hide-m">抽卡 <b id="h-pulls">0</b></div>
+  </div>
+  <button class="hbtn" id="btn-skin">🎨<span class="lbl"> 皮肤</span></button>
+  <button class="hbtn" id="btn-rates">📊<span class="lbl"> 概率公示</span></button>
+  <button class="hbtn" id="btn-dex">📖<span class="lbl"> 图鉴</span></button>
+  <button class="hbtn" id="btn-help">❓<span class="lbl"> 玩法</span></button>
+</header>
+
+<main>
+  <!-- ============ 页面1: 购买Token ============ -->
+  <div class="page" id="page-buy">
+    <div class="page-head"><h2>购买 Token</h2><p>盲盒计费 · 抽到顶级模型还是电子垃圾全看命 · 明码标价 · 概不退换</p></div>
+    <div class="notice"><span class="dot"></span><span id="notice-text">📢 公告：本站已上线 Kimi K3 / GPT-5.6 系列渠道；Claude 渠道今日波动，出货率概不补偿。</span></div>
+    <div class="pool-cards" id="pool-cards"></div>
+    <div class="buy-hint">💡 当前持有 <b id="buy-tokens">0 tokens</b>（约 <b id="buy-tasks">0</b> 单工作量）<button class="go" id="go-work">去「工作」变现 →</button></div>
+  </div>
+
+  <!-- ============ 页面2: 工作 ============ -->
+  <div class="page" id="page-work">
+    <div class="page-head"><h2>工作</h2><p>vibe coding 接单 · 系统自动按稀有度从高到低消耗 token · 每单 200K tokens</p></div>
+    <div class="work-grid">
+      <div class="work-side">
+        <div class="stat-row">
+          <div class="stat-card cyan"><div class="lb">⚡ 剩余 Token</div><div class="vl" id="w-tokens">0</div></div>
+          <div class="stat-card"><div class="lb">📦 可接单量</div><div class="vl" id="w-tasks">0 <small>单</small></div></div>
+          <div class="stat-card green"><div class="lb">💹 预计可赚</div><div class="vl" id="w-est">¥0</div></div>
+        </div>
+        <div class="panel panel-pad">
+          <div class="panel-title">📊 Token 构成<span class="right">消耗顺序 UR → N</span></div>
+          <div class="rarity-rows" id="rarity-rows"></div>
+        </div>
+      </div>
+      <div class="work-main">
+        <div class="terminal">
+          <div class="tbar"><i style="background:#ff5f56"></i><i style="background:#ffbd2e"></i><i style="background:#27c93f"></i><span id="term-title">agent — 自动调度（稀有度优先）</span></div>
+          <pre id="term-body">> 等待接单…<span class="cursor"></span></pre>
+        </div>
+        <div class="work-actions">
+          <button class="work-btn manual" id="btn-work">开始工作<small id="work-sub"></small></button>
+          <button class="work-btn auto" id="btn-auto">⚡ 自动模式 · 一键梭哈<small id="auto-sub"></small></button>
+        </div>
+      </div>
+    </div>
+    <div class="work-log" id="work-log"></div>
+  </div>
+
+  <!-- ============ 页面3: 余额 ============ -->
+  <div class="page" id="page-balance">
+    <div class="page-head"><h2>余额</h2><p>钱包 · 收支明细 · 资产持仓</p></div>
+    <div class="apikey">🔑 API 令牌：<span>sk-tokengacha-••••••••••••••••3f9a</span><button class="cp" id="btn-copy-key">复制</button></div>
+    <div class="bal-hero">
+      <div class="big"><div class="lb">账户余额 <span id="b-cheat"></span></div><div class="vl" id="b-money">¥0</div></div>
+      <div class="sub-stats">
+        <div class="cell"><div class="lb">累计收入</div><div class="vl" style="color:var(--green)" id="b-earn">¥0</div></div>
+        <div class="cell"><div class="lb">累计氪金</div><div class="vl" style="color:var(--red)" id="b-spent">¥0</div></div>
+        <div class="cell"><div class="lb">Token 估值</div><div class="vl" style="color:var(--cyan)" id="b-tokval">¥0</div></div>
+      </div>
+      <button class="hbtn" id="btn-topup" style="background:#fffbeb;border-color:#fde68a;color:#92600a;font-weight:800">💳<span class="lbl"> 充值</span></button>
+      <button class="hbtn" id="btn-share">📣<span class="lbl"> 分享战绩</span></button>
+      <div class="free-progress">
+        <div class="lb"><span>🏆 财富自由进度</span><span id="b-free-txt"></span></div>
+        <div class="bar"><i id="b-free-bar"></i></div>
+      </div>
+    </div>
+    <div class="two-col">
+      <div class="panel panel-pad">
+        <div class="panel-title">🧾 收支明细<span class="right">最近 80 条</span></div>
+        <div class="ledger-list" id="ledger-list"></div>
+      </div>
+      <div class="panel panel-pad">
+        <div class="panel-title">📈 战绩统计</div>
+        <div class="stat-grid" id="stat-grid"></div>
+        <div class="panel-title" style="margin-top:14px">📡 渠道状态<span class="right">实时监控（并不）</span></div>
+        <div class="channels" id="channels"></div>
+      </div>
+    </div>
+    <div class="panel panel-pad">
+      <div class="panel-title">🗃️ 我的模型卡<span class="right" id="inv-total"></span></div>
+      <div class="inv-grid" id="inv-grid"></div>
+    </div>
+  </div>
+
+  <!-- ============ 页面4: 活动(签到+任务) ============ -->
+  <div class="page" id="page-activity">
+    <div class="page-head"><h2>活动</h2><p>每日签到 · 日常任务 · 皮肤券攒起来</p></div>
+    <div class="act-grid">
+      <div class="panel panel-pad" id="daily-sign"></div>
+      <div class="panel panel-pad" id="daily-tasks"></div>
+    </div>
+    <div class="notice" style="margin-top:12px"><span class="dot"></span><span>🎫 当前持有皮肤券 <b id="skin-tickets" style="color:var(--gold)">0</b> 张 · 点右上角 🎨 兑换皮肤</span></div>
+  </div>
+
+  <!-- ============ 页面5: 数据 ============ -->
+  <div class="page" id="page-data">
+    <div class="page-head"><h2>数据</h2><p>抽卡分布 · 收支走势 · 图鉴进度 · 全部本地统计（并不实时）</p></div>
+    <div class="data-grid">
+      <div class="panel panel-pad"><div class="panel-title">📊 抽卡分布</div><div id="wrap-chart-bar"><canvas id="chart-bar"></canvas></div></div>
+      <div class="panel panel-pad"><div class="panel-title">📈 余额走势</div><div id="wrap-chart-line"><canvas id="chart-line"></canvas></div></div>
+      <div class="panel panel-pad"><div class="panel-title">🍩 稀有度占比</div><div id="wrap-chart-donut"><canvas id="chart-donut"></canvas></div></div>
+      <div class="panel panel-pad"><div class="panel-title">🗂️ 图鉴进度</div><div id="wrap-chart-dex"><canvas id="chart-dex"></canvas></div></div>
+      <div class="panel panel-pad" style="grid-column:1/-1"><div class="panel-title">🏭 厂商分布（已获得）</div><div id="wrap-chart-vendor"><canvas id="chart-vendor"></canvas></div></div>
+    </div>
+  </div>
+</main>
+
+<footer>TokenGacha 中转站 · 本站为抽卡模拟器，与任何真实中转站无关<br>模型与智能指数参考 <a href="https://artificialanalysis.ai/leaderboards/models" target="_blank">Artificial Analysis</a> · 图标来自 <a href="https://lobehub.com/icons" target="_blank">@lobehub/icons</a></footer>
+
+<!-- 抽卡动画层 -->
+<div id="overlay">
+  <button id="skip-btn">跳过 ▶▶</button>
+  <h2 id="overlay-title">✨ 抽卡结果 ✨</h2>
+  <div class="gacha-row" id="gacha-row"></div>
+  <div class="gacha-summary" id="gacha-summary"></div>
+  <button id="close-overlay">收入卡库</button>
+</div>
+
+<!-- 弹窗 -->
+<div class="modal-mask" id="modal-mask"><div class="modal" id="modal-box"></div></div>
+
+<script src="js/config.js?v=2"></script>
+<script src="js/fx.js?v=2"></script>
+<script src="js/state.js?v=2"></script>
+<script src="js/core.js?v=2"></script>
+<script src="js/ui.js?v=2"></script>
+<script src="js/banner.js?v=2"></script>
+<script src="js/daily.js?v=2"></script>
+<script src="js/skins.js?v=2"></script>
+<script src="js/analytics.js?v=2"></script>
+</body>
+</html>

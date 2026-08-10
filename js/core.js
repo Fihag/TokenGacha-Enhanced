@@ -1,0 +1,116 @@
+"use strict";
+/* ================================================================
+   TokenGacha · 核心层 (core.js)
+   抽卡核心 (含 UTR / 限定池 / 0731 独立爆率) / 工作核心 (含限定翻倍)
+   ================================================================ */
+
+const DSV73_DROP = 0.05; // DeepSeek V4 Flash 0731 独立爆率(每次抽卡固定 5%)
+
+/* ---------- 抽卡核心 ---------- */
+function drawRarity(poolKey){
+  const pool = POOLS[poolKey];
+  const pityMax = pool.pityMax || PITY_MAX;
+  if(S.pity[poolKey] >= pityMax-1){
+    // 保底: 限定池 90 抽必出限定(UTR/UR 限定), 其他池 20% UR / 80% SSR
+    if(pool.banner) return Math.random()<.5?'UTR':'UR';
+    return Math.random()<.2?'UR':'SSR';
+  }
+  const r=Math.random(); let acc=0;
+  for(const t of RORDER_DESC){ acc+=pool.rates[t]||0; if(r<acc) return t; }
+  return 'N';
+}
+function makeCard(poolKey, rarity, force0731){
+  let cands;
+  if(force0731){
+    cands = MODELS.filter(m=>m.id==='dsv4fl73');
+  }else{
+    cands = MODELS.filter(m=>m.r===rarity && m.id!=='dsv4fl73' && (!m.bannerOnly || poolKey==='banner'));
+  }
+  const m = cands[Math.floor(Math.random()*cands.length)];
+  const base = m.quota || RARITY[rarity].quota;
+  const quota = POOLS[poolKey].half ? Math.round(base/2) : base;
+  return { uid:S.uid++, m:m.id, tokens:quota, max:quota, half:POOLS[poolKey].half };
+}
+// 最佳出货: 先比稀有度, 同档比智能指数
+function maybeBest(c){
+  const m=MMAP[c.m];
+  if(!S.stats.best){ S.stats.best=c.m; return; }
+  const b=MMAP[S.stats.best];
+  const d=RORDER.indexOf(m.r)-RORDER.indexOf(b.r);
+  if(d>0 || (d===0 && m.idx>b.idx)) S.stats.best=c.m;
+}
+function doPulls(poolKey, count){
+  const cards=[];
+  const pool = POOLS[poolKey];
+  const pityMax = pool.pityMax || PITY_MAX;
+  if(typeof dailyResetIfNeeded==='function') dailyResetIfNeeded(); // 跨天时先重置今日计数
+  for(let i=0;i<count;i++){
+    const atPity = S.pity[poolKey] >= pityMax-1; // 保底触发时必出 SSR+, 不受 0731 独立爆率抢占
+    const force0731 = !atPity && Math.random() < DSV73_DROP;
+    const r = force0731 ? 'SSR' : drawRarity(poolKey);
+    S.pity[poolKey] = (r==='SSR'||r==='UR'||r==='UTR') ? 0 : S.pity[poolKey]+1;
+    const c = makeCard(poolKey, r, force0731);
+    cards.push(c);
+    S.stats.pulls++;
+    S.daily.pulls=(S.daily.pulls||0)+1;
+    S.stats.byR[r]=(S.stats.byR[r]||0)+1;
+    S.dex[c.m]=(S.dex[c.m]||0)+1;
+    maybeBest(c);
+    if(poolKey==='banner'){
+      S.bannerPulls++;
+      if(LIMITED_IDS.has(c.m)) S.bannerLimited++;
+    }
+  }
+  if(count===10 && !cards.some(c=>['SR','SSR','UR','UTR'].includes(MMAP[c.m].r))){
+    const old = cards[cards.length-1];
+    S.stats.byR[MMAP[old.m].r]--;
+    if(S.dex[old.m]){ S.dex[old.m]--; if(S.dex[old.m]<=0) delete S.dex[old.m]; }
+    cards[cards.length-1] = makeCard(poolKey,'SR');
+    S.pity[poolKey]=0; // 十连保底实际出货 SR+, 该池保底计数清零
+    const c=cards[cards.length-1];
+    S.stats.byR.SR++;
+    S.dex[c.m]=(S.dex[c.m]||0)+1;
+    maybeBest(c);
+  }
+  S.inv.push(...cards);
+  if(typeof afterPulls==='function') afterPulls(cards); // 皮肤掉落 hook
+  save();
+  return cards;
+}
+
+/* ---------- 工作核心 ---------- */
+function taskPayout(model){
+  let pay = RARITY[model.r].basePay*payFactor(model);
+  const boosted = LIMITED_IDS.has(model.id);
+  if(boosted) pay *= 2; // 限定卡加成: 用卡接单收入翻倍
+  const roll = Math.random();
+  const pGreat = .02 + model.idx/800;
+  const pRework = Math.min(.25,Math.max(.04,.25-model.idx/250));
+  const pDisaster = Math.min(.02,Math.max(0,(28-model.idx)/1200));
+  if(roll<pDisaster) return {amt:-50*PAY_BOOST, evt:'disaster', boosted};
+  if(roll<pDisaster+pRework) return {amt:pay*.4*PAY_BOOST, evt:'rework', boosted};
+  if(roll>1-pGreat) return {amt:pay*2.5*PAY_BOOST, evt:'great', boosted};
+  return {amt:pay*(.85+Math.random()*.3)*PAY_BOOST, evt:'ok', boosted};
+}
+function bestCard(){
+  let best=null;
+  for(const c of S.inv){
+    if(c.tokens<TASK_TOKENS) continue;
+    if(!best || RORDER.indexOf(MMAP[c.m].r)>RORDER.indexOf(MMAP[best.m].r)
+      || (MMAP[c.m].r===MMAP[best.m].r && MMAP[c.m].idx>MMAP[best.m].idx)) best=c;
+  }
+  return best;
+}
+// 消耗 n 单（按稀有度优先），返回明细
+function consumeTasks(n){
+  const items=[];
+  for(let i=0;i<n;i++){
+    const c=bestCard();
+    if(!c) break;
+    c.tokens-=TASK_TOKENS;
+    if(c.tokens<=0) S.inv.splice(S.inv.indexOf(c),1); // 耗尽卡自动移除
+    const m=MMAP[c.m];
+    items.push({m, res:taskPayout(m)});
+  }
+  return items;
+}
