@@ -2,7 +2,7 @@
 
 > 🎰 基于 [Animnia/TokenGacha](https://github.com/Animnia/TokenGacha) 开发的增强版。原项目是核心玩法与设计框架的来源,本项目在其基础上重构了代码结构并新增大量功能,感谢原作者的创意。
 
-**在线体验(Cloudflare Pages)**:https://tokengacha.pages.dev
+**在线体验**:https://tokengacha.pages.dev
 
 ## 这是什么
 
@@ -70,14 +70,6 @@ js/analytics.js       数据图表 + 启动
 npx serve .
 # 或
 python -m http.server 8123
-```
-
-## 部署
-
-已部署到 Cloudflare Pages(https://tokengacha.pages.dev)。手动更新:
-
-```bash
-npx wrangler pages deploy . --project-name tokengacha
 ```
 
 ## 许可证
