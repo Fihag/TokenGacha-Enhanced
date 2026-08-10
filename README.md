@@ -1,14 +1,14 @@
 # TokenGacha-Enhanced · LLM API 抽卡模拟器
 
-> 🎰 基于 [Animnia/TokenGacha](https://github.com/Animnia/TokenGacha) 开发的增强版。原项目是核心玩法与设计框架的来源,本项目在其基础上重构了代码结构并新增大量功能,感谢原作者的创意。
+> 🎰 基于 [Animnia/TokenGacha](https://github.com/Animnia/TokenGacha) 开发的增强版。原项目是核心玩法与设计框架的来源,本项目在其基础上重构了代码结构并新增大量功能,感谢原作者提供的代码
 
 **在线体验**:https://tokengacha.pages.dev
 
 ## 这是什么
 
-一家虚构的「LLM API 中转站」——它不按量计费,只卖**盲盒**。你花真金白银(游戏货币)抽卡,抽到顶级模型还是电子垃圾全看命;抽到的模型卡会变成 token 额度,拿去接 vibe coding 私活变现,形成「抽卡 → 工作 → 赚钱 → 再抽卡」的循环。
+一家虚构的「LLM API 中转站」——它不按量计费,只卖**盲盒**。你花真金白银(游戏货币)抽卡,抽到顶级模型还是电子垃圾全看命;抽到的模型卡会变成 token 额度,拿去接 vibe coding 私活变现,形成「抽卡 → 工作 → 赚钱 → 再抽卡」的循环
 
-稀有度依据 [Artificial Analysis Intelligence Index v4.1](https://artificialanalysis.ai/evaluations/artificial-analysis-intelligence-index) 分档,模型数据为实测/估算智能指数。
+稀有度依据 [Artificial Analysis Intelligence Index v4.1](https://artificialanalysis.ai/evaluations/artificial-analysis-intelligence-index) 分档,模型数据为实测/估算智能指数
 
 ## 与原始项目的区别
 
