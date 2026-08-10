@@ -25,7 +25,7 @@
 
 ### 模型与数值更新
 - 模型库扩充至 **42 个**(新增 Qwen3.8 Max、Hy3、Qwen3.7 Plus、Step 3.7 Flash 等),智能指数按 2026-08 最新数据校准
-- DeepSeek V4 Flash 拆分为 **Preview(R)** 与 **0731(SSR,独立 5% 爆率,800 万 token 量大管饱)** 两张卡
+- DeepSeek V4 Flash 拆分为 **Preview(R)** 与 **0731** 两张卡
 - 卡池概率、价格、回本率全部按概率公式重新计算并公示
 
 ### 工程重构
