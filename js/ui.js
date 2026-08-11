@@ -62,8 +62,11 @@ function renderWork(){
   $('w-est').textContent=fmt(estValue());
   const rows=$('rarity-rows'); rows.innerHTML='';
   const maxQ=RARITY.UTR.quota*3;
+  const groups={};
+  for(const r of RORDER) groups[r]=[];
+  for(const c of S.inv){ if(c.tokens>0) groups[MMAP[c.m].r].push(c); }
   for(const r of [...RORDER].reverse()){
-    const cards=S.inv.filter(c=>MMAP[c.m].r===r&&c.tokens>0);
+    const cards=groups[r];
     const tkR=cards.reduce((s,c)=>s+c.tokens,0);
     const estR=cards.reduce((s,c)=>s+(c.tokens/TASK_TOKENS)*expectedTaskPay(MMAP[c.m]),0);
     rows.insertAdjacentHTML('beforeend',
@@ -243,17 +246,22 @@ function showGacha(cards, pool){
 
 /* ---------- 工作流（批量 + 自动） ---------- */
 let working=false;
+const ACCEL_START=300, ACCEL_BLOCK=40, ACCEL_DECAY=0.72, MIN_INTERVAL=2; // 加速度曲线
+const SFX_GAP_MIN=20, SFX_GAP_RATIO=4; // 音效节流: gap=max(20ms, 当前间隔×4)
+const TERM_MAX_NODES=600;  // term-body 节点截断上限
 function termPrint(){
   const term=$('term-body');
+  const trim=()=>{ while(term.childNodes.length>TERM_MAX_NODES) term.firstChild.remove(); };
   return {
     reset(){ term.innerHTML='<span class="cursor"></span>'; },
     line(text){
       term.querySelector('.cursor')?.remove();
       const isRes = text.startsWith('  →');
       term.insertAdjacentHTML('beforeend', (isRes?text:escapeHtml(text))+'\n<span class="cursor"></span>');
+      trim();
       term.scrollTop=term.scrollHeight;
     },
-    done(text){ term.querySelector('.cursor')?.remove(); term.insertAdjacentHTML('beforeend', escapeHtml(text)); term.scrollTop=term.scrollHeight; }
+    done(text){ term.querySelector('.cursor')?.remove(); term.insertAdjacentHTML('beforeend', escapeHtml(text)); trim(); term.scrollTop=term.scrollHeight; }
   };
 }
 function escapeHtml(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
@@ -279,9 +287,11 @@ function settleItems(items){
   return {total, applied:S.money-before};
 }
 // lines: [{text, amt?, evt?}]，纯视觉回放（入账已在 settleItems 完成）
+// 加速度动画: 前 ACCEL_START 行原速, 之后每 ACCEL_BLOCK 行 interval×ACCEL_DECAY, 下限 MIN_INTERVAL
+// 音效节流: 事件行按 gap=max(SFX_GAP_MIN, 当前间隔×SFX_GAP_RATIO) 节流, 加速度越高越密但不过快
 function runLines(lines, interval, onDone){
   const tp=termPrint(); tp.reset();
-  let i=0, timer=null;
+  let i=0, timer=null, lastSfx=0, boosted=false;
   const finish=()=>{ document.removeEventListener('visibilitychange', onVis); onDone(tp); };
   const step=()=>{
     if(i>=lines.length){ finish(); return; }
@@ -297,13 +307,22 @@ function runLines(lines, interval, onDone){
       }
       finish(); return;
     }
+    let next=interval;
+    if(i>=ACCEL_START){
+      if(!boosted){ boosted=true; SFX.boost(); } // 进入加速段: 播加速音效
+      next=Math.max(MIN_INTERVAL, interval*Math.pow(ACCEL_DECAY, Math.floor((i-ACCEL_START)/ACCEL_BLOCK)));
+    }
     const L=lines[i];
     tp.line(L.text);
-    if(L.evt==='disaster') SFX.bad();
-    else if(L.evt==='great') SFX.coin();
+    const now=performance.now();
+    if((L.evt==='disaster'||L.evt==='great') && now-lastSfx>=Math.max(SFX_GAP_MIN, next*SFX_GAP_RATIO)){
+      lastSfx=now;
+      if(L.evt==='disaster') SFX.bad();
+      else SFX.coin();
+    }
     if(L.amt!=null) tweenMoney();
     i++;
-    timer=setTimeout(step, interval);
+    timer=setTimeout(step, next);
   };
   const onVis=()=>{ if(document.hidden){ clearTimeout(timer); step(); } };
   document.addEventListener('visibilitychange', onVis);

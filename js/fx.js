@@ -35,6 +35,20 @@ function beep(freq, dur=.12, type='sine', vol=.15, delay=0){
     o.connect(g); g.connect(c.destination); o.start(t); o.stop(t+dur+.05);
   }catch(e){}
 }
+// 滑音: 频率从 f0 线性上滑到 f1
+function sweep(f0, f1, dur=.5, type='sawtooth', vol=.09, delay=0){
+  if(muted) return;
+  try{
+    const c=ac(), o=c.createOscillator(), g=c.createGain();
+    o.type=type;
+    const t=c.currentTime+delay;
+    o.frequency.setValueAtTime(f0,t);
+    o.frequency.linearRampToValueAtTime(f1,t+dur);
+    g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(vol,t+.01);
+    g.gain.exponentialRampToValueAtTime(.0001,t+dur);
+    o.connect(g); g.connect(c.destination); o.start(t); o.stop(t+dur+.05);
+  }catch(e){}
+}
 const SFX = {
   click:()=>beep(600,.06,'square',.06),
   pull:()=>{beep(300,.2,'sawtooth',.08);beep(450,.25,'sawtooth',.06,.08);},
@@ -45,6 +59,7 @@ const SFX = {
     else if(r==='SR'){[440,554,659].forEach((f,i)=>beep(f,.15,'sine',.1,i*.07));} },
   coin:()=>{beep(988,.08,'square',.08);beep(1319,.15,'square',.08,.07);},
   bad:()=>{beep(200,.3,'sawtooth',.1);beep(150,.4,'sawtooth',.1,.1);},
+  boost:()=>{ sweep(320,980,.5,'sawtooth',.09); sweep(480,1400,.35,'square',.05,.12); }, // 加速: 转速上滑双音
   win:()=>{[523,659,784,1047,784,1047,1319].forEach((f,i)=>beep(f,.3,'sine',.13,i*.11));},
 };
 

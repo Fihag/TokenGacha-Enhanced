@@ -102,15 +102,22 @@ function bestCard(){
   return best;
 }
 // 消耗 n 单（按稀有度优先），返回明细
+// 大单量优化: 一次性排序可用卡 + 指针按序消耗, 避免每单全表扫描与 splice
 function consumeTasks(n){
   const items=[];
-  for(let i=0;i<n;i++){
-    const c=bestCard();
-    if(!c) break;
+  const usable = S.inv.filter(c=>c.tokens>=TASK_TOKENS)
+    .sort((a,b)=>{
+      const r=RORDER.indexOf(MMAP[a.m].r)-RORDER.indexOf(MMAP[b.m].r);
+      return r!==0 ? r : MMAP[b.m].idx-MMAP[a.m].idx;
+    });
+  let pos=0;
+  for(let i=0;i<n && pos<usable.length;i++){
+    const c=usable[pos];
     c.tokens-=TASK_TOKENS;
-    if(c.tokens<=0) S.inv.splice(S.inv.indexOf(c),1); // 耗尽卡自动移除
+    if(c.tokens<TASK_TOKENS) pos++; // 余量不足一单: 换下一张, 最后统一过滤
     const m=MMAP[c.m];
     items.push({m, res:taskPayout(m)});
   }
+  if(pos>0) S.inv=S.inv.filter(c=>c.tokens>0); // 耗尽卡统一移除
   return items;
 }
