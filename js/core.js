@@ -31,6 +31,19 @@ function makeCard(poolKey, rarity, force0731){
   const quota = POOLS[poolKey].half ? Math.round(base/2) : base;
   return { uid:S.uid++, m:m.id, tokens:quota, max:quota, half:POOLS[poolKey].half };
 }
+// 限定池保底: 必出限定卡 (dsv5pro / dsv5fl 各 50%), 维持原 UTR/UR 各半意图但锁定限定
+function makeLimited(poolKey){
+  const limited = MODELS.filter(m=>LIMITED_IDS.has(m.id) && (!m.bannerOnly || poolKey==='banner'));
+  const m = limited[Math.floor(Math.random()*limited.length)];
+  const base = m.quota || RARITY[m.r].quota;
+  const quota = POOLS[poolKey].half ? Math.round(base/2) : base;
+  return { uid:S.uid++, m:m.id, tokens:quota, max:quota, half:POOLS[poolKey].half };
+}
+function recordHist(cards){
+  const t=Date.now();
+  for(const c of cards) S.hist.push({t, pool:c._pool, m:c.m, r:MMAP[c.m].r});
+  if(S.hist.length>100) S.hist.splice(0, S.hist.length-100);
+}
 // 最佳出货: 先比稀有度, 同档比智能指数
 function maybeBest(c){
   const m=MMAP[c.m];
@@ -49,11 +62,17 @@ function doPulls(poolKey, count){
     const force0731 = !atPity && Math.random() < DSV73_DROP;
     const r = force0731 ? 'SSR' : drawRarity(poolKey);
     S.pity[poolKey] = (r==='SSR'||r==='UR'||r==='UTR') ? 0 : S.pity[poolKey]+1;
-    const c = makeCard(poolKey, r, force0731);
+    let c;
+    if(atPity && pool.banner){
+      c = makeLimited(poolKey); // 大保底: 必出限定
+    }else{
+      c = makeCard(poolKey, r, force0731);
+    }
+    c._pool = poolKey;
     cards.push(c);
     S.stats.pulls++;
     S.daily.pulls=(S.daily.pulls||0)+1;
-    S.stats.byR[r]=(S.stats.byR[r]||0)+1;
+    S.stats.byR[MMAP[c.m].r]=(S.stats.byR[MMAP[c.m].r]||0)+1;
     S.dex[c.m]=(S.dex[c.m]||0)+1;
     maybeBest(c);
     if(poolKey==='banner'){
@@ -66,6 +85,7 @@ function doPulls(poolKey, count){
     S.stats.byR[MMAP[old.m].r]--;
     if(S.dex[old.m]){ S.dex[old.m]--; if(S.dex[old.m]<=0) delete S.dex[old.m]; }
     cards[cards.length-1] = makeCard(poolKey,'SR');
+    cards[cards.length-1]._pool = poolKey;
     S.pity[poolKey]=0; // 十连保底实际出货 SR+, 该池保底计数清零
     const c=cards[cards.length-1];
     S.stats.byR.SR++;
@@ -73,6 +93,7 @@ function doPulls(poolKey, count){
     maybeBest(c);
   }
   S.inv.push(...cards);
+  recordHist(cards);
   if(typeof afterPulls==='function') afterPulls(cards); // 皮肤掉落 hook
   save();
   return cards;

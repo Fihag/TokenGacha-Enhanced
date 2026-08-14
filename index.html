@@ -370,8 +370,10 @@ footer{text-align:center;color:var(--faint);font-size:11px;padding:22px;line-hei
     <div class="chip">⚡ <b id="h-tokens">0</b></div>
     <div class="chip hide-m">抽卡 <b id="h-pulls">0</b></div>
   </div>
-  <button class="hbtn" id="btn-skin">🎨<span class="lbl"> 皮肤</span></button>
-  <button class="hbtn" id="btn-rates">📊<span class="lbl"> 概率公示</span></button>
+    <button class="hbtn" id="btn-skin">🎨<span class="lbl"> 皮肤</span></button>
+    <button class="hbtn" id="btn-mute">🔊<span class="lbl"> 音效</span></button>
+    <button class="hbtn" id="btn-save">💾<span class="lbl"> 存档</span></button>
+    <button class="hbtn" id="btn-rates">📊<span class="lbl"> 概率公示</span></button>
   <button class="hbtn" id="btn-dex">📖<span class="lbl"> 图鉴</span></button>
   <button class="hbtn" id="btn-help">❓<span class="lbl"> 玩法</span></button>
 </header>
@@ -469,6 +471,7 @@ footer{text-align:center;color:var(--faint);font-size:11px;padding:22px;line-hei
       <div class="panel panel-pad"><div class="panel-title">🍩 稀有度占比</div><div id="wrap-chart-donut"><canvas id="chart-donut"></canvas></div></div>
       <div class="panel panel-pad"><div class="panel-title">🗂️ 图鉴进度</div><div id="wrap-chart-dex"><canvas id="chart-dex"></canvas></div></div>
       <div class="panel panel-pad" style="grid-column:1/-1"><div class="panel-title">🏭 厂商分布（已获得）</div><div id="wrap-chart-vendor"><canvas id="chart-vendor"></canvas></div></div>
+      <div class="panel panel-pad" style="grid-column:1/-1"><div class="panel-title">🎲 出货记录（最近 100 次）</div><div id="gacha-hist"></div></div>
     </div>
   </div>
 </main>

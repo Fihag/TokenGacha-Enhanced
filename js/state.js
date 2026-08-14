@@ -13,7 +13,7 @@ function defaultState(){
     dex:{}, flags:{welcomed:false,ms:{},muted:false,cheated:false},
     daily:{lastSign:null,streak:0,day:null,earnToday:0,pulls:0,tasks:0,claimed:{},signDay:null},
     skin:'classic', skinsOwned:['classic'], skinTickets:0,
-    bannerPulls:0, bannerLimited:0 };
+    bannerPulls:0, bannerLimited:0, hist:[] };
 }
 function save(){ try{ localStorage.setItem('tokengacha_v2', JSON.stringify(S)); }catch(e){} }
 function load(){
@@ -47,6 +47,7 @@ function load(){
       if(!s.skin) s.skin='classic';
       if(!Array.isArray(s.skinsOwned)) s.skinsOwned=['classic'];
       if(s.skinTickets==null) s.skinTickets=0;
+      if(!Array.isArray(s.hist)) s.hist=[];
       s.ver=4;
       return s;
     }
@@ -80,7 +81,7 @@ function expectedTaskPay(m){
   if(LIMITED_IDS.has(m.id)) pay*=2; // 与 taskPayout 结算保持一致: 限定卡接单收入翻倍
   const pG=.02+m.idx/800, pR=Math.min(.25,Math.max(.04,.25-m.idx/250)), pD=Math.min(.02,Math.max(0,(28-m.idx)/1200));
   const pO=Math.max(0,1-pG-pR-pD);
-  return PAY_BOOST*(pO*pay + pG*pay*2.5 + pR*pay*.4 - pD*50);
+  return PAY_BOOST*(pO*pay + pG*pay*2.5 + pR*pay*.4 - pD*50*PAY_BOOST);
 }
 const estValue = () => S.inv.reduce((s,c)=> s + (c.tokens/TASK_TOKENS)*expectedTaskPay(MMAP[c.m]), 0);
 

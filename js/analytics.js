@@ -14,6 +14,30 @@ function renderData(){
   drawDonutChart();
   drawDexChart();
   drawVendorChart();
+  renderHist();
+}
+
+function renderHist(){
+  const box=$('gacha-hist');
+  if(!box) return;
+  const hist=S.hist||[];
+  if(!hist.length){
+    box.innerHTML='<div style="color:var(--faint);font-size:12.5px;padding:6px 2px">暂无出货记录，抽卡后这里会展示最近 100 次出货。</div>';
+    return;
+  }
+  const rows=hist.slice().reverse().map(h=>{
+    const m=MMAP[h.m];
+    const t=new Date(h.t);
+    const ts=`${String(t.getMonth()+1).padStart(2,'0')}-${String(t.getDate()).padStart(2,'0')} ${String(t.getHours()).padStart(2,'0')}:${String(t.getMinutes()).padStart(2,'0')}`;
+    const poolName=(POOLS[h.pool]&&POOLS[h.pool].name)||h.pool||'';
+    return `<div style="display:flex;align-items:center;gap:10px;padding:6px 8px;border-bottom:1px solid var(--line2)">
+      <span style="color:var(--faint);font-size:11px;white-space:nowrap">${ts}</span>
+      <span style="color:var(--faint);font-size:11px;white-space:nowrap">${poolName}</span>
+      <span style="font-size:12px;white-space:nowrap">${m.name}</span>
+      <span style="margin-left:auto;font-weight:800;font-size:11.5px;color:${RARITY[h.r].hex}">${h.r}</span>
+    </div>`;
+  }).join('');
+  box.innerHTML=`<div style="max-height:320px;overflow-y:auto;border:1px solid var(--line);border-radius:10px;background:var(--panel2)">${rows}</div>`;
 }
 
 function chartCanvas(id, h=180){
@@ -48,10 +72,10 @@ function drawBarChart(){
 function drawLineChart(){
   const c=chartCanvas('line'); if(!c) return;
   const {g,w,h}=c;
-  // 按收支明细累计余额曲线
+  // 按收支明细累计余额曲线(与结算一致: 余额不跌穿 0)
   const pts=[]; let bal=START_MONEY;
   const led=[...S.ledger].reverse();
-  for(const l of led){ bal+=l.amt; pts.push(bal); }
+  for(const l of led){ bal=Math.max(0,bal+l.amt); pts.push(bal); }
   if(!pts.length) pts.push(S.money);
   pts.push(S.money);
   const min=Math.min(...pts), max=Math.max(...pts), span=Math.max(1,max-min);

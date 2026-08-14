@@ -34,7 +34,7 @@ const MODELS = [
   {id:'kimik27c', name:'Kimi K2.7 Code',     vendor:'Moonshot AI',icon:'moonshot',      idx:43, r:'SR',  cost:'$0.08/任务', spd:48,  quote:'专精写代码的 Kimi'},
   {id:'mimo25',   name:'MiMo-V2.5-Pro',      vendor:'小米',       icon:'xiaomimimo',     idx:43, r:'SR',  cost:'$0.18/任务', spd:52,  quote:'雷军的 AI 野望'},
   {id:'qwen36',   name:'Qwen3.6 Max',        vendor:'阿里通义',   icon:'qwen-color',     idx:41, r:'SR',  cost:'$0.09/任务', spd:56,  quote:'Preview 版，爱拼才会赢'},
-  // R —— 28~39
+  // SR —— 40~46 (dsv4fl 虽注释在此, 实际 idx42 属 SR 档)
   {id:'dsv4fl',   name:'DeepSeek V4 Flash Preview',  vendor:'DeepSeek',   icon:'deepseek-color', idx:42, r:'SR',  cost:'$0.02/任务', spd:90,  quote:'Preview 版，便宜大碗，还要啥自行车'},
   {id:'qwen37p',  name:'Qwen3.7 Plus',       vendor:'阿里通义',   icon:'qwen-color',     idx:39, r:'R',   cost:'$0.24/任务', spd:56,  quote:'Plus 版通义，性价比担当'},
   {id:'step37',   name:'Step 3.7 Flash',     vendor:'阶跃星辰',   icon:'stepfun-color',  idx:31, r:'R',   cost:'$0.09/任务', spd:408, quote:'408 tok/s 的阶跃之光，快到飞起'},
@@ -71,19 +71,19 @@ const RORDER = ['N','R','SR','SSR','UR','UTR'];
 const RORDER_DESC = ['UTR','UR','SSR','SR','R','N']; // 抽卡概率累加用(高→低)
 const POOLS = {
   newbie:{ name:'青铜盲盒', sub:'新手体验池 · token 额度 ×50%', color:'#8ba3c7', price:30,  tenPrice:285,
-    rates:{N:.66,R:.28,SR:.05,SSR:.01,UR:0,UTR:0}, half:true, rtp:'约 73%', rtpFake:'约 88%',
+    rates:{N:.66,R:.28,SR:.05,SSR:.01,UR:0,UTR:0}, half:true,
     note:'体验卡额度减半。适合第一桶金，别指望出奇迹。',
     featured:['doubao','qwen37','mistral3','gpt4'] },
   standard:{ name:'白银盲盒', sub:'标准池 · 全档位可出', color:'#3b82f6', price:150, tenPrice:1425, rec:true,
-    rates:{N:.352,R:.355,SR:.20,SSR:.07,UR:.023,UTR:0}, half:false, rtp:'约 109%', rtpFake:'约 128%',
+    rates:{N:.352,R:.355,SR:.20,SSR:.07,UR:.023,UTR:0}, half:false,
     note:'主力卡池。UR 爆率 2.3%，出一张 Claude Opus 5 直接起飞。',
     featured:['opus5','gpt56sol','glm52','dsv4pro'] },
   flagship:{ name:'王者盲盒', sub:'旗舰池 · 不出 N 垃圾 · 欧皇专属', color:'#f59e0b', price:500, tenPrice:4700,
-    rates:{N:0,R:.06,SR:.65,SSR:.23,UR:.06,UTR:0}, half:false, rtp:'约 74%', rtpFake:'约 168%',
+    rates:{N:0,R:.06,SR:.65,SSR:.23,UR:.06,UTR:0}, half:false,
     note:'⚠️ UR 爆率 6%。庄家镰刀最锋利的一关：欧皇的天堂，赌狗的坟场。',
     featured:['opus5','fable5','kimik3','grok45'] },
   banner:{ name:'流光限定池', sub:'限定 UP · DeepSeek V5 系列 · 仅此期间', color:'#ff2d55', price:800, tenPrice:7600, rec:true,
-    rates:{N:0,R:0,SR:.608,SSR:.30,UR:.08,UTR:.012}, half:false, rtp:'约 88%', rtpFake:'约 158%',
+    rates:{N:0,R:0,SR:.608,SSR:.30,UR:.08,UTR:.012}, half:false,
     pityMax:90, banner:true, endsAt:'2026-08-24T00:00:00+08:00',
     note:'⏳ 限定卡池！UTR 超神话 DeepSeek V5 Pro 专属。90 抽大保底必出限定，活动结束即下架。',
     featured:['dsv5pro','dsv5fl'] },
@@ -94,7 +94,7 @@ const PAY_BOOST = 1.3;   // 工作报酬提升 30%（正反馈加强）
 const BATCH_TASKS = 10;          // 手动一次工作 = 10 单
 const VICTORY_AT = 50000;
 const START_MONEY = 800;
-const SITE_URL = 'https://tokengacha.metagaruta.com';
+const SITE_URL = 'https://tokengacha.pages.dev';
 const MILESTONES = [
   {id:'m10k',  at:10000,  title:'🎉 小有所成', tag:'余额突破 ¥10,000',  hype:'从电子垃圾堆里爬了出来，开始人模狗样。'},
   {id:'m50k',  at:50000,  title:'🏆 财富自由', tag:'余额突破 ¥50,000',  hype:'你击败了 70% 的玩家，成功跻身"持续赚钱"的那 30%。庄家已拉黑你。'},
