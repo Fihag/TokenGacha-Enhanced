@@ -12,8 +12,8 @@ function drawRarity(poolKey){
   const pool = POOLS[poolKey];
   const pityMax = pool.pityMax || PITY_MAX;
   if(S.pity[poolKey] >= pityMax-1){
-    // 保底: 限定池 100 抽必出限定(当期限定), 其他池 20% UR / 80% SSR
-    if(pool.banner) return Math.random()<.5?'UTR':'UR';
+    // 保底: 限定池 100 抽大保底必出当期限定 UTR; 其他池 20% UR / 80% SSR
+    if(pool.banner) return 'UTR';
     return Math.random()<.2?'UR':'SSR';
   }
   const r=Math.random(); let acc=0;
@@ -32,9 +32,11 @@ function makeCard(poolKey, rarity, force0731){
   const quota = POOLS[poolKey].half ? Math.round(base/2) : base;
   return { uid:S.uid++, m:m.id, tokens:quota, max:quota, half:POOLS[poolKey].half };
 }
-// 限定池保底: 必出限定卡 (dsv5pro / dsv5fl 各 50%), 维持原 UTR/UR 各半意图但锁定限定
+// 限定池保底: 必出当期限定 UTR (v5 赛季=dsv5pro, 神话回响=opus6/gem4pro)
 function makeLimited(poolKey){
-  const limited = MODELS.filter(m=>LIMITED_IDS.has(m.id)); // 当期限定卡 (按赛季轮换)
+  let limited = MODELS.filter(m=>LIMITED_IDS.has(m.id) && m.r==='UTR'); // 大保底锁定 UTR
+  if(!limited.length) limited = MODELS.filter(m=>LIMITED_IDS.has(m.id)); // 兜底: 赛季无UTR限定则退回全部限定
+  if(!limited.length) limited = MODELS.filter(m=>m.r==='UTR' && !m.bannerOnly); // 终极兜底: 任意非限定UTR
   const m = limited[Math.floor(Math.random()*limited.length)];
   const base = m.quota || RARITY[m.r].quota;
   const quota = POOLS[poolKey].half ? Math.round(base/2) : base;
