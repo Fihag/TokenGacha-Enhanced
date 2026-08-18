@@ -5,7 +5,7 @@
    ================================================================ */
 
 const DSV73_DROP = 0.05; // DeepSeek V4 Flash 0731 独立爆率(每次抽卡固定 5%)
-const ANTH_BAN_CHANCE = 0.006;
+const ANTH_BAN_CHANCE = 0.005;
 
 /* ---------- 抽卡核心 ---------- */
 function drawRarity(poolKey){

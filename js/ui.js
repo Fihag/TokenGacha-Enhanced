@@ -246,7 +246,7 @@ function showGacha(cards, pool){
 
 /* ---------- 工作流（批量 + 自动） ---------- */
 let working=false;
-const ACCEL_START=300, ACCEL_BLOCK=40, ACCEL_DECAY=0.72, MIN_INTERVAL=2; // 加速度曲线
+const ACCEL_START=260, ACCEL_BLOCK=32, ACCEL_DECAY=0.68, MIN_INTERVAL=1; // 加速度曲线(稍提速, 间隔下限 1ms)
 const SFX_GAP_MIN=20, SFX_GAP_RATIO=4; // 音效节流: gap=max(20ms, 当前间隔×4)
 const TERM_MAX_NODES=600;  // term-body 节点截断上限
 function termPrint(){
@@ -296,8 +296,11 @@ function runLines(lines, interval, onDone){
   const step=()=>{
     if(i>=lines.length){ finish(); return; }
     if(document.hidden){
-      // 后台标签页: 浏览器节流 setInterval 到 ≥1s, 静默快进完成(不播音效, 避免切回/切走时集体炸音)
-      while(i<lines.length){ tp.line(lines[i].text); i++; }
+      // 后台标签页: 浏览器节流 setInterval 到 ≥1s → 静默快进: 一次性写入剩余行(单次 DOM 写入 + 单次滚动),
+      // 避免逐行 scrollTop=scrollHeight 强制 reflow 在切回时造成卡顿; 全程不播音效
+      const rest=[];
+      while(i<lines.length){ rest.push(lines[i].text); i++; }
+      tp.done((rest.length? rest.join('\n')+'\n' : '') + '> ⏳ 后台静默完成 · 全部订单已结算');
       finish(); return;
     }
     let next=interval;
