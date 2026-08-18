@@ -82,13 +82,16 @@ function doPulls(poolKey, count){
     const atPity = S.pity[poolKey] >= pityMax-1; // 保底触发时必出 SSR+, 不受 0731 独立爆率抢占
     const force0731 = !atPity && Math.random() < DSV73_DROP;
     const r = force0731 ? 'SSR' : drawRarity(poolKey);
-    S.pity[poolKey] = (r==='SSR'||r==='UR'||r==='UTR') ? 0 : S.pity[poolKey]+1;
     let c;
     if(atPity && pool.banner){
-      c = makeLimited(poolKey); // 大保底: 必出限定
+      c = makeLimited(poolKey); // 大保底: 必出限定 UTR
     }else{
       c = makeCard(poolKey, r, force0731);
     }
+    // 保底计数: 限定池只在抽到【当期限定 UTR】时清零 —— 普通 SSR/UR 不重置, 保证 100 抽内必出限定 UTR;
+    // 其他池维持 SSR+ 即清零。按实际出货(c.m 的真实稀有度)计数, 幻觉修正为R的卡不会假性触发保底。
+    const mr = MMAP[c.m].r;
+    S.pity[poolKey] = (pool.banner ? (mr==='UTR' && LIMITED_IDS.has(c.m)) : (mr==='SSR'||mr==='UR'||mr==='UTR')) ? 0 : S.pity[poolKey]+1;
     c._pool = poolKey;
     maybeHallucinate(c, poolKey);
     cards.push(c);

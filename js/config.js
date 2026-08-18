@@ -92,11 +92,11 @@ const RORDER_DESC = ['UTR','UR','SSR','SR','R','N']; // 抽卡概率累加用(�
 const BANNER_SEASONS = [
   { id:'v5',  name:'流光限定池', sub:'限定 UP · DeepSeek V5 系列 · 牢梁涨价中 · 仅此期间', color:'#ff2d55', price:900, tenPrice:8600, oldPrice:800, oldTenPrice:7600, rec:true,
     rates:{N:0,R:0,SR:.62,SSR:.295,UR:.075,UTR:.01}, half:false, pityMax:100, banner:true,
-    note:'⏳ 限定卡池！UTR 超神话 DeepSeek V5 Pro 专属。100 抽大保底必出限定，赛季结束自动轮换。',
+    note:'⏳ 限定卡池！UTR 超神话 DeepSeek V5 Pro 专属。100 抽大保底必出限定 UTR，赛季结束自动轮换。',
     featured:['dsv5pro','dsv5fl'], limited:['dsv5pro','dsv5fl'] },
   { id:'cog', name:'神话回响池', sub:'限定 UP · Claude Opus 6 & Gemini 4 Pro · 仅此期间', color:'#8b5cf6', price:800, tenPrice:7600, rec:true,
     rates:{N:0,R:0,SR:.62,SSR:.295,UR:.075,UTR:.01}, half:false, pityMax:100, banner:true,
-    note:'⏳ 限定卡池！神秘的克劳德先生与 Gemini 4 Pro 降临。100 抽大保底必出限定，赛季结束自动轮换。',
+    note:'⏳ 限定卡池！神秘的克劳德先生与 Gemini 4 Pro 降临。100 抽大保底必出限定 UTR，赛季结束自动轮换。',
     featured:['opus6','gem4pro'], limited:['opus6','gem4pro'] },
 ];
 const BANNER_DUR = 86400000;   // 每个赛季 1 天, 次日自动轮换
@@ -253,7 +253,7 @@ const NOTICES = [
 '📢 公告：GPT-4 渠道已进博物馆，抽中概不退换，权当收藏。',
 '📢 公告：本月中转成本上涨，但盲盒价格不变——庄家还能亏不成？',
 '📢 公告：请勿在工单里询问"保底真的存在吗"，问就是存在。',
-'🔥 公告：限定卡池轮换开启！当前赛季 DeepSeek V5 系列，100 抽大保底必出限定，赛季结束自动轮换！',
+'🔥 公告：限定卡池轮换开启！当前赛季 DeepSeek V5 系列，100 抽大保底必出限定 UTR，赛季结束自动轮换！',
 '🔥 公告：牢梁官宣涨价！DeepSeek 限定池单抽 ¥800 → ¥900，十连 ¥7600 → ¥8600，早买早享受。',
 '📢 公告：Grok 4.6 / Muse Spark 1.2 / Gemini 3.7 Flash 已上架，UR 神话池又添三位新神，抽到记得晒。',
 '🔥 公告：「神话回响池」预告：神秘的 Claude Opus 6 与 Gemini 4 Pro 即将降临！',
