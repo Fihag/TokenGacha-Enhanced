@@ -265,7 +265,8 @@ function showGacha(cards, pool){
     $('close-overlay').classList.add('show');
     save(); renderAll();
     // 动画结束后依次弹: 幻觉揭晓(锁定) → 价格战返现
-    setTimeout(showHalluc, 650);
+    // 点过跳过时全部卡牌瞬间翻完, 延后弹窗留时间看清出了什么模型; 正常翻牌保持较快节奏
+    setTimeout(showHalluc, skipped ? 2800 : 650);
   }
   $('close-overlay').onclick=()=>{ ov.classList.remove('show'); pulling=false; checkEnd(); };
 }
