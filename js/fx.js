@@ -25,7 +25,7 @@ function iconImg(slug, cls=''){
 let AC = null, muted = false;
 function ac(){ if(!AC) AC = new (window.AudioContext||window.webkitAudioContext)(); return AC; }
 function beep(freq, dur=.12, type='sine', vol=.15, delay=0){
-  if(muted) return;
+  if(muted || document.hidden) return; // 后台标签页不发声(工作快进/结算等都在静默下进行)
   try{
     const c=ac(), o=c.createOscillator(), g=c.createGain();
     o.type=type; o.frequency.value=freq;

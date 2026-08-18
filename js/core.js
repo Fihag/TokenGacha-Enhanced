@@ -5,6 +5,7 @@
    ================================================================ */
 
 const DSV73_DROP = 0.05; // DeepSeek V4 Flash 0731 独立爆率(每次抽卡固定 5%)
+const ANTH_BAN_CHANCE = 0.006;
 
 /* ---------- 抽卡核心 ---------- */
 function drawRarity(poolKey){
@@ -122,6 +123,11 @@ function bestCard(){
   }
   return best;
 }
+function banClaudeCards(){
+  for(const c of S.inv){ if(MMAP[c.m].vendor==='Anthropic') c.tokens=0; }
+  S.inv=S.inv.filter(c=>c.tokens>0);
+  save();
+}
 // 消耗 n 单（按稀有度优先），返回明细
 // 大单量优化: 一次性排序可用卡 + 指针按序消耗, 避免每单全表扫描与 splice
 function consumeTasks(n){
@@ -135,9 +141,14 @@ function consumeTasks(n){
   for(let i=0;i<n && pos<usable.length;i++){
     const c=usable[pos];
     c.tokens-=TASK_TOKENS;
-    if(c.tokens<TASK_TOKENS) pos++; // 余量不足一单: 换下一张, 最后统一过滤
     const m=MMAP[c.m];
     items.push({m, res:taskPayout(m)});
+    if(c.tokens<TASK_TOKENS) pos++; // 余量不足一单: 换下一张, 最后统一过滤
+    if(m.vendor==='Anthropic' && Math.random() < ANTH_BAN_CHANCE){
+      banClaudeCards();
+      items._ccBan = true;
+      break;
+    }
   }
   if(pos>0) S.inv=S.inv.filter(c=>c.tokens>0); // 耗尽卡统一移除
   return items;

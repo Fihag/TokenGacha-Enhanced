@@ -296,15 +296,8 @@ function runLines(lines, interval, onDone){
   const step=()=>{
     if(i>=lines.length){ finish(); return; }
     if(document.hidden){
-      // 后台标签页: 浏览器节流 setInterval 到 ≥1s, 直接快进完成
-      while(i<lines.length){
-        const L=lines[i];
-        tp.line(L.text);
-        if(L.evt==='disaster') SFX.bad();
-        else if(L.evt==='great') SFX.coin();
-        if(L.amt!=null) tweenMoney();
-        i++;
-      }
+      // 后台标签页: 浏览器节流 setInterval 到 ≥1s, 静默快进完成(不播音效, 避免切回/切走时集体炸音)
+      while(i<lines.length){ tp.line(lines[i].text); i++; }
       finish(); return;
     }
     let next=interval;
@@ -362,6 +355,7 @@ function finishWork(tp, items, modeLabel, applied){
   if(evts.great>0||applied>500){ burst(rect.left+rect.width/2, rect.top+100, ['#16a34a','#f59e0b','#fff'], 50, 6); }
   if(evts.disaster>0) shake();
   working=false; save(); renderAll(); checkEnd();
+  if(items._ccBan){ SFX.bad(); setTimeout(()=>showModal(claudeBanHTML(), true), 300); }
   if(totalTasks()<=0 && S.money<minPoolPrice()) return;
   if(totalTasks()<=0) toast('⚡ Token 已全部耗尽 → 去「购买Token」抽下一波');
 }
@@ -415,6 +409,15 @@ function checkEnd(){
 function showModal(html, lock=false){ const b=$('modal-box'); b.innerHTML=html; if(lock) b.dataset.locked='1'; else delete b.dataset.locked; $('modal-mask').classList.add('show'); }
 $('modal-mask').addEventListener('click', e=>{ if(e.target.id==='modal-mask' && !$('modal-box').dataset.locked) $('modal-mask').classList.remove('show'); });
 function closeModal(){ $('modal-mask').classList.remove('show'); }
+function claudeBanHTML(){
+  return `<h3>🚫 Claude 封禁通知<button class="x" onclick="closeModal()">×</button></h3>
+  <p>Claude 官方检测到你的账号来自<b>中国境内</b>，触发区域风控，账号封禁。</p>
+  <p><b style="color:var(--red)">名下全部 Claude 卡额度已清零</b>——Opus 6 / Opus 5 / Fable 5 / Sonnet 5 / 4.5 Sonnet / Haiku 4.5，备胎一个没留。</p>
+  <p>官方理由：「合规问题，恕不另行通知。别问，问就是风控。」</p>
+  <p style="color:var(--faint)">本批剩余订单一并查封作废；已结掉的钱不追回——这是本站最后的人道主义。</p>
+  <p>庄家友情提示：下次接单记得用 DeepSeek，量大管饱，就是涨价后贵了点。</p>
+  <button class="big-btn ghost" onclick="closeModal()">我认了，继续压榨 →</button>`;
+}
 
 /* ---------- 分享 ---------- */
 let shareCtx={cv:null,ms:null};
