@@ -171,8 +171,11 @@ function renderAll(){
 
 /* ---------- 抽卡流程 ---------- */
 let pulling=false;
+let lastPullAt=0, rapidCount=0, cooling=false;   // GPU 过热彩蛋: 连点计数/冻结标记
+let lastRefund=0;                                 // 价格屠夫返现: 本次抽卡返现金额
+let gachaCards=[], gachaEls=[], pendingHalluc=[]; // 幻觉彩蛋: 当前揭晓卡组/待修正列表
 function tryPull(poolKey, count){
-  if(pulling) return;
+  if(pulling || cooling) return;
   const p=POOLS[poolKey];
   const useFree = poolKey==='standard' && count===10 && S.freeTen>0;
   const cost = count===10 ? p.tenPrice : p.price;
@@ -181,22 +184,43 @@ function tryPull(poolKey, count){
   else { S.money-=cost; S.stats.spent+=cost; addLedger(`购买${p.name} ×${count}`, -cost); }
   SFX.pull();
   const cards = doPulls(poolKey, count);
+  // GPU 过热彩蛋: 3.5s 内连点抽卡 ≥5 次, 0.1% 触发机房冻结 3s(假补偿 10 token)
+  const now=performance.now();
+  rapidCount = (now-lastPullAt<=3500) ? rapidCount+1 : 1;
+  lastPullAt = now;
+  if(rapidCount>=5 && Math.random()<0.001) gpuCoolDown();
+  // 价格屠夫返现: 抽到 DeepSeek 卡 0.2% 触发, 返还本次抽卡花费的 50%
+  lastRefund=0;
+  for(const c of cards){
+    if(MMAP[c.m].vendor==='DeepSeek' && Math.random()<0.002){
+      lastRefund = useFree ? 0 : Math.round(cost*0.5);
+      if(lastRefund>0){
+        S.money+=lastRefund;
+        S.stats.spent=Math.max(0,S.stats.spent-lastRefund);
+        addLedger('⚔️ DeepSeek 价格战返现', lastRefund);
+      }
+      break;
+    }
+  }
   save(); renderAll();
   showGacha(cards, p);
 }
 function showGacha(cards, pool){
   pulling=true;
+  gachaCards=cards;
   const ov=$('overlay'), row=$('gacha-row');
   $('overlay-title').textContent = cards.length>1 ? `✨ ${pool.name} · 十连抽 ✨` : `✨ ${pool.name} · 单抽 ✨`;
   $('gacha-summary').classList.remove('show');
   $('close-overlay').classList.remove('show');
   row.innerHTML=''; ov.classList.add('show');
   let skipped=false, flippedCount=0;
+  const dispOf = c => c._halluc ? MMAP[c._halluc] : MMAP[c.m]; // 幻觉卡先显示 UR 伪装
   const els = cards.map((c,i)=>{
-    const m=MMAP[c.m], r=RARITY[m.r];
+    const m=dispOf(c), r=RARITY[m.r];
     const d=document.createElement('div');
     d.className='gcard'+(m.r==='UR'||m.r==='UTR'?' ur':'');
     d.style.setProperty('--rc', r.hex);
+    const showTok = c._halluc ? (MMAP[c._halluc].quota||RARITY.UR.quota) : c.tokens;
     d.innerHTML=`<div class="inner">
       <div class="face back"><div class="q">?</div><small>API 盲盒</small></div>
       <div class="face front">
@@ -205,28 +229,30 @@ function showGacha(cards, pool){
         <div class="nm">${m.name}</div>
         <div class="vd">${m.vendor}${c.half?' · 体验卡':''}</div>
         <div class="idx">智能指数 ${m.idx}</div>
-        <div class="tk">⚡ ${fmtK(c.tokens)} tokens</div>
+        <div class="tk">⚡ ${fmtK(showTok)} tokens</div>
       </div></div>`;
     d.querySelector('.ic').appendChild(iconImg(m.icon));
     d.onclick=()=>flipOne(i);
     row.appendChild(d);
     return d;
   });
+  gachaEls=els;
   function flipOne(i){
     const el=els[i];
     if(el.classList.contains('flipped')) return;
     el.classList.add('flipped','pop');
     flippedCount++;
-    const r=MMAP[cards[i].m].r;
+    const rr=dispOf(cards[i]).r;
     SFX.flip(i);
-    if(r==='SSR'||r==='UR'||r==='UTR'){
+    if(rr==='SSR'||rr==='UR'||rr==='UTR'){
       setTimeout(()=>{
-        SFX.rarity(r);
+        SFX.rarity(rr);
+        if(cards[i]._halluc) goldFlash(); // 幻觉: 屏幕闪金光
         const rect=el.getBoundingClientRect();
         burst(rect.left+rect.width/2, rect.top+rect.height/2,
-          r==='UTR'?['#ff2d55','#f59e0b','#2f6bff','#fff']:(r==='UR'?['#ff5f6d','#f59e0b','#2f6bff','#fff']:['#f59e0b','#fde68a','#fff']),
-          r==='UTR'?160:(r==='UR'?120:70), r==='UTR'?11:(r==='UR'?9:7));
-        if(r==='UR'||r==='UTR') shake();
+          rr==='UTR'?['#ff2d55','#f59e0b','#2f6bff','#fff']:(rr==='UR'?['#ff5f6d','#f59e0b','#2f6bff','#fff']:['#f59e0b','#fde68a','#fff']),
+          rr==='UTR'?160:(rr==='UR'?120:70), rr==='UTR'?11:(rr==='UR'?9:7));
+        if(rr==='UR'||rr==='UTR') shake();
       }, 250);
     }
     if(flippedCount>=cards.length) finish();
@@ -234,15 +260,45 @@ function showGacha(cards, pool){
   cards.forEach((c,i)=> setTimeout(()=>{ if(!skipped) flipOne(i); }, 450+i*380));
   $('skip-btn').onclick=()=>{ skipped=true; els.forEach((e,i)=>{ if(!e.classList.contains('flipped')) setTimeout(()=>flipOne(i), i*40); }); };
   function finish(){
-    const totTok = cards.reduce((s,c)=>s+c.tokens,0);
-    const best = cards.reduce((a,c)=> RORDER.indexOf(MMAP[c.m].r)>RORDER.indexOf(MMAP[a.m].r)?c:a, cards[0]);
-    const bm=MMAP[best.m];
-    $('gacha-summary').innerHTML=`共获得 <b>${fmtK(totTok)} tokens</b> · 最佳: <b style="color:${RARITY[bm.r].hex}">${bm.name}</b>（${RARITY[bm.r].name}）`;
+    updateGachaSummary();
     $('gacha-summary').classList.add('show');
     $('close-overlay').classList.add('show');
     save(); renderAll();
+    // 动画结束后依次弹: 幻觉揭晓(锁定) → 价格战返现
+    setTimeout(showHalluc, 650);
   }
   $('close-overlay').onclick=()=>{ ov.classList.remove('show'); pulling=false; checkEnd(); };
+}
+function updateGachaSummary(){
+  const totTok = gachaCards.reduce((s,c)=>s+c.tokens,0);
+  const best = gachaCards.reduce((a,c)=> RORDER.indexOf(MMAP[c.m].r)>RORDER.indexOf(MMAP[a.m].r)?c:a, gachaCards[0]);
+  const bm=MMAP[best.m];
+  $('gacha-summary').innerHTML=`共获得 <b>${fmtK(totTok)} tokens</b> · 最佳: <b style="color:${RARITY[bm.r].hex}">${bm.name}</b>（${RARITY[bm.r].name}）`;
+}
+function showHalluc(){
+  pendingHalluc = gachaCards.map((c,i)=> c._halluc ? {c, el:gachaEls[i]} : null).filter(Boolean);
+  if(pendingHalluc.length){ showModal(hallucHTML(MMAP[pendingHalluc[0].c._halluc].name), true); return; }
+  if(lastRefund>0){ const amt=lastRefund; lastRefund=0; showModal(priceWarHTML(amt)); }
+}
+function acceptHalluc(){
+  for(const {c, el} of pendingHalluc) rebindFace(el, c);
+  pendingHalluc=[];
+  updateGachaSummary();
+  closeModal();
+  toast('🧠 幻觉已修正：这张卡实际为 R 档，30 万 token 精神损失费已垫进卡里', 3200);
+  if(lastRefund>0){ const amt=lastRefund; lastRefund=0; setTimeout(()=>showModal(priceWarHTML(amt)), 400); }
+}
+function rebindFace(el, c){
+  const m=MMAP[c.m], r=RARITY[m.r];
+  el.classList.toggle('ur', m.r==='UR'||m.r==='UTR');
+  el.style.setProperty('--rc', r.hex);
+  el.querySelector('.rr').textContent=`${r.name} · ${r.label}`;
+  el.querySelector('.nm').textContent=m.name;
+  el.querySelector('.vd').textContent=m.vendor+(c.half?' · 体验卡':'');
+  el.querySelector('.idx').textContent=`智能指数 ${m.idx}`;
+  el.querySelector('.tk').textContent=`⚡ ${fmtK(c.tokens)} tokens`;
+  const ic=el.querySelector('.ic'); ic.innerHTML=''; ic.appendChild(iconImg(m.icon));
+  el.classList.add('pop');
 }
 
 /* ---------- 工作流（批量 + 自动） ---------- */
@@ -423,6 +479,31 @@ function checkEnd(){
 function showModal(html, lock=false){ const b=$('modal-box'); b.innerHTML=html; if(lock) b.dataset.locked='1'; else delete b.dataset.locked; $('modal-mask').classList.add('show'); }
 $('modal-mask').addEventListener('click', e=>{ if(e.target.id==='modal-mask' && !$('modal-box').dataset.locked) $('modal-mask').classList.remove('show'); });
 function closeModal(){ $('modal-mask').classList.remove('show'); }
+/* ---------- 抽卡彩蛋: 金闪 / 弹幕 / 冷却 / 返现 / 幻觉 ---------- */
+function goldFlash(){ const g=$('goldflash'); if(!g) return; g.classList.remove('go'); void g.offsetWidth; g.classList.add('go'); }
+function danmaku(text){
+  const d=document.createElement('div'); d.className='danmaku'; d.textContent=text;
+  document.body.appendChild(d); setTimeout(()=>d.remove(), 5000);
+}
+function gpuCoolDown(){
+  cooling=true;
+  const el=$('cooling'); if(!el) return;
+  el.hidden=false;
+  setTimeout(()=>{ el.hidden=true; cooling=false; toast('🧊 冷却完毕，补偿 10 Token 已发放（记在账外）', 3000); }, 3000);
+}
+function priceWarHTML(amt){
+  return `<h3>⚔️ 价格战<button class="x" onclick="closeModal()">×</button></h3>
+  <p>DeepSeek 挥刀砍价，帮你省了一半！友商沉默，玩家狂喜。</p>
+  <p>本次抽卡返现 <b style="color:var(--red)">¥${fmt(amt)}</b> 已退回账户，且不扣成就。</p>
+  <button class="big-btn ghost" onclick="closeModal()">收下 →</button>`;
+}
+function hallucHTML(fakeName){
+  return `<h3>🤯 检测到模型幻觉<button class="x" onclick="closeModal()">×</button></h3>
+  <p>你抽到的「<b>${fakeName}</b>」其实是模型一本正经地胡说八道——<b>纯纯的幻觉</b>。</p>
+  <p>经本站鉴定：<b style="color:var(--blue)">实际结果为 R 档</b>，卡面已强制修正，概不退换。</p>
+  <p style="color:var(--faint)">为表歉意，30 万 token 精神损失费已垫进这张卡里。</p>
+  <button class="big-btn ghost" onclick="acceptHalluc()">接受现实 →</button>`;
+}
 function claudeBanHTML(){
   return `<h3>🚫 Claude 封禁通知<button class="x" onclick="closeModal()">×</button></h3>
   <p>Claude 官方检测到你的账号来自<b>中国境内</b>，触发区域风控，账号封禁。</p>
@@ -643,6 +724,15 @@ document.addEventListener('click', e=>{
   if(e.target.id==='btn-do-topup'){ doTopup(); }
   if(e.target.dataset && e.target.dataset.amt){ const inp=$('topup-amt'); if(inp) inp.value=e.target.dataset.amt; SFX.click(); }
 });
+
+/* ---------- 隐藏互动: Logo 连点 10 次 → 弹幕彩蛋 ---------- */
+let logoClicks=0, logoTimer=null;
+document.querySelector('.logo').onclick=()=>{
+  logoClicks++;
+  clearTimeout(logoTimer);
+  logoTimer=setTimeout(()=>{ logoClicks=0; }, 1600);
+  if(logoClicks>=10){ logoClicks=0; danmaku('别点了，没有隐藏福利！——来自穷鬼开发者'); }
+};
 
 /* ---------- 启动(在所有模块加载后,由 analytics.js 末尾触发) ---------- */
 function boot(){

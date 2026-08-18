@@ -243,6 +243,19 @@ main{max-width:1180px;margin:0 auto;padding:14px 22px 26px}
 #close-overlay{margin-top:12px;padding:11px 34px;border-radius:12px;background:linear-gradient(135deg,#2f6bff,#7c3aed);color:#fff;font-weight:800;font-size:14px;opacity:0;pointer-events:none;transition:.3s;box-shadow:var(--shadow-lg)}
 #close-overlay.show{opacity:1;pointer-events:auto}
 #close-overlay:hover{filter:brightness(1.1)}
+/* ---------- 彩蛋特效: 幻觉金闪 / 弹幕 / 机房冷却 ---------- */
+#goldflash{position:fixed;inset:0;z-index:96;background:radial-gradient(circle at 50% 45%,rgba(255,214,0,.55),rgba(245,158,11,.25) 55%,transparent 78%);opacity:0;pointer-events:none;transition:opacity .12s}
+#goldflash.go{opacity:1;animation:goldfade .9s ease-out forwards}
+@keyframes goldfade{0%{opacity:1}100%{opacity:0}}
+.danmaku{position:fixed;top:56px;left:0;z-index:95;background:#111827e6;color:#ffd76a;padding:7px 18px;border-radius:999px;font-size:13px;font-weight:800;white-space:nowrap;box-shadow:0 4px 18px rgba(0,0,0,.35);pointer-events:none;animation:danmakuMove 4.8s linear forwards}
+@keyframes danmakuMove{from{transform:translateX(105vw)}to{transform:translateX(-115%)}}
+.cooling{position:fixed;inset:0;z-index:900;background:rgba(6,10,24,.86);backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center}
+.cooling[hidden]{display:none}
+.cool-box{text-align:center;color:#9fb0e8;min-width:280px}
+.cool-txt{font-size:19px;font-weight:900;letter-spacing:2px;color:#cfe3ff;text-shadow:0 0 22px rgba(80,160,255,.65);margin-bottom:16px}
+.cool-bar{height:8px;border-radius:99px;background:#1d2742;overflow:hidden;border:1px solid #2a3554}
+.cool-bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,#41d9ff,#2f6bff);animation:coolFill 3s linear forwards}
+@keyframes coolFill{to{width:100%}}
 
 /* ---------- modals ---------- */
 .modal-mask{position:fixed;inset:0;z-index:120;background:rgba(30,38,64,.45);backdrop-filter:blur(5px);display:none;align-items:center;justify-content:center;padding:18px}
@@ -516,6 +529,10 @@ footer{text-align:center;color:var(--faint);font-size:11px;padding:22px;line-hei
   <div class="gacha-summary" id="gacha-summary"></div>
   <button id="close-overlay">收入卡库</button>
 </div>
+
+<!-- 彩蛋层 -->
+<div id="goldflash"></div>
+<div class="cooling" id="cooling" hidden><div class="cool-box"><div class="cool-txt">🧊 数据中心冷却中...</div><div class="cool-bar"><i></i></div></div></div>
 
 <!-- 弹窗 -->
 <div class="modal-mask" id="modal-mask"><div class="modal" id="modal-box"></div></div>

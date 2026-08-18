@@ -53,6 +53,24 @@ function maybeBest(c){
   const d=RORDER.indexOf(m.r)-RORDER.indexOf(b.r);
   if(d>0 || (d===0 && m.idx>b.idx)) S.stats.best=c.m;
 }
+// 幻觉彩蛋: 非UR/UTR出货时有 0.3% 概率伪装成UR(gold闪+UR特效), 揭晓后强制变回R并垫少量token作精神损失费
+function maybeHallucinate(c, poolKey){
+  if(c.m==='dsv4fl73') return; // 0731 是独立爆率联名, 不参与
+  if(RORDER.indexOf(MMAP[c.m].r) >= RORDER.indexOf('UR')) return; // 真UR/UTR不装幻觉
+  if(Math.random() >= 0.003) return;
+  const legal = m => m.r==='R' && m.id!=='dsv4fl73' && (!m.bannerOnly || (poolKey==='banner' && LIMITED_IDS.has(m.id)));
+  const rCands = MODELS.filter(legal);
+  const uCands = MODELS.filter(m=> m.r==='UR' && m.id!=='dsv4fl73' && (!m.bannerOnly || (poolKey==='banner' && LIMITED_IDS.has(m.id))));
+  if(!rCands.length || !uCands.length) return;
+  const real = rCands[Math.floor(Math.random()*rCands.length)];
+  const fake = uCands[Math.floor(Math.random()*uCands.length)];
+  const comp = 300000; // 精神损失费 30万 token
+  c.m = real.id;
+  c.tokens = (real.quota || RARITY.R.quota) + comp;
+  c.max = c.tokens;
+  c._halluc = fake.id; // 揭晓前显示 UR 伪装
+  c._comp = comp;
+}
 function doPulls(poolKey, count){
   const cards=[];
   const pool = POOLS[poolKey];
@@ -70,6 +88,7 @@ function doPulls(poolKey, count){
       c = makeCard(poolKey, r, force0731);
     }
     c._pool = poolKey;
+    maybeHallucinate(c, poolKey);
     cards.push(c);
     S.stats.pulls++;
     S.daily.pulls=(S.daily.pulls||0)+1;
