@@ -4,7 +4,7 @@
    抽卡核心 (含 UTR / 限定池 / 0731 独立爆率) / 工作核心 (含限定翻倍)
    ================================================================ */
 
-const DSV73_DROP = 0.05; // DeepSeek V4 Flash 0731 独立爆率(每次抽卡固定 5%)
+const DSV73_DROP = 0.015; // DeepSeek V4 Flash 0731 独立爆率(每次抽卡固定 1.5%)
 const ANTH_BAN_CHANCE = 0.005;
 
 /* ---------- 抽卡核心 ---------- */
@@ -53,11 +53,11 @@ function maybeBest(c){
   const d=RORDER.indexOf(m.r)-RORDER.indexOf(b.r);
   if(d>0 || (d===0 && m.idx>b.idx)) S.stats.best=c.m;
 }
-// 幻觉彩蛋: 非UR/UTR出货时有 0.3% 概率伪装成UR(gold闪+UR特效), 揭晓后强制变回R并垫少量token作精神损失费
+// 幻觉彩蛋: 非UR/UTR出货时有 0.2% 概率伪装成UR(gold闪+UR特效), 揭晓后强制变回R并垫少量token作精神损失费
 function maybeHallucinate(c, poolKey){
   if(c.m==='dsv4fl73') return; // 0731 是独立爆率联名, 不参与
   if(RORDER.indexOf(MMAP[c.m].r) >= RORDER.indexOf('UR')) return; // 真UR/UTR不装幻觉
-  if(Math.random() >= 0.003) return;
+  if(Math.random() >= 0.002) return;
   const legal = m => m.r==='R' && m.id!=='dsv4fl73' && (!m.bannerOnly || (poolKey==='banner' && LIMITED_IDS.has(m.id)));
   const rCands = MODELS.filter(legal);
   const uCands = MODELS.filter(m=> m.r==='UR' && m.id!=='dsv4fl73' && (!m.bannerOnly || (poolKey==='banner' && LIMITED_IDS.has(m.id))));

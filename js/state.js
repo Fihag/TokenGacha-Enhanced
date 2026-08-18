@@ -87,15 +87,15 @@ function expectedTaskPay(m){
 const estValue = () => S.inv.reduce((s,c)=> s + (c.tokens/TASK_TOKENS)*expectedTaskPay(MMAP[c.m]), 0);
 
 /* ---------- 卡池真实回本率(按概率公式计算) ---------- */
-// 单抽期望价值 = 5%×0731卡价值 + 95%×(各稀有度概率×该档平均卡价值)
+// 单抽期望价值 = 1.5%×0731卡价值 + 98.5%×(各稀有度概率×该档平均卡价值)
 function poolExpectedValue(poolKey){
   const p = POOLS[poolKey];
   let ev = 0;
-  // 0731 独立 5%: 固定出 dsv4fl73(540万 token, 青铜池减半)
+  // 0731 独立 1.5%: 固定出 dsv4fl73(540万 token, 青铜池减半)
   const d73 = MMAP.dsv4fl73;
   const d73q = p.half ? Math.round((d73.quota||RARITY.SSR.quota)/2) : (d73.quota||RARITY.SSR.quota);
-  ev += 0.05 * (d73q/TASK_TOKENS) * expectedTaskPay(d73);
-  // 其余 95% 走稀有度概率
+  ev += 0.015 * (d73q/TASK_TOKENS) * expectedTaskPay(d73);
+  // 其余 98.5% 走稀有度概率
   for(const r of RORDER){
     const pr = p.rates[r]||0;
     if(!pr) continue;
