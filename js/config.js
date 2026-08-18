@@ -11,6 +11,8 @@ const MODELS = [
   {id:'dsv5pro', name:'DeepSeek V5 Pro',     vendor:'DeepSeek',   icon:'deepseek-color', idx:72, r:'UTR', quota:6000000, bannerOnly:true, cost:'$0.09/任务', spd:120, quote:'限定·超神话！72 分新王登基，接单收入翻倍，价格也翻倍'},
   {id:'opus6',   name:'Claude Opus 6',      vendor:'Anthropic',  icon:'claude-color',   idx:79, r:'UTR', quota:6000000, bannerOnly:true, cost:'$2.90/任务', spd:48,  quote:'神秘的克劳德先生，天才程序员就此诞生'},
   {id:'gem4pro', name:'Gemini 4 Pro',       vendor:'Google',      icon:'gemini-color',   idx:75, r:'UTR', quota:6000000, bannerOnly:true, cost:'$1.50/任务', spd:88,  quote:'会有出来的这一天吗？希望吧…'},
+  // NB —— 作者自研, 全池 0.01% 隐藏神卡 (图鉴未抽到不显示)
+  {id:'fihagv1', name:'Fihag V1',          vendor:'作者自研',    icon:'fihagv1',       idx:100, r:'NB', quota:100000000, cost:'$0/任务', spd:999, quote:'作者亲自下场，全站唯一 NB 级存在，抽到就是天选之卡'},
   // UR —— 智能指数 55~63, 顶级中的顶级
   {id:'opus5',    name:'Claude Opus 5',      vendor:'Anthropic',  icon:'claude-color',   idx:63, r:'UR',  cost:'$2.03/任务', spd:54,  quote:'智能指数 63，榜一大哥，vibe coding 界的爱马仕'},
   {id:'fable5',   name:'Claude Fable 5',     vendor:'Anthropic',  icon:'claude-color',   idx:62, r:'UR',  cost:'$2.75/任务', spd:66,  quote:'传说中的 Fable，带着 Opus 4.8 当备胎上场'},
@@ -84,9 +86,10 @@ const RARITY = {
   SSR:{name:'SSR',label:'传说', hex:'#f59e0b', min:47,max:54, tasks:16, basePay:35,  quota:3200000},
   UR: {name:'UR', label:'神话', hex:'#ec4899', min:55,max:63, tasks:20, basePay:80,  quota:4000000},
   UTR:{name:'UTR',label:'超神话',hex:'#ff2d55',min:64,max:99, tasks:24, basePay:480, quota:6000000},
+  NB: {name:'NB', label:'神迹', hex:'#ff6ec7', min:64,max:100, tasks:30, basePay:640,  quota:100000000, secret:true},
 };
-const RORDER = ['N','R','SR','SSR','UR','UTR'];
-const RORDER_DESC = ['UTR','UR','SSR','SR','R','N']; // 抽卡概率累加用(高→低)
+const RORDER = ['N','R','SR','SSR','UR','UTR','NB'];
+const RORDER_DESC = ['NB','UTR','UR','SSR','SR','R','N']; // 抽卡概率累加用(高→低)
 
 /* ---------- 限定池轮换 (每赛季 1 天, 到期自动轮换) ---------- */
 const BANNER_SEASONS = [

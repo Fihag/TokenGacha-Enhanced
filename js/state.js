@@ -9,7 +9,7 @@ let S = null;
 function defaultState(){
   return { ver:4, money:START_MONEY, inv:[], uid:1, freeTen:1,
     pity:{newbie:0,standard:0,flagship:0,banner:0}, ledger:[],
-    stats:{pulls:0,earn:0,spent:0,tasks:0,best:'',disasters:0,greats:0,byR:{N:0,R:0,SR:0,SSR:0,UR:0,UTR:0}},
+    stats:{pulls:0,earn:0,spent:0,tasks:0,best:'',disasters:0,greats:0,byR:{N:0,R:0,SR:0,SSR:0,UR:0,UTR:0,NB:0}},
     dex:{}, flags:{welcomed:false,ms:{},muted:false,cheated:false},
     daily:{lastSign:null,streak:0,day:null,earnToday:0,pulls:0,tasks:0,claimed:{},signDay:null},
     skin:'classic', skinsOwned:['classic'], skinTickets:0,
@@ -36,6 +36,7 @@ function load(){
       s.inv=s.inv.filter(c=>c.tokens>0);
       // v3 → v4: 新增 UTR / banner / daily / skin
       if(!s.stats.byR.UTR) s.stats.byR.UTR=0;
+      if(!s.stats.byR.NB) s.stats.byR.NB=0;
       if(!s.pity.banner) s.pity.banner=0;
       if(!s.bannerPulls) s.bannerPulls=0;
       if(!s.bannerLimited) s.bannerLimited=0;
@@ -62,6 +63,7 @@ const $ = id => document.getElementById(id);
 const fmt = n => '¥' + Math.round(n).toLocaleString('zh-CN');
 const fmt2 = n => '¥' + n.toLocaleString('zh-CN',{maximumFractionDigits:1});
 const fmtK = n => n>=10000 ? (n/10000).toLocaleString('zh-CN',{maximumFractionDigits:1})+'万' : n>=1000 ? (n/1000).toLocaleString('zh-CN',{maximumFractionDigits:1})+'K' : Math.round(n);
+const fmtTok = n => n>=100000000 ? (n/100000000).toLocaleString('zh-CN',{maximumFractionDigits:2})+'亿' : fmtK(n); // 1 亿级 token 显示为「1亿」
 const totalTokens = () => S.inv.reduce((s,c)=>s+c.tokens,0);
 const totalTasks = () => Math.floor(totalTokens()/TASK_TOKENS);
 const pick = arr => arr[Math.floor(Math.random()*arr.length)];

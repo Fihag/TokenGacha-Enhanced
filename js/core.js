@@ -5,6 +5,7 @@
    ================================================================ */
 
 const DSV73_DROP = 0.015; // DeepSeek V4 Flash 0731 独立爆率(每次抽卡固定 1.5%)
+const FIHAG_DROP = 0.0001; // Fihag V1 隐藏神卡: 每个池子 0.01% 独立出货
 const ANTH_BAN_CHANCE = 0.005;
 
 /* ---------- 抽卡核心 ---------- */
@@ -55,6 +56,10 @@ function maybeBest(c){
   const d=RORDER.indexOf(m.r)-RORDER.indexOf(b.r);
   if(d>0 || (d===0 && m.idx>b.idx)) S.stats.best=c.m;
 }
+// Fihag V1: 全池 0.01% 隐藏神卡, 固定 1 亿 token, 品质 NB
+function makeFihag(){
+  return { uid:S.uid++, m:'fihagv1', tokens:100000000, max:100000000, half:false };
+}
 // 幻觉彩蛋: 非UR/UTR出货时有 0.2% 概率伪装成UR(gold闪+UR特效), 揭晓后强制变回R并垫少量token作精神损失费
 function maybeHallucinate(c, poolKey){
   if(c.m==='dsv4fl73') return; // 0731 是独立爆率联名, 不参与
@@ -80,18 +85,22 @@ function doPulls(poolKey, count){
   if(typeof dailyResetIfNeeded==='function') dailyResetIfNeeded(); // 跨天时先重置今日计数
   for(let i=0;i<count;i++){
     const atPity = S.pity[poolKey] >= pityMax-1; // 保底触发时必出 SSR+, 不受 0731 独立爆率抢占
-    const force0731 = !atPity && Math.random() < DSV73_DROP;
-    const r = force0731 ? 'SSR' : drawRarity(poolKey);
+    const gotFihag = Math.random() < FIHAG_DROP; // 全池 0.01% 隐藏神卡优先判定
+    const force0731 = !gotFihag && !atPity && Math.random() < DSV73_DROP;
+    const r = gotFihag ? 'NB' : (force0731 ? 'SSR' : drawRarity(poolKey));
     let c;
-    if(atPity && pool.banner){
+    if(gotFihag){
+      c = makeFihag(); // Fihag V1: 固定 1 亿 token
+    }else if(atPity && pool.banner){
       c = makeLimited(poolKey); // 大保底: 必出限定 UTR
     }else{
       c = makeCard(poolKey, r, force0731);
     }
-    // 保底计数: 限定池只在抽到【当期限定 UTR】时清零 —— 普通 SSR/UR 不重置, 保证 100 抽内必出限定 UTR;
+    // 保底计数: 限定池只在抽到【当期限定 UTR】或 NB 时清零 —— 普通 SSR/UR 不重置, 保证 100 抽内必出限定 UTR;
     // 其他池维持 SSR+ 即清零。按实际出货(c.m 的真实稀有度)计数, 幻觉修正为R的卡不会假性触发保底。
     const mr = MMAP[c.m].r;
-    S.pity[poolKey] = (pool.banner ? (mr==='UTR' && LIMITED_IDS.has(c.m)) : (mr==='SSR'||mr==='UR'||mr==='UTR')) ? 0 : S.pity[poolKey]+1;
+    const reset = pool.banner ? (mr==='NB' || (mr==='UTR' && LIMITED_IDS.has(c.m))) : (mr==='SSR'||mr==='UR'||mr==='UTR'||mr==='NB');
+    S.pity[poolKey] = reset ? 0 : S.pity[poolKey]+1;
     c._pool = poolKey;
     maybeHallucinate(c, poolKey);
     cards.push(c);
@@ -105,7 +114,7 @@ function doPulls(poolKey, count){
       if(LIMITED_IDS.has(c.m)) S.bannerLimited++;
     }
   }
-  if(count===10 && !cards.some(c=>['SR','SSR','UR','UTR'].includes(MMAP[c.m].r))){
+  if(count===10 && !cards.some(c=>['SR','SSR','UR','UTR','NB'].includes(MMAP[c.m].r))){
     const old = cards[cards.length-1];
     S.stats.byR[MMAP[old.m].r]--;
     if(S.dex[old.m]){ S.dex[old.m]--; if(S.dex[old.m]<=0) delete S.dex[old.m]; }

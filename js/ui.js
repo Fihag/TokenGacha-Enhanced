@@ -218,7 +218,7 @@ function showGacha(cards, pool){
   const els = cards.map((c,i)=>{
     const m=dispOf(c), r=RARITY[m.r];
     const d=document.createElement('div');
-    d.className='gcard'+(m.r==='UR'||m.r==='UTR'?' ur':'');
+    d.className='gcard'+(m.r==='NB'?' nb':(m.r==='UR'||m.r==='UTR'?' ur':''));
     d.style.setProperty('--rc', r.hex);
     const showTok = c._halluc ? (MMAP[c._halluc].quota||RARITY.UR.quota) : c.tokens;
     d.innerHTML=`<div class="inner">
@@ -229,9 +229,11 @@ function showGacha(cards, pool){
         <div class="nm">${m.name}</div>
         <div class="vd">${m.vendor}${c.half?' · 体验卡':''}</div>
         <div class="idx">智能指数 ${m.idx}</div>
-        <div class="tk">⚡ ${fmtK(showTok)} tokens</div>
+        <div class="tk">⚡ ${fmtTok(showTok)} tokens</div>
       </div></div>`;
-    d.querySelector('.ic').appendChild(iconImg(m.icon));
+    const icEl=d.querySelector('.ic');
+    if(m.id==='fihagv1'){ icEl.textContent='🌈'; icEl.style.cssText='font-size:clamp(24px,4vw,42px);line-height:1;margin:8px 0 6px'; }
+    else icEl.appendChild(iconImg(m.icon));
     d.onclick=()=>flipOne(i);
     row.appendChild(d);
     return d;
@@ -244,7 +246,15 @@ function showGacha(cards, pool){
     flippedCount++;
     const rr=dispOf(cards[i]).r;
     SFX.flip(i);
-    if(rr==='SSR'||rr==='UR'||rr==='UTR'){
+    if(rr==='NB'){
+      setTimeout(()=>{
+        SFX.nb();
+        goldFlash();
+        const rect=el.getBoundingClientRect();
+        burst(rect.left+rect.width/2, rect.top+rect.height/2, ['#ff2d55','#ffd700','#41d9ff','#7c3aed','#22c55e','#ff6ec7','#fff'], 220, 13);
+        shake();
+      }, 250);
+    }else if(rr==='SSR'||rr==='UR'||rr==='UTR'){
       setTimeout(()=>{
         SFX.rarity(rr);
         if(cards[i]._halluc) goldFlash(); // 幻觉: 屏幕闪金光
@@ -274,7 +284,7 @@ function updateGachaSummary(){
   const totTok = gachaCards.reduce((s,c)=>s+c.tokens,0);
   const best = gachaCards.reduce((a,c)=> RORDER.indexOf(MMAP[c.m].r)>RORDER.indexOf(MMAP[a.m].r)?c:a, gachaCards[0]);
   const bm=MMAP[best.m];
-  $('gacha-summary').innerHTML=`共获得 <b>${fmtK(totTok)} tokens</b> · 最佳: <b style="color:${RARITY[bm.r].hex}">${bm.name}</b>（${RARITY[bm.r].name}）`;
+  $('gacha-summary').innerHTML=`共获得 <b>${fmtTok(totTok)} tokens</b> · 最佳: <b style="color:${RARITY[bm.r].hex}">${bm.name}</b>（${RARITY[bm.r].name}）`;
 }
 function showHalluc(){
   pendingHalluc = gachaCards.map((c,i)=> c._halluc ? {c, el:gachaEls[i]} : null).filter(Boolean);
@@ -297,7 +307,7 @@ function rebindFace(el, c){
   el.querySelector('.nm').textContent=m.name;
   el.querySelector('.vd').textContent=m.vendor+(c.half?' · 体验卡':'');
   el.querySelector('.idx').textContent=`智能指数 ${m.idx}`;
-  el.querySelector('.tk').textContent=`⚡ ${fmtK(c.tokens)} tokens`;
+  el.querySelector('.tk').textContent=`⚡ ${fmtTok(c.tokens)} tokens`;
   const ic=el.querySelector('.ic'); ic.innerHTML=''; ic.appendChild(iconImg(m.icon));
   el.classList.add('pop');
 }
@@ -627,16 +637,18 @@ function ratesHTML(){
   · 本中转站期望约 7 成玩家最终破产。庄家永远赢，除非……你抽到那张卡。</div>`;
 }
 function dexHTML(){
+  const ownNB = (S.dex.fihagv1||0)>0;
+  const visible = MODELS.filter(m=> m.id!=='fihagv1' || ownNB); // Fihag V1 未抽到前在图鉴中隐藏
   const counts={};
-  for(const r of RORDER) counts[r]=MODELS.filter(m=>m.r===r).length;
+  for(const r of RORDER) counts[r]=visible.filter(m=>m.r===r).length;
   const got=Object.keys(S.dex).length;
-  const html=`<h3>📖 模型图鉴 ${got}/${MODELS.length}<button class="x" onclick="closeModal()">×</button></h3>
-  <div class="dex-legend">${RORDER.map(r=>`<span style="color:${RARITY[r].hex}">■</span> ${r} ${RARITY[r].label} ×${counts[r]}`).join('　')}</div>
+  const html=`<h3>📖 模型图鉴 ${got}/${visible.length}<button class="x" onclick="closeModal()">×</button></h3>
+  <div class="dex-legend">${RORDER.filter(r=> r!=='NB' || ownNB).map(r=>`<span style="color:${RARITY[r].hex}">■</span> ${r} ${RARITY[r].label} ×${counts[r]}`).join('　')}</div>
   <div class="dex-grid" id="dex-grid"></div>
   <div class="note" style="margin-top:10px">收录 OpenAI / Anthropic / Google / xAI / DeepSeek / Moonshot / 智谱 / 阿里 / Meta / Mistral / NVIDIA / Amazon / 小米 / MiniMax / 字节 / 百度 / 腾讯 / 讯飞 等 18 家厂商。排名参考 Artificial Analysis 智能指数 v4.1。</div>`;
   showModal(html);
   const grid=$('dex-grid');
-  const sorted=[...MODELS].sort((a,b)=>RORDER.indexOf(b.r)-RORDER.indexOf(a.r)||b.idx-a.idx);
+  const sorted=[...visible].sort((a,b)=>RORDER.indexOf(b.r)-RORDER.indexOf(a.r)||b.idx-a.idx);
   grid.innerHTML=sorted.map(m=>{
     const owned=S.dex[m.id]>0;
     return `<div class="dex-cell ${owned?'':'locked'}" style="--rc:${RARITY[m.r].hex}" title="${m.name} · ${m.vendor}&#10;${m.quote}">
@@ -644,7 +656,7 @@ function dexHTML(){
       <div class="nm">${owned?m.name:'？？？'}</div>
       <div class="ct">${owned?`指数 ${m.idx} · 抽到 ${S.dex[m.id]} 次`:'未获得'}</div></div>`;
   }).join('');
-  sorted.forEach((m,i)=>{ grid.children[i].querySelector('.ic').appendChild(iconImg(m.icon)); });
+  sorted.forEach((m,i)=>{ const ic=grid.children[i].querySelector('.ic'); if(m.id==='fihagv1'){ ic.textContent='🌈'; ic.style.cssText='font-size:30px;line-height:1'; } else ic.appendChild(iconImg(m.icon)); });
 }
 function helpHTML(){
   return `<h3>❓ 玩法说明<button class="x" onclick="closeModal()">×</button></h3>

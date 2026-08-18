@@ -53,11 +53,12 @@ function chartCanvas(id, h=180){
 function drawBarChart(){
   const c=chartCanvas('bar'); if(!c) return;
   const {g,w,h}=c;
-  const data=RORDER.slice().reverse().map(r=>S.stats.byR[r]||0);
+  const arr=RORDER.slice().reverse().filter(r=> r!=='NB' || (S.stats.byR.NB||0)>0); // NB 未抽到前隐藏
+  const data=arr.map(r=>S.stats.byR[r]||0);
   const max=Math.max(1,...data);
   const pad=36, bw=(w-pad*2)/data.length;
   g.font='11px system-ui'; g.textAlign='center';
-  RORDER.slice().reverse().forEach((r,i)=>{
+  arr.forEach((r,i)=>{
     const v=S.stats.byR[r]||0;
     const x=pad+i*bw+bw/2, bh=(v/max)*(h-40);
     g.fillStyle=RARITY[r].hex;
@@ -102,7 +103,7 @@ function drawLineChart(){
 function drawDonutChart(){
   const c=chartCanvas('donut'); if(!c) return;
   const {g,w,h}=c;
-  const data=RORDER.map(r=>[r,S.stats.byR[r]||0]);
+  const data=RORDER.filter(r=> r!=='NB' || (S.stats.byR.NB||0)>0).map(r=>[r,S.stats.byR[r]||0]); // NB 未抽到前隐藏
   const total=Math.max(1,data.reduce((s,x)=>s+x[1],0));
   const R=Math.min(w*0.32, h/2-22);
   const cx=R+30, cy=h/2;

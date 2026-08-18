@@ -235,6 +235,10 @@ main{max-width:1180px;margin:0 auto;padding:14px 22px 26px}
 @keyframes pop{0%{transform:scale(.6)}100%{transform:scale(1)}}
 .gcard.ur .front{animation:urGlow 1.4s linear infinite}
 @keyframes urGlow{0%,100%{box-shadow:0 0 0 1px #fff,0 8px 30px -4px var(--UR1)}50%{box-shadow:0 0 0 1px #fff,0 8px 34px -2px var(--UR3)}}
+.gcard.nb .face.front{background:linear-gradient(135deg,#ffe9f7,#e9f2ff,#eafff4,#fff3e0,#f0e9ff);border:2px solid transparent;background-clip:padding-box;box-shadow:0 0 0 2px #fff,0 0 24px 2px rgba(255,110,199,.55);animation:nbRainbow 1.6s linear infinite}
+.gcard.nb .face.front .rr{color:#8b00ff;-webkit-text-fill-color:transparent;background:linear-gradient(90deg,#ff2d55,#ff9f1a,#22c55e,#41d9ff,#7c3aed,#ff2d55);background-size:300% 100%;-webkit-background-clip:text;background-clip:text;animation:nbRainbow 1.6s linear infinite;font-size:clamp(8px,1.3vw,12px)}
+.gcard.nb .face.front .nm{color:#7c3aed;text-shadow:0 0 10px rgba(124,58,237,.6)}
+@keyframes nbRainbow{from{filter:hue-rotate(0deg)}to{filter:hue-rotate(360deg)}}
 .gacha-summary{margin-top:14px;font-size:13.5px;color:var(--dim);opacity:0;transition:.3s;background:#fff;border:1px solid var(--line);border-radius:12px;padding:9px 18px;box-shadow:var(--shadow)}
 .gacha-summary.show{opacity:1}
 .gacha-summary b{color:var(--cyan)}
