@@ -19,6 +19,8 @@ function syncBanner(){
   let switched = false;
   if(p._seasonId !== slot.season.id || p._end !== slot.end){
     Object.assign(p, slot.season);
+    // 涨价标识仅 DeepSeek 赛季定义, 其他赛季必须清掉, 防止继承残留
+    if(slot.season.oldPrice == null){ delete p.oldPrice; delete p.oldTenPrice; }
     p._seasonId = slot.season.id;
     p._end = slot.end;
     switched = true;
