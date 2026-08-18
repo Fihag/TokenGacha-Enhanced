@@ -29,7 +29,7 @@ const MODELS = [
   {id:'dsv4pro0813', name:'DeepSeek V4 Pro 0813', vendor:'DeepSeek', icon:'deepseek-color', idx:53.2, r:'SSR', cost:'$0.25/任务', spd:94,  quote:'0813 迭代版开源上桌，开源≠便宜，牢梁默默改了价目表'},
   {id:'glm52',    name:'GLM-5.2',            vendor:'智谱 Z.ai',  icon:'zai',            idx:53, r:'SSR', cost:'$0.30/任务', spd:60,  quote:'智谱出品，开源阵营第一梯队'},
   {id:'gpt56lun', name:'GPT-5.6 Luna',       vendor:'OpenAI',     icon:'openai',         idx:52, r:'SSR', cost:'$0.29/任务', spd:197, quote:'197 tok/s，快到没朋友'},
-  {id:'dsv4fl73', name:'DeepSeek V4 Flash 0731', vendor:'DeepSeek', icon:'deepseek-color', idx:52, r:'SSR', cost:'$0.03/任务', spd:141, quota:5500000, quote:'0731 迭代版，闪速升级，550万token——涨价后依然量大，只是价格不再管饱'},
+  {id:'dsv4fl73', name:'DeepSeek V4 Flash 0731', vendor:'DeepSeek', icon:'deepseek-color', idx:52, r:'SSR', cost:'$0.03/任务', spd:141, quota:5400000, quote:'0731 迭代版，闪速升级，540万token——涨价后依然量大，只是价格不再管饱'},
   {id:'gem36fl',  name:'Gemini 3.6 Flash',   vendor:'Google',     icon:'gemini-color',   idx:52, r:'SSR', cost:'$0.10/任务', spd:150, quote:'速度翻倍，智商……也够用了'},
   {id:'qwen3827b',name:'Qwen3.8 27B',        vendor:'阿里通义',   icon:'qwen-color',     idx:52.02, r:'SSR', cost:'$0.01/任务', spd:85,  quote:'开源 27B 小钢炮，白嫖党的无限火力'},
   {id:'gem31pro', name:'Gemini 3.1 Pro',     vendor:'Google',     icon:'gemini-color',   idx:48, r:'SSR', cost:'$0.45/任务', spd:80,  quote:'谷歌多模态扛把子'},
@@ -179,6 +179,16 @@ const CLIENT_REQS = [
 '「密室逃脱预约 + NPC 排班系统」','「早餐摊扫码点单，老板只有一台红米」','「帮婚庆做电子请柬，要能放 200 张照片」',
 '「驾校约车系统，顺便做个教练骂人语录数据库」','「给自家猫做个博客，要支持猫语」','「废品回收上门小程序，要地图派单」',
 '「帮包工头做个记工考勤，工人平均年龄 55」','「剧本杀店的拼车系统」','「给钓鱼佬做个鱼获排行榜 App」',
+'「帮我做个点菜小程序，老板要能一边炒菜一边接单」',
+'「帮宠物店做宠物档案，猫狗也要有专属页面」',
+'「学校社团招新系统，要能在线发传单」',
+'「做个股票预警，一有涨跌就给我发短信」',
+'「婚纱摄影小程序，修图 AI 要一键磨皮」',
+'「给小区物业做报修系统，按钮要大，大妈手指粗」',
+'「做个二手书交易平台，押金要能自动退」',
+'「帮房东做房租提醒，逾期自动加滞纳金」',
+'「做个表情包生成器，把我朋友的脸放进去」',
+'「客户：把这个 Excel 做成网页版，再顺便做个 App」',
 ];
 const MEME_LINES = [
 '$ rm -rf node_modules && npm i  # 包治百病','console.log("到这了吗 111");','// TODO: 以后优化（2019 年留，勿动）',
@@ -246,5 +256,9 @@ const NOTICES = [
 '🔥 公告：限定卡池轮换开启！当前赛季 DeepSeek V5 系列，100 抽大保底必出限定，赛季结束自动轮换！',
 '🔥 公告：牢梁官宣涨价！DeepSeek 限定池单抽 ¥800 → ¥900，十连 ¥7600 → ¥8600，早买早享受。',
 '📢 公告：Grok 4.6 / Muse Spark 1.2 / Gemini 3.7 Flash 已上架，UR 神话池又添三位新神，抽到记得晒。',
-'🔥 公告：「神话回响池」预告：神秘的 Claude Opus 6 与 Gemini 4 Pro 即将降临！'
+'🔥 公告：「神话回响池」预告：神秘的 Claude Opus 6 与 Gemini 4 Pro 即将降临！',
+'🔥 公告：「神话回响池」今日降临！Claude Opus 6 与 Gemini 4 Pro 双限定同台，100 抽大保底见真章，错过这班等明天。',
+'📢 公告：有玩家提议限定池常驻，庄家婉拒——常驻了还怎么叫限定？',
+'📢 公告：总有人问是不是偷偷改了 token 数，天地良心——我们改，但从不偷偷。',
+'📢 公告：新增 R 档返厂潮，GPT-5.1 / Claude 4.5 Sonnet 等 14 位老将重登卡池，量大管饱，抽到别嫌弃。',
 ];

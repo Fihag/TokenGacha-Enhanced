@@ -91,7 +91,7 @@ const estValue = () => S.inv.reduce((s,c)=> s + (c.tokens/TASK_TOKENS)*expectedT
 function poolExpectedValue(poolKey){
   const p = POOLS[poolKey];
   let ev = 0;
-  // 0731 独立 5%: 固定出 dsv4fl73(800万 token, 青铜池减半)
+  // 0731 独立 5%: 固定出 dsv4fl73(540万 token, 青铜池减半)
   const d73 = MMAP.dsv4fl73;
   const d73q = p.half ? Math.round((d73.quota||RARITY.SSR.quota)/2) : (d73.quota||RARITY.SSR.quota);
   ev += 0.05 * (d73q/TASK_TOKENS) * expectedTaskPay(d73);
