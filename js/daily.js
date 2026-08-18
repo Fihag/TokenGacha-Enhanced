@@ -35,12 +35,11 @@ function doSign(){
   S.money+=amt;
   S.stats.earn+=amt;
   S.daily.earnToday+=amt;
-  S.skinTickets=(S.skinTickets||0)+1;
   addLedger(`📅 签到第 ${S.daily.streak} 天`, amt);
   save(); renderAll();
   SFX.coin();
   burst(innerWidth/2, innerHeight/3, ['#f59e0b','#2f6bff','#fff'], 90, 8);
-  toast(`📅 签到成功！第 ${S.daily.streak} 天 +${fmt(amt)} +1 皮肤券`, 2600);
+  toast(`📅 签到成功！第 ${S.daily.streak} 天 +${fmt(amt)}`, 2600);
 }
 
 // 日常任务: 进度查询 / 领取
@@ -88,7 +87,7 @@ function renderActivity(){
         return `<div class="sign-day ${done?'done':''} ${cur?'cur':''}"><div class="d">第${i+1}天</div><div class="a">¥${amt}</div>${done?'✔':''}</div>`;
       }).join('')}
     </div>
-    <button class="work-btn manual" id="btn-sign" style="margin-top:10px" ${signedToday?'disabled':''}>${signedToday?'✅ 今日已签到':'📅 立即签到 (+¥'+SIGN_REWARDS[nextIdx]+' +1皮肤券)'}</button>`;
+    <button class="work-btn manual" id="btn-sign" style="margin-top:10px" ${signedToday?'disabled':''}>${signedToday?'✅ 今日已签到':'📅 立即签到 (+¥'+SIGN_REWARDS[nextIdx]+')'}</button>`;
   const signBtn=$('btn-sign');
   if(signBtn) signBtn.onclick=()=>{ SFX.click(); doSign(); };
   // 任务区

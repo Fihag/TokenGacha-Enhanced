@@ -114,9 +114,9 @@ const LIMITED_IDS = new Set(['dsv5pro','dsv5fl']);
 /* ---------- 每日签到 & 任务定义 ---------- */
 const SIGN_REWARDS = [200, 250, 300, 350, 400, 500, 600, 700, 800, 900, 1000, 1200, 1500, 1800, 2200, 2800, 3500, 4500, 6000, 8000, 10000]; // 21 天循环
 const DAILY_TASKS = [
-  {id:'pull100',  name:'抽卡 100 次',     desc:'今天抽满 100 抽（不限池）',  target:100,  rewardMoney:5000,  rewardTicket:1, rewardFreeTen:0, check:s=>S.daily.pulls},
-  {id:'work800',  name:'工作 800 单',     desc:'用 token 接 800 单私活',     target:800,  rewardMoney:8000,  rewardTicket:1, rewardFreeTen:0, check:s=>S.daily.tasks},
-  {id:'earn25000',name:'日入 ¥25000',     desc:'今日累计收入 ≥ ¥25000',     target:25000, rewardMoney:10000, rewardTicket:2, rewardFreeTen:1, check:s=>S.daily.earnToday},
+  {id:'pull100',  name:'抽卡 100 次',     desc:'今天抽满 100 抽（不限池）',  target:100,  rewardMoney:2000,  rewardTicket:1, rewardFreeTen:0, check:s=>S.daily.pulls},
+  {id:'work800',  name:'工作 800 单',     desc:'用 token 接 800 单私活',     target:800,  rewardMoney:3000,  rewardTicket:1, rewardFreeTen:0, check:s=>S.daily.tasks},
+  {id:'earn25000',name:'日入 ¥25000',     desc:'今日累计收入 ≥ ¥25000',     target:25000, rewardMoney:4000, rewardTicket:2, rewardFreeTen:1, check:s=>S.daily.earnToday},
 ];
 
 /* ---------- 皮肤系统 ---------- */
