@@ -109,7 +109,7 @@ function poolExpectedValue(poolKey){
       const q = p.half ? Math.round((m.quota||RARITY[r].quota)/2) : (m.quota||RARITY[r].quota);
       return s + (q/TASK_TOKENS)*expectedTaskPay(m);
     },0)/cands.length;
-    ev += 0.95 * pr * avg;
+    ev += 0.985 * pr * avg;
   }
   return ev;
 }

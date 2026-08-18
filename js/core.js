@@ -6,7 +6,7 @@
 
 const DSV73_DROP = 0.015; // DeepSeek V4 Flash 0731 独立爆率(每次抽卡固定 1.5%)
 const FIHAG_DROP = 0.0001; // Fihag V1 隐藏神卡: 每个池子 0.01% 独立出货
-const ANTH_BAN_CHANCE = 0.005;
+const ANTH_BAN_CHANCE = 0.006; // Claude 封禁彩蛋: 每张 Anthropic 卡 0.6%
 
 /* ---------- 抽卡核心 ---------- */
 function drawRarity(poolKey){
@@ -98,11 +98,13 @@ function doPulls(poolKey, count){
     }
     // 保底计数: 限定池只在抽到【当期限定 UTR】或 NB 时清零 —— 普通 SSR/UR 不重置, 保证 100 抽内必出限定 UTR;
     // 其他池维持 SSR+ 即清零。按实际出货(c.m 的真实稀有度)计数, 幻觉修正为R的卡不会假性触发保底。
-    const mr = MMAP[c.m].r;
+    c._pool = poolKey;
+      maybeHallucinate(c, poolKey);
+      const mr = MMAP[c.m].r;
     const reset = pool.banner ? (mr==='NB' || (mr==='UTR' && LIMITED_IDS.has(c.m))) : (mr==='SSR'||mr==='UR'||mr==='UTR'||mr==='NB');
     S.pity[poolKey] = reset ? 0 : S.pity[poolKey]+1;
     c._pool = poolKey;
-    maybeHallucinate(c, poolKey);
+    
     cards.push(c);
     S.stats.pulls++;
     S.daily.pulls=(S.daily.pulls||0)+1;
@@ -115,16 +117,17 @@ function doPulls(poolKey, count){
     }
   }
   if(count===10 && !cards.some(c=>['SR','SSR','UR','UTR','NB'].includes(MMAP[c.m].r))){
-    const old = cards[cards.length-1];
+    let idx = cards.length-1; while(idx>=0 && cards[idx]._halluc) idx--; if(idx>=0){ const old = cards[idx];
     S.stats.byR[MMAP[old.m].r]--;
     if(S.dex[old.m]){ S.dex[old.m]--; if(S.dex[old.m]<=0) delete S.dex[old.m]; }
-    cards[cards.length-1] = makeCard(poolKey,'SR');
-    cards[cards.length-1]._pool = poolKey;
+    cards[idx] = makeCard(poolKey,'SR');
+    cards[idx]._pool = poolKey;
     S.pity[poolKey]=0; // 十连保底实际出货 SR+, 该池保底计数清零
-    const c=cards[cards.length-1];
+    const c=cards[idx];
     S.stats.byR.SR++;
     S.dex[c.m]=(S.dex[c.m]||0)+1;
     maybeBest(c);
+}
   }
   S.inv.push(...cards);
   recordHist(cards);

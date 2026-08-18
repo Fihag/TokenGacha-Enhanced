@@ -135,7 +135,9 @@ function drawDonutChart(){
 function drawDexChart(){
   const c=chartCanvas('dex', 120); if(!c) return;
   const {g,w,h}=c;
-  const owned=Object.keys(S.dex).length, total=MODELS.length;
+  const owned=Object.keys(S.dex).length;
+    const hasNB=(S.dex.fihagv1||0)>0;
+    const total=MODELS.filter(m=>m.id!=='fihagv1'||hasNB).length;
   const pct=total?owned/total*100:0;
   const pad=36;
   g.fillStyle='#eef1f8';

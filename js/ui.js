@@ -109,9 +109,11 @@ function renderBalance(){
   if(!S.ledger.length){ ll.innerHTML='<div class="ledger-empty">暂无收支记录</div>'; }
   else ll.innerHTML=S.ledger.map(l=>`<div class="lrow"><span class="lab"><small>${l.ts}</small>${l.label}</span><span class="amt ${l.amt>=0?'pos':'neg'}">${l.amt>=0?'+':''}${fmt(l.amt)}</span></div>`).join('');
   const best=S.stats.best?MMAP[S.stats.best]:null;
+const hasNB=(S.dex.fihagv1||0)>0;
+    const dexTotal=MODELS.filter(m=>m.id!=='fihagv1'||hasNB).length;
   const cells=[
     ['总抽数',S.stats.pulls],['工作单数',S.stats.tasks],['大成功',S.stats.greats],['删库事故',S.stats.disasters],
-    ['最佳出货',best?best.name:'无'],['图鉴',`${Object.keys(S.dex).length}/${MODELS.length}`],
+    ['最佳出货',best?best.name:'无'],['图鉴',`${Object.keys(S.dex).length}/${dexTotal}`],
   ];
   $('stat-grid').innerHTML=cells.map(([l,v])=>`<div class="cell"><div class="lb">${l}</div><div class="vl">${v}</div></div>`).join('')
     + RORDER.map(r=>`<div class="cell"><div class="lb">${r} 出货</div><div class="vl" style="color:${RARITY[r].hex}">${S.stats.byR[r]||0}</div></div>`).join('');
@@ -135,7 +137,8 @@ function renderBalance(){
       d.className='inv-card'+(c.tokens<=0?' dead':'');
       d.style.setProperty('--rc', r.hex);
       d.innerHTML=`<span class="rt">${r.name}</span>${c.half?'<span class="half">体验</span>':''}`;
-      d.appendChild(iconImg(m.icon));
+      if(m.id==='fihagv1'){ const ic=document.createElement('span'); ic.textContent='🌈'; ic.style.cssText='font-size:28px;line-height:1;margin:4px 0'; d.appendChild(ic); }
+        else d.appendChild(iconImg(m.icon));
       d.insertAdjacentHTML('beforeend',`<div class="nm">${m.name}</div><div class="tk">${c.tokens>0?fmtK(c.tokens)+' tok':'已耗尽'}</div>`);
       d.title=`${m.name} · ${m.vendor}\n智能指数 ${m.idx} · 真实成本 ${m.cost}\n${m.quote}`;
       g.appendChild(d);
@@ -281,9 +284,11 @@ function showGacha(cards, pool){
   $('close-overlay').onclick=()=>{ ov.classList.remove('show'); pulling=false; checkEnd(); };
 }
 function updateGachaSummary(){
-  const totTok = gachaCards.reduce((s,c)=>s+c.tokens,0);
-  const best = gachaCards.reduce((a,c)=> RORDER.indexOf(MMAP[c.m].r)>RORDER.indexOf(MMAP[a.m].r)?c:a, gachaCards[0]);
-  const bm=MMAP[best.m];
+  const dispOf = c => c._halluc ? MMAP[c._halluc] : MMAP[c.m];
+  const tokOf = c => c._halluc ? (MMAP[c._halluc].quota||RARITY.UR.quota) : c.tokens;
+  const totTok = gachaCards.reduce((s,c)=>s+tokOf(c),0);
+  const best = gachaCards.reduce((a,c)=> RORDER.indexOf(dispOf(c).r)>RORDER.indexOf(dispOf(a).r)?c:a, gachaCards[0]);
+  const bm=dispOf(best);
   $('gacha-summary').innerHTML=`共获得 <b>${fmtTok(totTok)} tokens</b> · 最佳: <b style="color:${RARITY[bm.r].hex}">${bm.name}</b>（${RARITY[bm.r].name}）`;
 }
 function showHalluc(){
@@ -309,7 +314,8 @@ function rebindFace(el, c){
   el.querySelector('.idx').textContent=`智能指数 ${m.idx}`;
   el.querySelector('.tk').textContent=`⚡ ${fmtTok(c.tokens)} tokens`;
   const ic=el.querySelector('.ic'); ic.innerHTML=''; ic.appendChild(iconImg(m.icon));
-  el.classList.add('pop');
+  delete c._halluc; // 幻觉揭晓后清除伪装, 让摘要/统计显示真实结果
+    el.classList.add('pop');
 }
 
 /* ---------- 工作流（批量 + 自动） ---------- */
@@ -663,8 +669,8 @@ function helpHTML(){
   <p>你是一名独立开发者。这家中转站不卖套餐，只卖<b>盲盒</b>：抽到顶级模型还是电子垃圾，全看命。</p>
   <p>🔁 循环：<b>「购买Token」抽卡 → 「工作」用 token 接 vibe coding 私活 → 「余额」看着数字涨跌</b>。系统自动优先消耗最高稀有度的卡——好钢用在刀刃上。模型越强报价越高、翻车越少；垃圾模型还可能把客户数据库删了<b>倒赔钱</b>。</p>
   <p>⚡ 「开始工作」一键完成 ${BATCH_TASKS} 单；「自动模式」直接梭哈全部 token。资金回笼后立刻去抽下一波。</p>
-   <p>💡 攻略：青铜池是新手陷阱（额度减半）；<b>白银池是本站良心，期望回本率最高</b>，主力抽它；王者池不出垃圾但 UR 仅 6%——欧皇的天堂，赌狗的坟场。余额 ≥ ${fmt(VICTORY_AT)} 即达成「财富自由」。</p>
-  <p>🔥 限定池：每赛季自动轮换的限定 UP 卡池，当前为 DeepSeek V5 系列；100 抽大保底必出当期限定 UTR，限定卡接单收入 <b>翻倍</b>！</p>
+   <p>💡 攻略：青铜池是新手陷阱（额度减半）；<b>白银池是本站良心，期望回本率最高</b>，主力抽它；王者池不出垃圾但 UR 仅 5.5%——欧皇的天堂，赌狗的坟场。余额 ≥ ${fmt(VICTORY_AT)} 即达成「财富自由」。</p>
+  <p>🔥 限定池：每赛季自动轮换的限定 UP 卡池，当前「${POOLS.banner.name}」——${POOLS.banner.sub}；100 抽大保底必出当期限定 UTR，限定卡接单收入 <b>翻倍</b>！</p>
   <p>📅 「活动」页每日签到 + 3 个日常任务领奖励；「数据」页可查看抽卡/收支图表。</p>
   <p>⌨️ 快捷键：<span class="kbd">空格</span> 批量接单</p>
   <button class="big-btn ghost" id="btn-reset">🗑️ 清空存档，重新来过</button>`;
