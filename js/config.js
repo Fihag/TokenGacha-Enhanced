@@ -88,7 +88,7 @@ const RARITY = {
 const RORDER = ['N','R','SR','SSR','UR','UTR'];
 const RORDER_DESC = ['UTR','UR','SSR','SR','R','N']; // 抽卡概率累加用(高→低)
 
-/* ---------- 限定池轮换 (每赛季 21 天, 到期自动轮换) ---------- */
+/* ---------- 限定池轮换 (每赛季 1 天, 到期自动轮换) ---------- */
 const BANNER_SEASONS = [
   { id:'v5',  name:'流光限定池', sub:'限定 UP · DeepSeek V5 系列 · 牢梁涨价中 · 仅此期间', color:'#ff2d55', price:900, tenPrice:8600, oldPrice:800, oldTenPrice:7600, rec:true,
     rates:{N:0,R:0,SR:.62,SSR:.295,UR:.075,UTR:.01}, half:false, pityMax:100, banner:true,
@@ -108,11 +108,11 @@ const POOLS = {
     featured:['doubao','qwen37','mistral3','gpt4'] },
   standard:{ name:'白银盲盒', sub:'标准池 · 全档位可出', color:'#3b82f6', price:150, tenPrice:1425, rec:true,
     rates:{N:.372,R:.35,SR:.195,SSR:.065,UR:.018,UTR:0}, half:false,
-    note:'主力卡池。UR 爆率 2.3%，出一张 Claude Opus 5 直接起飞。',
+    note:'主力卡池。UR 爆率 1.8%，出一张 Claude Opus 5 直接起飞。',
     featured:['opus5','gpt56sol','glm52','dsv4pro'] },
   flagship:{ name:'王者盲盒', sub:'旗舰池 · 不出 N 垃圾 · 欧皇专属', color:'#f59e0b', price:500, tenPrice:4700,
     rates:{N:0,R:.075,SR:.645,SSR:.225,UR:.055,UTR:0}, half:false,
-    note:'⚠️ UR 爆率 6%。庄家镰刀最锋利的一关：欧皇的天堂，赌狗的坟场。',
+    note:'⚠️ UR 爆率 5.5%。庄家镰刀最锋利的一关：欧皇的天堂，赌狗的坟场。',
     featured:['opus5','fable5','grok46','mspark12','kimik3','grok45'] },
   banner:Object.assign({}, BANNER_SEASONS[0]),
 };
