@@ -134,7 +134,8 @@ function consumeTasks(n){
   const items=[];
   const usable = S.inv.filter(c=>c.tokens>=TASK_TOKENS)
     .sort((a,b)=>{
-      const r=RORDER.indexOf(MMAP[a.m].r)-RORDER.indexOf(MMAP[b.m].r);
+      // 高稀有度优先(UTR→N): RORDER 升序, 反转为降序, 同档比智能指数高者先
+      const r=RORDER.indexOf(MMAP[b.m].r)-RORDER.indexOf(MMAP[a.m].r);
       return r!==0 ? r : MMAP[b.m].idx-MMAP[a.m].idx;
     });
   let pos=0;
