@@ -192,8 +192,12 @@ main{max-width:1180px;margin:0 auto;padding:14px 22px 26px}
 .mini-btn:hover{color:var(--txt);border-color:#c9d2ea;background:#fff}
 
 /* ---------- 抽卡 overlay ---------- */
-#overlay{position:fixed;inset:0;z-index:100;background:rgba(244,246,251,.94);backdrop-filter:blur(10px);display:none;align-items:center;justify-content:center;flex-direction:column;padding:20px;overflow-y:auto}
+#overlay{position:fixed;inset:0;z-index:100;background:rgba(244,246,251,.94);backdrop-filter:blur(10px);display:none;align-items:center;flex-direction:column;padding:20px;overflow-y:auto}
 #overlay.show{display:flex}
+/* 可滚动居中: 内容矮于视口时整体居中, 高于视口时从顶部起可滚(避免 justify-content:center 裁剪顶部不可达) */
+#overlay>*{flex-shrink:0}
+#overlay>h2{margin-top:auto}
+#overlay>#close-overlay{margin-bottom:auto}
 #overlay h2{font-size:21px;font-weight:900;margin-bottom:16px;letter-spacing:2px;color:var(--txt)}
 .gacha-row{display:flex;flex-wrap:wrap;gap:12px;justify-content:center;width:min(760px,100%)}
 .gcard{width:calc((100% - 48px)/5);aspect-ratio:13/18.4;perspective:900px;cursor:pointer}
@@ -288,10 +292,17 @@ main{max-width:1180px;margin:0 auto;padding:14px 22px 26px}
   .work-btn small{font-size:10px}
   .bal-hero{padding:14px;gap:14px}
   .bal-hero .big .vl{font-size:28px}
-  .gacha-row{gap:8px}
-  .gcard{width:calc((100% - 32px)/5)}
+  .gacha-row{gap:10px}
+  /* 移动端 3 列: 卡面内容(稀有度/图标/名称/智能指数/额度)在 5 列超窄排版下会溢出被裁, 导致"智能指数"与 token 数不显示 */
+  .gcard{width:calc((100% - 20px)/3)}
+  .gcard .front{padding:7px 5px}
+  .gcard .front img{margin:6px 0 5px}
   .inv-grid{grid-template-columns:repeat(auto-fill,minmax(80px,1fr))}
   footer{font-size:10px;padding:14px}
+}
+@media(max-width:340px){
+  /* 超窄屏兜底: 2 列, 保证智能指数与 token 行可见 */
+  .gcard{width:calc((100% - 10px)/2)}
 }
 @media(max-height:740px) and (min-width:901px){
   .notice{display:none}
