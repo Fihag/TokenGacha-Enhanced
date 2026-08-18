@@ -29,7 +29,7 @@ const MODELS = [
   {id:'dsv4pro0813', name:'DeepSeek V4 Pro 0813', vendor:'DeepSeek', icon:'deepseek-color', idx:53.2, r:'SSR', cost:'$0.25/任务', spd:94,  quote:'0813 迭代版开源上桌，开源≠便宜，牢梁默默改了价目表'},
   {id:'glm52',    name:'GLM-5.2',            vendor:'智谱 Z.ai',  icon:'zai',            idx:53, r:'SSR', cost:'$0.30/任务', spd:60,  quote:'智谱出品，开源阵营第一梯队'},
   {id:'gpt56lun', name:'GPT-5.6 Luna',       vendor:'OpenAI',     icon:'openai',         idx:52, r:'SSR', cost:'$0.29/任务', spd:197, quote:'197 tok/s，快到没朋友'},
-  {id:'dsv4fl73', name:'DeepSeek V4 Flash 0731', vendor:'DeepSeek', icon:'deepseek-color', idx:52, r:'SSR', cost:'$0.03/任务', spd:141, quota:5500000, quote:'0731 迭代版，闪速升级，550万token量大管饱'},
+  {id:'dsv4fl73', name:'DeepSeek V4 Flash 0731', vendor:'DeepSeek', icon:'deepseek-color', idx:52, r:'SSR', cost:'$0.03/任务', spd:141, quota:5500000, quote:'0731 迭代版，闪速升级，550万token——涨价后依然量大，只是价格不再管饱'},
   {id:'gem36fl',  name:'Gemini 3.6 Flash',   vendor:'Google',     icon:'gemini-color',   idx:52, r:'SSR', cost:'$0.10/任务', spd:150, quote:'速度翻倍，智商……也够用了'},
   {id:'qwen3827b',name:'Qwen3.8 27B',        vendor:'阿里通义',   icon:'qwen-color',     idx:52.02, r:'SSR', cost:'$0.01/任务', spd:85,  quote:'开源 27B 小钢炮，白嫖党的无限火力'},
   {id:'gem31pro', name:'Gemini 3.1 Pro',     vendor:'Google',     icon:'gemini-color',   idx:48, r:'SSR', cost:'$0.45/任务', spd:80,  quote:'谷歌多模态扛把子'},
@@ -73,14 +73,14 @@ const RARITY = {
   SR: {name:'SR', label:'精锐', hex:'#9333ea', min:40,max:46, tasks:12, basePay:15.5,quota:2400000},
   SSR:{name:'SSR',label:'传说', hex:'#f59e0b', min:47,max:54, tasks:16, basePay:35,  quota:3200000},
   UR: {name:'UR', label:'神话', hex:'#ec4899', min:55,max:63, tasks:20, basePay:80,  quota:4000000},
-  UTR:{name:'UTR',label:'超神话',hex:'#ff2d55',min:64,max:99, tasks:24, basePay:160, quota:6000000},
+  UTR:{name:'UTR',label:'超神话',hex:'#ff2d55',min:64,max:99, tasks:24, basePay:480, quota:6000000},
 };
 const RORDER = ['N','R','SR','SSR','UR','UTR'];
 const RORDER_DESC = ['UTR','UR','SSR','SR','R','N']; // 抽卡概率累加用(高→低)
 
 /* ---------- 限定池轮换 (每赛季 21 天, 到期自动轮换) ---------- */
 const BANNER_SEASONS = [
-  { id:'v5',  name:'流光限定池', sub:'限定 UP · DeepSeek V5 系列 · 仅此期间', color:'#ff2d55', price:800, tenPrice:7600, rec:true,
+  { id:'v5',  name:'流光限定池', sub:'限定 UP · DeepSeek V5 系列 · 牢梁涨价中 · 仅此期间', color:'#ff2d55', price:900, tenPrice:8600, oldPrice:800, oldTenPrice:7600, rec:true,
     rates:{N:0,R:0,SR:.62,SSR:.295,UR:.075,UTR:.01}, half:false, pityMax:90, banner:true,
     note:'⏳ 限定卡池！UTR 超神话 DeepSeek V5 Pro 专属。90 抽大保底必出限定，赛季结束自动轮换。',
     featured:['dsv5pro','dsv5fl'], limited:['dsv5pro','dsv5fl'] },
@@ -89,8 +89,8 @@ const BANNER_SEASONS = [
     note:'⏳ 限定卡池！神秘的克劳德先生与 Gemini 4 Pro 降临。90 抽大保底必出限定，赛季结束自动轮换。',
     featured:['opus6','gem4pro'], limited:['opus6','gem4pro'] },
 ];
-const BANNER_DUR = 21*86400000;   // 每个赛季 21 天
-const BANNER_EPOCH = Date.parse('2026-08-03T00:00:00+08:00'); // 赛季1起点
+const BANNER_DUR = 86400000;   // 每个赛季 1 天, 次日自动轮换
+const BANNER_EPOCH = Date.parse('2026-08-18T00:00:00+08:00'); // 赛季1起点(DeepSeek)
 const POOLS = {
   newbie:{ name:'青铜盲盒', sub:'新手体验池 · token 额度 ×50%', color:'#8ba3c7', price:30,  tenPrice:285,
     rates:{N:.675,R:.275,SR:.045,SSR:.005,UR:0,UTR:0}, half:true,
@@ -234,6 +234,7 @@ const NOTICES = [
 '📢 公告：本月中转成本上涨，但盲盒价格不变——庄家还能亏不成？',
 '📢 公告：请勿在工单里询问"保底真的存在吗"，问就是存在。',
 '🔥 公告：限定卡池轮换开启！当前赛季 DeepSeek V5 系列，90 抽大保底必出限定，赛季结束自动轮换！',
+'🔥 公告：牢梁官宣涨价！DeepSeek 限定池单抽 ¥800 → ¥900，十连 ¥7600 → ¥8600，早买早享受。',
 '📢 公告：Grok 4.6 / Muse Spark 1.2 / Gemini 3.7 Flash 已上架，UR 神话池又添三位新神，抽到记得晒。',
 '🔥 公告：「神话回响池」预告：神秘的 Claude Opus 6 与 Gemini 4 Pro 即将降临！'
 ];

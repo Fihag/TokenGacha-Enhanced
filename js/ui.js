@@ -32,7 +32,7 @@ function renderBuy(){
     const pityMax = p.pityMax || PITY_MAX;
     card.innerHTML=`<div class="accent"></div><div class="pool-body">
       <div><div class="pool-name">${p.name}</div><div class="pool-sub">${p.sub}</div></div>
-      <div class="pool-price"><b>¥${p.price}</b><span>/ 抽 · 十连 ¥${p.tenPrice}</span><span class="rtp-tag ${poolRTP(k)<1?'low':''}">回本率 ${(poolRTP(k)*100).toFixed(0)}%</span></div>
+      <div class="pool-price">${p.oldPrice?`<s>¥${p.oldPrice}</s><em class="arrow">→</em><b>¥${p.price}</b>`:`<b>¥${p.price}</b>`}<span>/ 抽 · 十连 ${p.oldTenPrice?`<s>¥${p.oldTenPrice}</s><em class="arrow">→</em><b>¥${p.tenPrice}</b>`:`¥${p.tenPrice}`}</span><span class="rtp-tag ${poolRTP(k)<1?'low':''}">回本率 ${(poolRTP(k)*100).toFixed(0)}%</span></div>
       <div class="featured-row"></div>
       <div class="rates-bar" title="稀有度分布">${seg}</div>
       <div class="rates-legend">${RORDER.filter(r=>p.rates[r]).map(r=>`<span style="color:${RARITY[r].hex}">■</span>${r} ${((p.rates[r]||0)*100).toFixed(1)}%`).join('　')}</div>
