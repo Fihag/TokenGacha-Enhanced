@@ -596,41 +596,11 @@ $('btn-share').onclick=()=>{ SFX.click(); openShare(null); };
 $('btn-topup').onclick=()=>{ SFX.click(); showModal(topupHTML()); const inp=$('topup-amt'); if(inp){ inp.addEventListener('keydown',e=>{ if(e.key==='Enter') doTopup(); }); inp.focus&&inp.focus(); } };
 $('btn-skin').onclick=()=>{ SFX.click(); skinPickerHTML(); };
 $('btn-mute').onclick=()=>{ toggleMuteUI(); };
-$('btn-save').onclick=()=>{ SFX.click(); showModal(saveHTML()); };
 function toggleMuteUI(){
   muted=!muted; S.flags.muted=muted; save();
   $('btn-mute').innerHTML = muted ? '🔇<span class="lbl"> 静音</span>' : '🔊<span class="lbl"> 音效</span>';
   if(muted) toast('🔇 已静音'); else toast('🔊 音效已开启');
 }
-function saveHTML(){
-  const json=JSON.stringify(S);
-  return `<h3>💾 存档管理</h3>
-  <p style="font-size:12.5px;color:var(--dim)">数据保存在本机浏览器。导出后可复制保存，换设备/清缓存时导入恢复。</p>
-  <textarea id="save-area" spellcheck="false" style="width:100%;height:120px;font-family:ui-monospace,Consolas,monospace;font-size:11px;resize:vertical;background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:10px;color:var(--txt)">${json.replace(/</g,'&lt;')}</textarea>
-  <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
-    <button class="big-btn" style="flex:1" id="btn-save-copy">📋 复制存档</button>
-    <button class="big-btn" style="flex:1;background:linear-gradient(135deg,#16a34a,#0f766e)" id="btn-save-import">📥 导入存档</button>
-  </div>
-  <div style="margin-top:8px;font-size:11px;color:var(--faint)">粘贴存档 JSON 后点「导入存档」。导入会覆盖当前进度。</div>`;
-}
-function importSave(raw){
-  try{
-    const s=JSON.parse(raw);
-    if(s && typeof s.money==='number' && typeof s.uid==='number'){
-      if(!Array.isArray(s.hist)) s.hist=[];
-      if(!Array.isArray(s.ledger)) s.ledger=[];
-      S=s; save(); renderAll();
-      toast('📥 存档导入成功');
-      return true;
-    }
-  }catch(e){}
-  toast('❌ 存档格式无效');
-  return false;
-}
-document.addEventListener('click', e=>{
-  if(e.target.id==='btn-save-copy'){ copyText(JSON.stringify(S)); }
-  if(e.target.id==='btn-save-import'){ const raw=$('save-area') && $('save-area').value; if(raw) importSave(raw); }
-});
 // banner 倒计时: 每秒实时刷新, 活动到期自动下架
 setInterval(()=>{
   const el=$('banner-countdown');
