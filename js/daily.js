@@ -46,9 +46,9 @@ function doSign(){
 // 日常任务: 进度查询 / 领取
 function dailyTaskProgress(t){
   switch(t.id){
-    case 'pull5':   return Math.min(t.target, S.daily.pulls||0);
-    case 'work10':  return Math.min(t.target, S.daily.tasks||0);
-    case 'earn500': return Math.min(t.target, Math.round(S.daily.earnToday||0));
+    case 'pull100':   return Math.min(t.target, S.daily.pulls||0);
+    case 'work800':   return Math.min(t.target, S.daily.tasks||0);
+    case 'earn25000': return Math.min(t.target, Math.round(S.daily.earnToday||0));
   }
   return 0;
 }
