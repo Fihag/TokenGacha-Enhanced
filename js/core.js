@@ -24,7 +24,7 @@ function makeCard(poolKey, rarity, force0731){
   if(force0731){
     cands = MODELS.filter(m=>m.id==='dsv4fl73');
   }else{
-    cands = MODELS.filter(m=>m.r===rarity && m.id!=='dsv4fl73' && (!m.bannerOnly || poolKey==='banner'));
+    cands = MODELS.filter(m=>m.r===rarity && m.id!=='dsv4fl73' && (!m.bannerOnly || (poolKey==='banner' && LIMITED_IDS.has(m.id))));
   }
   const m = cands[Math.floor(Math.random()*cands.length)];
   const base = m.quota || RARITY[rarity].quota;
@@ -33,7 +33,7 @@ function makeCard(poolKey, rarity, force0731){
 }
 // 限定池保底: 必出限定卡 (dsv5pro / dsv5fl 各 50%), 维持原 UTR/UR 各半意图但锁定限定
 function makeLimited(poolKey){
-  const limited = MODELS.filter(m=>LIMITED_IDS.has(m.id) && (!m.bannerOnly || poolKey==='banner'));
+  const limited = MODELS.filter(m=>LIMITED_IDS.has(m.id)); // 当期限定卡 (按赛季轮换)
   const m = limited[Math.floor(Math.random()*limited.length)];
   const base = m.quota || RARITY[m.r].quota;
   const quota = POOLS[poolKey].half ? Math.round(base/2) : base;

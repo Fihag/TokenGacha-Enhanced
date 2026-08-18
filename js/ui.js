@@ -524,7 +524,7 @@ function ratesHTML(){
   · 稀有度按 <a href="https://artificialanalysis.ai/leaderboards/models" target="_blank">Artificial Analysis 智能指数 v4.1</a> 分档：UTR≥64 / UR 55-63 / SSR 47-54 / SR 40-46 / R 28-39 / N&lt;28<br>
   · 每池 ${PITY_MAX} 抽无 SSR+ 触发保底（80% SSR / 20% UR）；限定池 90 抽大保底 80% 出限定；十连必出 SR 及以上<br>
   · 新手池为「体验卡」，token 额度 ×50%<br>
-  · 工作收入 = 模型报价 × 事件倍率（大成功×2.5 / 返工×0.4 / 删库赔¥65，垃圾模型事故率高）；限定 DeepSeek V5 用卡接单收入 ×2<br>
+  · 工作收入 = 模型报价 × 事件倍率（大成功×2.5 / 返工×0.4 / 删库赔¥65，垃圾模型事故率高）；限定池出卡接单收入 ×2<br>
   · 本中转站期望约 7 成玩家最终破产。庄家永远赢，除非……你抽到那张卡。</div>`;
 }
 function dexHTML(){
@@ -553,7 +553,7 @@ function helpHTML(){
   <p>🔁 循环：<b>「购买Token」抽卡 → 「工作」用 token 接 vibe coding 私活 → 「余额」看着数字涨跌</b>。系统自动优先消耗最高稀有度的卡——好钢用在刀刃上。模型越强报价越高、翻车越少；垃圾模型还可能把客户数据库删了<b>倒赔钱</b>。</p>
   <p>⚡ 「开始工作」一键完成 ${BATCH_TASKS} 单；「自动模式」直接梭哈全部 token。资金回笼后立刻去抽下一波。</p>
    <p>💡 攻略：青铜池是新手陷阱（额度减半）；<b>白银池是本站良心，期望回本率最高</b>，主力抽它；王者池不出垃圾但 UR 仅 6%——欧皇的天堂，赌狗的坟场。余额 ≥ ${fmt(VICTORY_AT)} 即达成「财富自由」。</p>
-  <p>🔥 限定池：DeepSeek V5 Pro（UTR·72 分）与 V5 Flash（UR·61 分）限时登场，90 抽大保底必出限定；用这两张卡接单收入 <b>翻倍</b>！</p>
+  <p>🔥 限定池：每赛季自动轮换的限定 UP 卡池，当前为 DeepSeek V5 系列；90 抽大保底必出当期限定，限定卡接单收入 <b>翻倍</b>！</p>
   <p>📅 「活动」页每日签到 + 3 个日常任务领奖励；「数据」页可查看抽卡/收支图表。</p>
   <p>⌨️ 快捷键：<span class="kbd">空格</span> 批量接单</p>
   <button class="big-btn ghost" id="btn-reset">🗑️ 清空存档，重新来过</button>`;
@@ -579,7 +579,7 @@ function milestoneHTML(ms){
 function welcomeHTML(){
   return `<h3>🎰 欢迎来到 TokenGacha</h3>
   <p>这是一家神秘的 <b>LLM API 中转站</b>。它不按量计费，只卖<b>盲盒</b>——</p>
-  <p>你可能抽到 <b>DeepSeek V5 Pro</b>（限定超神话，智能指数 72，接单收入翻倍），也可能抽到<b>豆包</b>（「垃圾。」——某玩家的个人想法）。</p>
+  <p>你可能抽到 <b>Claude Opus 6</b>（限定超神话，智能指数 79，接单收入翻倍），也可能抽到<b>豆包</b>（「垃圾。」——某玩家的个人想法）。</p>
   <p>💰 启动资金 <b>${fmt(START_MONEY)}</b> 已到账，另赠<b>白银盲盒免费十连 ×1</b>。<br>三个页面完成整个循环：<b>购买Token → 工作 → 余额</b>。是破产收场还是财富自由，看你的命了。</p>
   <button class="big-btn" id="btn-start">🎁 收下启动资金，开抽！</button>`;
 }

@@ -13,7 +13,7 @@ function defaultState(){
     dex:{}, flags:{welcomed:false,ms:{},muted:false,cheated:false},
     daily:{lastSign:null,streak:0,day:null,earnToday:0,pulls:0,tasks:0,claimed:{},signDay:null},
     skin:'classic', skinsOwned:['classic'], skinTickets:0,
-    bannerPulls:0, bannerLimited:0, hist:[] };
+    bannerPulls:0, bannerLimited:0, bannerSeason:null, hist:[] };
 }
 function save(){ try{ localStorage.setItem('tokengacha_v2', JSON.stringify(S)); }catch(e){} }
 function load(){
@@ -39,6 +39,7 @@ function load(){
       if(!s.pity.banner) s.pity.banner=0;
       if(!s.bannerPulls) s.bannerPulls=0;
       if(!s.bannerLimited) s.bannerLimited=0;
+      if(s.bannerSeason==null) s.bannerSeason=null;
       if(!s.daily) s.daily={lastSign:null,streak:0,day:null,earnToday:0,claimed:{},signDay:null};
       if(s.daily.claimed==null) s.daily.claimed={};
       if(s.daily.earnToday==null) s.daily.earnToday=0;
@@ -98,7 +99,9 @@ function poolExpectedValue(poolKey){
   for(const r of RORDER){
     const pr = p.rates[r]||0;
     if(!pr) continue;
-    const cands = MODELS.filter(m=>m.r===r && m.id!=='dsv4fl73' && (!m.bannerOnly || p.banner));
+    const cands = p.banner
+      ? MODELS.filter(m=>m.r===r && m.id!=='dsv4fl73' && (!m.bannerOnly || LIMITED_IDS.has(m.id)))
+      : MODELS.filter(m=>m.r===r && m.id!=='dsv4fl73' && !m.bannerOnly);
     if(!cands.length) continue;
     const avg = cands.reduce((s,m)=>{
       const q = p.half ? Math.round((m.quota||RARITY[r].quota)/2) : (m.quota||RARITY[r].quota);
