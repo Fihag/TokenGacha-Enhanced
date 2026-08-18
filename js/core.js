@@ -11,7 +11,7 @@ function drawRarity(poolKey){
   const pool = POOLS[poolKey];
   const pityMax = pool.pityMax || PITY_MAX;
   if(S.pity[poolKey] >= pityMax-1){
-    // 保底: 限定池 90 抽必出限定(UTR/UR 限定), 其他池 20% UR / 80% SSR
+    // 保底: 限定池 100 抽必出限定(当期限定), 其他池 20% UR / 80% SSR
     if(pool.banner) return Math.random()<.5?'UTR':'UR';
     return Math.random()<.2?'UR':'SSR';
   }

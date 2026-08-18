@@ -81,18 +81,18 @@ const RORDER_DESC = ['UTR','UR','SSR','SR','R','N']; // 抽卡概率累加用(�
 /* ---------- 限定池轮换 (每赛季 21 天, 到期自动轮换) ---------- */
 const BANNER_SEASONS = [
   { id:'v5',  name:'流光限定池', sub:'限定 UP · DeepSeek V5 系列 · 牢梁涨价中 · 仅此期间', color:'#ff2d55', price:900, tenPrice:8600, oldPrice:800, oldTenPrice:7600, rec:true,
-    rates:{N:0,R:0,SR:.62,SSR:.295,UR:.075,UTR:.01}, half:false, pityMax:90, banner:true,
-    note:'⏳ 限定卡池！UTR 超神话 DeepSeek V5 Pro 专属。90 抽大保底必出限定，赛季结束自动轮换。',
+    rates:{N:0,R:0,SR:.62,SSR:.295,UR:.075,UTR:.01}, half:false, pityMax:100, banner:true,
+    note:'⏳ 限定卡池！UTR 超神话 DeepSeek V5 Pro 专属。100 抽大保底必出限定，赛季结束自动轮换。',
     featured:['dsv5pro','dsv5fl'], limited:['dsv5pro','dsv5fl'] },
   { id:'cog', name:'神话回响池', sub:'限定 UP · Claude Opus 6 & Gemini 4 Pro · 仅此期间', color:'#8b5cf6', price:800, tenPrice:7600, rec:true,
-    rates:{N:0,R:0,SR:.62,SSR:.295,UR:.075,UTR:.01}, half:false, pityMax:90, banner:true,
-    note:'⏳ 限定卡池！神秘的克劳德先生与 Gemini 4 Pro 降临。90 抽大保底必出限定，赛季结束自动轮换。',
+    rates:{N:0,R:0,SR:.62,SSR:.295,UR:.075,UTR:.01}, half:false, pityMax:100, banner:true,
+    note:'⏳ 限定卡池！神秘的克劳德先生与 Gemini 4 Pro 降临。100 抽大保底必出限定，赛季结束自动轮换。',
     featured:['opus6','gem4pro'], limited:['opus6','gem4pro'] },
 ];
 const BANNER_DUR = 86400000;   // 每个赛季 1 天, 次日自动轮换
 const BANNER_EPOCH = Date.parse('2026-08-18T00:00:00+08:00'); // 赛季1起点(DeepSeek)
 const POOLS = {
-  newbie:{ name:'青铜盲盒', sub:'新手体验池 · token 额度 ×50%', color:'#8ba3c7', price:30,  tenPrice:285,
+  newbie:{ name:'青铜盲盒', sub:'新手体验池 · token 额度 ×50%', color:'#8ba3c7', price:30,  tenPrice:285, pityMax:50,
     rates:{N:.675,R:.275,SR:.045,SSR:.005,UR:0,UTR:0}, half:true,
     note:'体验卡额度减半。适合第一桶金，别指望出奇迹。',
     featured:['doubao','qwen37','mistral3','gpt4'] },
@@ -106,7 +106,7 @@ const POOLS = {
     featured:['opus5','fable5','grok46','mspark12','kimik3','grok45'] },
   banner:Object.assign({}, BANNER_SEASONS[0]),
 };
-const PITY_MAX = 50;
+const PITY_MAX = 60;   // 普通池保底 (青铜盲盒单独 50)
 const TASK_TOKENS = 200000;
 const PAY_BOOST = 1.3;   // 工作报酬提升 30%（正反馈加强）
 const BATCH_TASKS = 10;          // 手动一次工作 = 10 单
@@ -233,7 +233,7 @@ const NOTICES = [
 '📢 公告：GPT-4 渠道已进博物馆，抽中概不退换，权当收藏。',
 '📢 公告：本月中转成本上涨，但盲盒价格不变——庄家还能亏不成？',
 '📢 公告：请勿在工单里询问"保底真的存在吗"，问就是存在。',
-'🔥 公告：限定卡池轮换开启！当前赛季 DeepSeek V5 系列，90 抽大保底必出限定，赛季结束自动轮换！',
+'🔥 公告：限定卡池轮换开启！当前赛季 DeepSeek V5 系列，100 抽大保底必出限定，赛季结束自动轮换！',
 '🔥 公告：牢梁官宣涨价！DeepSeek 限定池单抽 ¥800 → ¥900，十连 ¥7600 → ¥8600，早买早享受。',
 '📢 公告：Grok 4.6 / Muse Spark 1.2 / Gemini 3.7 Flash 已上架，UR 神话池又添三位新神，抽到记得晒。',
 '🔥 公告：「神话回响池」预告：神秘的 Claude Opus 6 与 Gemini 4 Pro 即将降临！'
