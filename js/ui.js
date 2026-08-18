@@ -83,6 +83,7 @@ function renderWork(){
   ba.disabled = working || tasks<=0;
   $('work-sub').textContent = tasks>0 ? `一键完成 ${n} 单 · 消耗 ${fmtK(n*TASK_TOKENS)} tokens` : '没有可用 token，去「购买Token」';
   $('auto-sub').textContent = tasks>0 ? `全部 ${tasks} 单一次清完 · ${fmtK(tk)} tokens` : '没有可用 token';
+  const sb=$('btn-skip'); if(sb) sb.hidden = !working;
 }
 function renderWorkLog(){
   // 日志只在会话内保留，渲染由 addWorkLog 完成
@@ -245,7 +246,7 @@ function showGacha(cards, pool){
 }
 
 /* ---------- 工作流（批量 + 自动） ---------- */
-let working=false;
+let working=false, skipFlag=false; // skipFlag: 点击「跳过」后下一拍直接快进结算
 const ACCEL_START=260, ACCEL_BLOCK=32, ACCEL_DECAY=0.68, MIN_INTERVAL=1; // 加速度曲线(稍提速, 间隔下限 1ms)
 const SFX_GAP_MIN=20, SFX_GAP_RATIO=4; // 音效节流: gap=max(20ms, 当前间隔×4)
 const TERM_MAX_NODES=600;  // term-body 节点截断上限
@@ -293,15 +294,24 @@ function runLines(lines, interval, onDone){
   const tp=termPrint(); tp.reset();
   let i=0, timer=null, lastSfx=0, boosted=false;
   const finish=()=>{ document.removeEventListener('visibilitychange', onVis); onDone(tp); };
+  // 一次性快进所有剩余行(单次 DOM 写入 + 单次滚动, 避免逐行 reflow), 手动跳过与后台静默共用
+  const fastFwd=(why)=>{
+    const rest=[];
+    while(i<lines.length){ rest.push(lines[i].text); i++; }
+    tp.done((rest.length? rest.join('\n')+'\n' : '') + why);
+    finish();
+  };
   const step=()=>{
     if(i>=lines.length){ finish(); return; }
+    if(skipFlag){
+      skipFlag=false;
+      fastFwd('> ⏭ 已手动跳过 · 剩余订单全部结算');
+      return;
+    }
     if(document.hidden){
-      // 后台标签页: 浏览器节流 setInterval 到 ≥1s → 静默快进: 一次性写入剩余行(单次 DOM 写入 + 单次滚动),
-      // 避免逐行 scrollTop=scrollHeight 强制 reflow 在切回时造成卡顿; 全程不播音效
-      const rest=[];
-      while(i<lines.length){ rest.push(lines[i].text); i++; }
-      tp.done((rest.length? rest.join('\n')+'\n' : '') + '> ⏳ 后台静默完成 · 全部订单已结算');
-      finish(); return;
+      // 后台标签页: 浏览器节流 setInterval 到 ≥1s → 静默快进(静音, 不逐行 reflow)
+      fastFwd('> ⏳ 后台静默完成 · 全部订单已结算');
+      return;
     }
     let next=interval;
     if(i>=ACCEL_START){
@@ -362,6 +372,7 @@ function finishWork(tp, items, modeLabel, applied){
   if(totalTasks()<=0 && S.money<minPoolPrice()) return;
   if(totalTasks()<=0) toast('⚡ Token 已全部耗尽 → 去「购买Token」抽下一波');
 }
+function skipWork(){ skipFlag=true; } // 跳过按钮: 下一拍直接快进结算
 function doWork(){
   if(working) return;
   const n=Math.min(BATCH_TASKS,totalTasks());
@@ -593,6 +604,7 @@ function welcomeHTML(){
 /* ---------- 事件绑定 ---------- */
 $('btn-work').onclick=doWork;
 $('btn-auto').onclick=doAuto;
+$('btn-skip').onclick=()=>{ SFX.click(); skipWork(); };
 $('go-work').onclick=()=>go('work');
 $('btn-rates').onclick=()=>{ SFX.click(); showModal(ratesHTML()); };
 $('btn-dex').onclick=()=>{ SFX.click(); dexHTML(); };
