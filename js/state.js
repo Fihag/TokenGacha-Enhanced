@@ -37,7 +37,10 @@ function load(){
       // v3 → v4: 新增 UTR / banner / daily / skin
       if(!s.stats.byR.UTR) s.stats.byR.UTR=0;
       if(!s.stats.byR.NB) s.stats.byR.NB=0;
+      if(!s.pity || typeof s.pity!=='object') s.pity={};
+      for(const k of ['newbie','standard','flagship']) if(!s.pity[k]) s.pity[k]=0;
       if(!s.pity.banner) s.pity.banner=0;
+      if(s.freeTen==null) s.freeTen=1;
       if(!s.bannerPulls) s.bannerPulls=0;
       if(!s.bannerLimited) s.bannerLimited=0;
       if(s.bannerSeason==null) s.bannerSeason=null;

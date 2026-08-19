@@ -40,6 +40,7 @@ function doSign(){
   SFX.coin();
   burst(innerWidth/2, innerHeight/3, ['#f59e0b','#2f6bff','#fff'], 90, 8);
   toast(`📅 签到成功！第 ${S.daily.streak} 天 +${fmt(amt)}`, 2600);
+  checkEnd();
 }
 
 // 日常任务: 进度查询 / 领取
@@ -67,6 +68,7 @@ function claimDailyTask(id){
   SFX.coin();
   burst(innerWidth/2, innerHeight/3, ['#16a34a','#f59e0b','#fff'], 80, 7);
   toast(`📋 任务完成！+${fmt(t.rewardMoney)}${t.rewardTicket?` +${t.rewardTicket}皮肤券`:''}${t.rewardFreeTen?` +${t.rewardFreeTen}免费十连`:''}`, 2600);
+  checkEnd();
 }
 
 function renderActivity(){

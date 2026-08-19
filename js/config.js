@@ -1,7 +1,7 @@
 "use strict";
 /* ================================================================
    TokenGacha · 数据层 (config.js)
-   稀有度依据 Artificial Analysis Intelligence Index v4.1 分档
+   稀有度依据 Artificial Analysis Intelligence Index v4.1.1 分档
    图标: @lobehub/icons (unpkg + npmmirror 双 CDN 兜底)
    ================================================================ */
 
@@ -11,6 +11,8 @@ const MODELS = [
   {id:'dsv5pro', name:'DeepSeek V5 Pro',     vendor:'DeepSeek',   icon:'deepseek-color', idx:72, r:'UTR', quota:6000000, bannerOnly:true, cost:'$0.09/任务', spd:120, quote:'限定·超神话！72 分新王登基，接单收入翻倍，价格也翻倍'},
   {id:'opus6',   name:'Claude Opus 6',      vendor:'Anthropic',  icon:'claude-color',   idx:79, r:'UTR', quota:6000000, bannerOnly:true, cost:'$2.90/任务', spd:48,  quote:'神秘的克劳德先生，天才程序员就此诞生'},
   {id:'gem4pro', name:'Gemini 4 Pro',       vendor:'Google',      icon:'gemini-color',   idx:75, r:'UTR', quota:6000000, bannerOnly:true, cost:'$1.50/任务', spd:88,  quote:'会有出来的这一天吗？希望吧…'},
+  {id:'glm6',    name:'GLM-6',              vendor:'智谱 Z.ai',   icon:'zai',            idx:66, r:'UTR', quota:6000000, bannerOnly:true, cost:'$0.52/任务', spd:78,  quote:'开源阵营第一张神话卡，后训练仙人终极形态，找 bug 王中王'},
+  {id:'qwen5max',name:'Qwen5 Max',          vendor:'阿里通义',    icon:'qwen-color',     idx:64, r:'UTR', quota:6000000, bannerOnly:true, cost:'$0.98/任务', spd:90,  quote:'通义顶配再度登基，阿里含泪开源，国产之光×2'},
   // NB —— 作者自研, 全池 0.01% 隐藏神卡 (图鉴未抽到不显示)
   {id:'fihagv1', name:'Fihag V1',          vendor:'作者自研',    icon:'fihagv1',       idx:100, r:'NB', quota:100000000, cost:'$0/任务', spd:999, quote:'作者亲自下场，全站唯一 NB 级存在，抽到就是天选之卡'},
   // UR —— 智能指数 55~63, 顶级中的顶级
@@ -20,7 +22,7 @@ const MODELS = [
   {id:'gpt56sol', name:'GPT-5.6 Sol',        vendor:'OpenAI',     icon:'openai',         idx:61, r:'UR',  cost:'$1.54/任务', spd:67,  quote:'OpenAI 的 Solaris，亮瞎同行'},
   {id:'grok46',   name:'Grok 4.6',           vendor:'xAI',        icon:'grok',           idx:60.92, r:'UR',  cost:'$0.84/任务', spd:58,  quote:'马斯克：地表最强 2.0，这次是说真的，60.92 分工单杀手'},
   {id:'kimik3',   name:'Kimi K3',            vendor:'Moonshot AI',icon:'moonshot',      idx:60, r:'UR',  cost:'$0.72/任务', spd:32,  quote:'月之暗面杀进总榜前三，国产之光'},
-  {id:'glm53',    name:'GLM-5.3',           vendor:'智谱 Z.ai',  icon:'zai',            idx:60, r:'UR',  cost:'$0.45/任务', spd:66,  quote:'找 bug 的王，后训练仙人'} ,
+  {id:'glm53',    name:'GLM-5.3',           vendor:'智谱 Z.ai',  icon:'zai',            idx:60, r:'UR',  cost:'$0.45/任务', spd:66,  quote:'找 bug 的王，后训练仙人——智谱把开源卷成了神话'},
   {id:'qwen38',   name:'Qwen3.8 Max',        vendor:'阿里通义',   icon:'qwen-color',     idx:58, r:'UR',  cost:'$1.13/任务', spd:82,  quote:'通义顶配 Max，58 分杀进神话榜'},
   {id:'gpt56ter', name:'GPT-5.6 Terra',      vendor:'OpenAI',     icon:'openai',         idx:57, r:'UR',  cost:'$0.78/任务', spd:143, quote:'143 tok/s 的速度与激情'},
   {id:'mspark12', name:'Muse Spark 1.2',     vendor:'Meta',       icon:'meta-color',     idx:56.76, r:'UR',  cost:'$0.40/任务', spd:140, quote:'Meta 的代码缪斯，1M 上下文一口气写完整仓库'},
@@ -30,7 +32,7 @@ const MODELS = [
   // SSR —— 47~54
   {id:'mspark11', name:'Muse Spark 1.1',     vendor:'Meta',       icon:'meta-color',     idx:53.2, r:'SSR', cost:'$0.29/任务', spd:232, quote:'1.2 的旧爱，写起代码依然是一把好手'},
   {id:'dsv4pro0813', name:'DeepSeek V4 Pro 0813', vendor:'DeepSeek', icon:'deepseek-color', idx:53.2, r:'SSR', cost:'$0.25/任务', spd:94,  quote:'0813 迭代版开源上桌，开源≠便宜，牢梁默默改了价目表'},
-  {id:'glm52',    name:'GLM-5.2',            vendor:'智谱 Z.ai',  icon:'zai',            idx:53, r:'SSR', cost:'$0.30/任务', spd:60,  quote:'智谱出品，开源阵营第一梯队'},
+  {id:'glm52',    name:'GLM-5.2',            vendor:'智谱 Z.ai',  icon:'zai',            idx:53, r:'SSR', cost:'$0.30/任务', spd:60,  quote:'智谱出品，开源第一梯队——只差一步登顶神话'},
   {id:'gpt56lun', name:'GPT-5.6 Luna',       vendor:'OpenAI',     icon:'openai',         idx:52, r:'SSR', cost:'$0.29/任务', spd:197, quote:'197 tok/s，快到没朋友'},
   {id:'dsv4fl73', name:'DeepSeek V4 Flash 0731', vendor:'DeepSeek', icon:'deepseek-color', idx:52, r:'SSR', cost:'$0.03/任务', spd:141, quota:5400000, quote:'0731 迭代版，闪速升级，540万token——涨价后依然量大，只是价格不再管饱'},
   {id:'gem36fl',  name:'Gemini 3.6 Flash',   vendor:'Google',     icon:'gemini-color',   idx:52, r:'SSR', cost:'$0.10/任务', spd:150, quote:'速度翻倍，智商……也够用了'},
@@ -48,7 +50,7 @@ const MODELS = [
   // SR —— 40~46 (dsv4fl 虽注释在此, 实际 idx42 属 SR 档)
   {id:'dsv4fl',   name:'DeepSeek V4 Flash Preview',  vendor:'DeepSeek',   icon:'deepseek-color', idx:42, r:'SR',  cost:'$0.02/任务', spd:90,  quote:'Preview 版，曾经便宜大碗，如今大碗贵面'},
   {id:'qwen37p',  name:'Qwen3.7 Plus',       vendor:'阿里通义',   icon:'qwen-color',     idx:39, r:'R',   cost:'$0.24/任务', spd:56,  quote:'Plus 版通义，性价比担当'},
-  // R —— 28~39 (index v4.1 新增补强)
+  // R —— 28~39 (index v4.1.1 新增补强)
   {id:'gpt54nano',name:'GPT-5.4 nano',      vendor:'OpenAI',     icon:'openai',         idx:39.71, r:'R',  cost:'$0.15/任务', spd:176, quote:'nano 小身板 R 档天花板，聪明到让大哥们涨价脸红'},
   {id:'grok43',   name:'Grok 4.3',          vendor:'xAI',        icon:'grok',           idx:37.95, r:'R',  cost:'$0.15/任务', spd:122, quote:'4.3 是 4.5 的青春版，马斯克：性价比也是地表最强'},
   {id:'gpt51',    name:'GPT-5.1',           vendor:'OpenAI',     icon:'openai',         idx:37.47, r:'R',  cost:'$0.30/任务', spd:113, quote:'5 系列的守门员，早买早享受'},
@@ -59,7 +61,7 @@ const MODELS = [
   {id:'mistralm35',name:'Mistral Medium 3.5',vendor:'Mistral',   icon:'mistral-color',  idx:30.39, r:'R',  cost:'$0.46/任务', spd:152, quote:'法兰西中杯，比 Large 3 清醒一点'},
   {id:'gemma431b',name:'Gemma 4 31B',       vendor:'Google',     icon:'gemma-color',    idx:29.69, r:'R',  cost:'$0.01/任务', spd:36,  quote:'31B 开源小砖头，白嫖党的入门砖'},
   {id:'step37',   name:'Step 3.7 Flash',     vendor:'阶跃星辰',   icon:'stepfun-color',  idx:31, r:'R',   cost:'$0.09/任务', spd:408, quote:'408 tok/s 的阶跃之光，快到飞起'},
-  {id:'nemotron3',name:'Nemotron 3 Ultra',   vendor:'NVIDIA',     icon:'nvidia-color',   idx:38, r:'R',   cost:'$0.25/任务', spd:75,  quote:'老黄的算力情怀'},
+  {id:'nemotron3',name:'Nemotron 3 Ultra',   vendor:'NVIDIA',     icon:'nvidia-color',   idx:38, r:'R',   cost:'$0.25/任务', spd:75,  quote:'老黄的算力情怀——显存爆炸警告，先买 8 张 H200 再说'},
   {id:'gem35lite',name:'Gemini 3.5 Flash-Lite',vendor:'Google',   icon:'gemini-color',   idx:37, r:'R',   cost:'$0.03/任务', spd:180, quote:'Lite 版，轻量级选手'},
   {id:'haiku45',  name:'Claude Haiku 4.5',   vendor:'Anthropic',  icon:'claude-color',   idx:30, r:'R',   cost:'$0.06/任务', spd:85,  quote:'小巧玲珑，俳句之神'},
   // N —— <28, 垃圾
@@ -94,14 +96,18 @@ const RORDER_DESC = ['NB','UTR','UR','SSR','SR','R','N']; // 抽卡概率累加�
 
 /* ---------- 限定池轮换 (每赛季 1 天, 到期自动轮换) ---------- */
 const BANNER_SEASONS = [
-  { id:'v5',  name:'流光限定池', sub:'限定 UP · DeepSeek V5 系列 · 牢梁涨价中 · 仅此期间', color:'#ff2d55', price:900, tenPrice:8600, oldPrice:800, oldTenPrice:7600, rec:true,
+  { id:'v5',  name:'流光限定池', sub:'限定 UP · DeepSeek V5 系列 · 牢梁又涨价了 · 仅此期间', color:'#ff2d55', price:1000, tenPrice:9600, oldPrice:900, oldTenPrice:8600, rec:true,
     rates:{N:0,R:0,SR:.62,SSR:.295,UR:.075,UTR:.01}, half:false, pityMax:100, banner:true,
     note:'⏳ 限定卡池！UTR 超神话 DeepSeek V5 Pro 专属。100 抽大保底必出限定 UTR，赛季结束自动轮换。',
     featured:['dsv5pro','dsv5fl'], limited:['dsv5pro','dsv5fl'] },
-  { id:'cog', name:'神话回响池', sub:'限定 UP · Claude Opus 6 & Gemini 4 Pro · 仅此期间', color:'#8b5cf6', price:800, tenPrice:7600, rec:true,
+  { id:'cog', name:'神话回响池', sub:'限定 UP · Claude Opus 6 & Gemini 4 Pro · 仅此期间', color:'#8b5cf6', price:900, tenPrice:8700, rec:true,
     rates:{N:0,R:0,SR:.62,SSR:.295,UR:.075,UTR:.01}, half:false, pityMax:100, banner:true,
     note:'⏳ 限定卡池！神秘的克劳德先生与 Gemini 4 Pro 降临。100 抽大保底必出限定 UTR，赛季结束自动轮换。',
     featured:['opus6','gem4pro'], limited:['opus6','gem4pro'] },
+  { id:'oss', name:'开源之光池', sub:'限定 UP · GLM-6 & Qwen5 Max 双开源神话 · 与神话回响同价', color:'#22c55e', price:900, tenPrice:8700, rec:true,
+    rates:{N:0,R:0,SR:.60,SSR:.31,UR:.08,UTR:.01}, half:false, pityMax:100, banner:true,
+    note:'⏳ 限定卡池！智谱 GLM-6 与阿里 Qwen5 Max 双开源神话同台，国产之光×2。100 抽大保底必出限定 UTR，赛季结束自动轮换。',
+    featured:['glm6','qwen5max','glm53','qwen38'], limited:['glm6','qwen5max'] },
 ];
 const BANNER_DUR = 86400000;   // 每个赛季 1 天, 次日自动轮换
 const BANNER_EPOCH = Date.parse('2026-08-18T00:00:00+08:00'); // 赛季1起点(DeepSeek)
@@ -193,6 +199,11 @@ const CLIENT_REQS = [
 '「帮房东做房租提醒，逾期自动加滞纳金」',
 '「做个表情包生成器，把我朋友的脸放进去」',
 '「客户：把这个 Excel 做成网页版，再顺便做个 App」',
+'「帮烧烤店做个点单系统，老板说烤串编号要用方言语音输入」',
+'「给农场主做猪脸识别，认不出来就要被骂笨」',
+'「做个 AI 伴聊，要会骂人的那种，用户就吃这套」',
+'「帮驾校教练做科目二模拟打分，压线要报警」',
+'「把电梯广告屏接入 AI 大屏，广告词按楼层人群自动生成」',
 ];
 const MEME_LINES = [
 '$ rm -rf node_modules && npm i  # 包治百病','console.log("到这了吗 111");','// TODO: 以后优化（2019 年留，勿动）',
@@ -258,11 +269,15 @@ const NOTICES = [
 '📢 公告：本月中转成本上涨，但盲盒价格不变——庄家还能亏不成？',
 '📢 公告：请勿在工单里询问"保底真的存在吗"，问就是存在。',
 '🔥 公告：限定卡池轮换开启！当前赛季 DeepSeek V5 系列，100 抽大保底必出限定 UTR，赛季结束自动轮换！',
-'🔥 公告：牢梁官宣涨价！DeepSeek 限定池单抽 ¥800 → ¥900，十连 ¥7600 → ¥8600，早买早享受。',
+'🔥 公告：牢梁官宣二度涨价！DeepSeek 限定池单抽 ¥900 → ¥1000，十连 ¥8600 → ¥9600，早买早享受（可惜你赶不上了）。',
 '📢 公告：Grok 4.6 / Muse Spark 1.2 / Gemini 3.7 Flash 已上架，UR 神话池又添三位新神，抽到记得晒。',
 '🔥 公告：「神话回响池」预告：神秘的 Claude Opus 6 与 Gemini 4 Pro 即将降临！',
 '🔥 公告：「神话回响池」今日降临！Claude Opus 6 与 Gemini 4 Pro 双限定同台，100 抽大保底见真章，错过这班等明天。',
 '📢 公告：有玩家提议限定池常驻，庄家婉拒——常驻了还怎么叫限定？',
 '📢 公告：总有人问是不是偷偷改了 token 数，天地良心——我们改，但从不偷偷。',
 '📢 公告：新增 R 档返厂潮，GPT-5.1 / Claude 4.5 Sonnet 等 14 位老将重登卡池，量大管饱，抽到别嫌弃。',
+'🔥 公告：「开源之光池」预告：GLM-6 与 Qwen5 Max 双开源神话即将降临，全场最低限定价，国产之光×2！',
+'🔥 公告：「开源之光池」今日降临！GLM-6（66 分）与 Qwen5 Max（64 分）同台，双开源神话的含金量，抽到就是见证历史。',
+'📢 公告：温馨提示——白银盲盒的免费十连不用白不用，白嫖党永不破产（大概）。',
+'📢 公告：概率公示页写的回本率仅供参考，别问为什么王者池 101% 还老破产，问就是方差。',
 ];

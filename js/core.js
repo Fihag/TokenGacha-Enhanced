@@ -99,12 +99,11 @@ function doPulls(poolKey, count){
     // 保底计数: 限定池只在抽到【当期限定 UTR】或 NB 时清零 —— 普通 SSR/UR 不重置, 保证 100 抽内必出限定 UTR;
     // 其他池维持 SSR+ 即清零。按实际出货(c.m 的真实稀有度)计数, 幻觉修正为R的卡不会假性触发保底。
     c._pool = poolKey;
-      maybeHallucinate(c, poolKey);
-      const mr = MMAP[c.m].r;
+    maybeHallucinate(c, poolKey);
+    const mr = MMAP[c.m].r;
     const reset = pool.banner ? (mr==='NB' || (mr==='UTR' && LIMITED_IDS.has(c.m))) : (mr==='SSR'||mr==='UR'||mr==='UTR'||mr==='NB');
     S.pity[poolKey] = reset ? 0 : S.pity[poolKey]+1;
-    c._pool = poolKey;
-    
+
     cards.push(c);
     S.stats.pulls++;
     S.daily.pulls=(S.daily.pulls||0)+1;

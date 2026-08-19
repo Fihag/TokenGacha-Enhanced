@@ -118,11 +118,19 @@ const hasNB=(S.dex.fihagv1||0)>0;
   $('stat-grid').innerHTML=cells.map(([l,v])=>`<div class="cell"><div class="lb">${l}</div><div class="vl">${v}</div></div>`).join('')
     + RORDER.map(r=>`<div class="cell"><div class="lb">${r} 出货</div><div class="vl" style="color:${RARITY[r].hex}">${S.stats.byR[r]||0}</div></div>`).join('');
   const ch=$('channels'); ch.innerHTML='';
+  // 渠道状态会话内固定生成一次(避免每次 renderAll 随机闪烁)
   const chModels=['opus5','gpt56sol','gem31pro','dsv4pro','qwen37','doubao'];
+  if(!window._chanState){
+    window._chanState = {};
+    for(const id of chModels){
+      const m=MMAP[id];
+      window._chanState[id] = { warn:Math.random()<.2, lat:Math.round(80+Math.random()*400) };
+    }
+  }
   for(const id of chModels){
     const m=MMAP[id];
-    const warn=Math.random()<.2;
-    ch.insertAdjacentHTML('beforeend',`<div class="ch-row"><span class="ic"></span><span>${m.vendor} 渠道</span><span class="st ${warn?'warn':''}">${warn?'● 波动':'● 正常'}</span><span class="lat">${Math.round(80+Math.random()*400)}ms</span></div>`);
+    const st=window._chanState[id];
+    ch.insertAdjacentHTML('beforeend',`<div class="ch-row"><span class="ic"></span><span>${m.vendor} 渠道</span><span class="st ${st.warn?'warn':''}">${st.warn?'● 波动':'● 正常'}</span><span class="lat">${st.lat}ms</span></div>`);
     ch.lastChild.querySelector('.ic').appendChild(iconImg(m.icon));
   }
   // 卡库
@@ -569,7 +577,7 @@ function drawShareCard(ms){
     g.font='800 21px '+F; g.fillStyle='#1c2340'; g.fillText(String(v),x+cw/2,y0+62);
   });
   g.font='700 20px '+F; g.fillStyle='#2f6bff';
-  g.fillText('70% 玩家最终破产，你能成为那 30% 吗？👉 tokengacha.metagaruta.com', W/2, 478);
+  g.fillText('70% 玩家最终破产，你能成为那 30% 吗？👉 '+SITE_URL.replace(/^https?:\/\//,''), W/2, 478);
   return cv;
 }
 function shareHTML(ms){
@@ -634,10 +642,12 @@ function ratesHTML(){
   }
   return `<h3>📊 概率公示（像正规抽卡游戏一样诚实）<button class="x" onclick="closeModal()">×</button></h3>
   <table><tr><th>卡池</th><th>N 垃圾</th><th>R 普通</th><th>SR 精锐</th><th>SSR 传说</th><th>UR 神话</th><th>UTR 超神话</th><th>期望回本率</th></tr>${rows}</table>
-  <div class="note">
+<div class="note">
   · ⚠️ 卡池页展示的「回本率」为宣传口径，你懂的；上表才是实测数学期望。本站保留最终解释权。<br>
   · 稀有度按 <a href="https://artificialanalysis.ai/leaderboards/models" target="_blank">Artificial Analysis 智能指数 v4.1</a> 分档：UTR≥64 / UR 55-63 / SSR 47-54 / SR 40-46 / R 28-39 / N&lt;28<br>
-  · 每池 ${PITY_MAX} 抽（青铜盲盒 50 抽）无 SSR+ 触发保底（80% SSR / 20% UR）；限定池 100 抽大保底出当期限定；十连必出 SR 及以上<br>
+  · 全池另有 <b>DeepSeek V4 Flash 0731 独立 1.5%</b> 出货（记入 SSR，表内概率不含此项，故 SSR 实际略高于表列）<br>
+  · 全池另有 0.01% 隐藏神卡概率（比 SSR 稀有得多，抽到自然知道）<br>
+  · 每池 ${PITY_MAX} 抽（青铜盲盒 50 抽）无 SSR+ 触发保底（80% SSR / 20% UR）；限定池 100 抽大保底必出当期限定 UTR（约 1% 自然 UTR 另计）；十连必出 SR 及以上<br>
   · 新手池为「体验卡」，token 额度 ×50%<br>
   · 工作收入 = 模型报价 × 事件倍率（大成功×2.5 / 返工×0.4 / 删库赔¥65，垃圾模型事故率高）；限定池出卡接单收入 ×2<br>
   · 本中转站期望约 7 成玩家最终破产。庄家永远赢，除非……你抽到那张卡。</div>`;
@@ -651,7 +661,7 @@ function dexHTML(){
   const html=`<h3>📖 模型图鉴 ${got}/${visible.length}<button class="x" onclick="closeModal()">×</button></h3>
   <div class="dex-legend">${RORDER.filter(r=> r!=='NB' || ownNB).map(r=>`<span style="color:${RARITY[r].hex}">■</span> ${r} ${RARITY[r].label} ×${counts[r]}`).join('　')}</div>
   <div class="dex-grid" id="dex-grid"></div>
-  <div class="note" style="margin-top:10px">收录 OpenAI / Anthropic / Google / xAI / DeepSeek / Moonshot / 智谱 / 阿里 / Meta / Mistral / NVIDIA / Amazon / 小米 / MiniMax / 字节 / 百度 / 腾讯 / 讯飞 等 18 家厂商。排名参考 Artificial Analysis 智能指数 v4.1。</div>`;
+  <div class="note" style="margin-top:10px">收录 OpenAI / Anthropic / Google / xAI / DeepSeek / Moonshot / 智谱 / 阿里 / Meta / Mistral / NVIDIA / Amazon / 小米 / MiniMax / 字节 / 百度 / 腾讯 / 讯飞 等 18 家厂商。排名参考 Artificial Analysis 智能指数 v4.1.1。</div>`;
   showModal(html);
   const grid=$('dex-grid');
   const sorted=[...visible].sort((a,b)=>RORDER.indexOf(b.r)-RORDER.indexOf(a.r)||b.idx-a.idx);
