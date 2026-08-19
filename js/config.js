@@ -45,6 +45,16 @@ const MODELS = [
   // SR —— 40~46 (dsv4fl 虽注释在此, 实际 idx42 属 SR 档)
   {id:'dsv4fl',   name:'DeepSeek V4 Flash Preview',  vendor:'DeepSeek',   icon:'deepseek-color', idx:42, r:'SR',  cost:'$0.02/任务', spd:90,  quote:'Preview 版，曾经便宜大碗，如今大碗贵面'},
   {id:'qwen37p',  name:'Qwen3.7 Plus',       vendor:'阿里通义',   icon:'qwen-color',     idx:39, r:'R',   cost:'$0.24/任务', spd:56,  quote:'Plus 版通义，性价比担当'},
+  // R —— 28~39 (index v4.1 新增补强)
+  {id:'gpt54nano',name:'GPT-5.4 nano',      vendor:'OpenAI',     icon:'openai',         idx:39.71, r:'R',  cost:'$0.15/任务', spd:176, quote:'nano 小身板 R 档天花板，聪明到让大哥们涨价脸红'},
+  {id:'grok43',   name:'Grok 4.3',          vendor:'xAI',        icon:'grok',           idx:37.95, r:'R',  cost:'$0.15/任务', spd:122, quote:'4.3 是 4.5 的青春版，马斯克：性价比也是地表最强'},
+  {id:'gpt51',    name:'GPT-5.1',           vendor:'OpenAI',     icon:'openai',         idx:37.47, r:'R',  cost:'$0.30/任务', spd:113, quote:'5 系列的守门员，早买早享受'},
+  {id:'claude45s',name:'Claude 4.5 Sonnet', vendor:'Anthropic',  icon:'claude-color',   idx:37.39, r:'R',  cost:'$0.46/任务', spd:46,  quote:'Sonnet 的老前辈，写代码依旧稳如老狗'},
+  {id:'kimik25',  name:'Kimi K2.5',         vendor:'Moonshot AI',icon:'moonshot',      idx:36.02, r:'R',  cost:'$0.10/任务', spd:46,  quote:'K3 的爷爷，长文本活化石'},
+  {id:'museGlm',  name:'Muse Glimmer',      vendor:'Meta',       icon:'meta-color',     idx:35.06, r:'R',  cost:'$0.07/任务', spd:109, quote:'缪斯家的小火苗，Spark 的实习生'},
+  {id:'glm47',    name:'GLM-4.7',           vendor:'智谱 Z.ai',  icon:'zai',            idx:34.46, r:'R',  cost:'$0.36/任务', spd:119, quote:'开源 R 档代表，数学不赖就是慢性子'},
+  {id:'mistralm35',name:'Mistral Medium 3.5',vendor:'Mistral',   icon:'mistral-color',  idx:30.39, r:'R',  cost:'$0.46/任务', spd:152, quote:'法兰西中杯，比 Large 3 清醒一点'},
+  {id:'gemma431b',name:'Gemma 4 31B',       vendor:'Google',     icon:'gemma-color',    idx:29.69, r:'R',  cost:'$0.01/任务', spd:36,  quote:'31B 开源小砖头，白嫖党的入门砖'},
   {id:'step37',   name:'Step 3.7 Flash',     vendor:'阶跃星辰',   icon:'stepfun-color',  idx:31, r:'R',   cost:'$0.09/任务', spd:408, quote:'408 tok/s 的阶跃之光，快到飞起'},
   {id:'nemotron3',name:'Nemotron 3 Ultra',   vendor:'NVIDIA',     icon:'nvidia-color',   idx:38, r:'R',   cost:'$0.25/任务', spd:75,  quote:'老黄的算力情怀'},
   {id:'gem35lite',name:'Gemini 3.5 Flash-Lite',vendor:'Google',   icon:'gemini-color',   idx:37, r:'R',   cost:'$0.03/任务', spd:180, quote:'Lite 版，轻量级选手'},
