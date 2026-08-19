@@ -20,6 +20,7 @@ const MODELS = [
   {id:'gpt56sol', name:'GPT-5.6 Sol',        vendor:'OpenAI',     icon:'openai',         idx:61, r:'UR',  cost:'$1.54/任务', spd:67,  quote:'OpenAI 的 Solaris，亮瞎同行'},
   {id:'grok46',   name:'Grok 4.6',           vendor:'xAI',        icon:'grok',           idx:60.92, r:'UR',  cost:'$0.84/任务', spd:58,  quote:'马斯克：地表最强 2.0，这次是说真的，60.92 分工单杀手'},
   {id:'kimik3',   name:'Kimi K3',            vendor:'Moonshot AI',icon:'moonshot',      idx:60, r:'UR',  cost:'$0.72/任务', spd:32,  quote:'月之暗面杀进总榜前三，国产之光'},
+  {id:'glm53',    name:'GLM-5.3',           vendor:'智谱 Z.ai',  icon:'zai',            idx:60, r:'UR',  cost:'$0.45/任务', spd:66,  quote:'找 bug 的王，后训练仙人'} ,
   {id:'qwen38',   name:'Qwen3.8 Max',        vendor:'阿里通义',   icon:'qwen-color',     idx:58, r:'UR',  cost:'$1.13/任务', spd:82,  quote:'通义顶配 Max，58 分杀进神话榜'},
   {id:'gpt56ter', name:'GPT-5.6 Terra',      vendor:'OpenAI',     icon:'openai',         idx:57, r:'UR',  cost:'$0.78/任务', spd:143, quote:'143 tok/s 的速度与激情'},
   {id:'mspark12', name:'Muse Spark 1.2',     vendor:'Meta',       icon:'meta-color',     idx:56.76, r:'UR',  cost:'$0.40/任务', spd:140, quote:'Meta 的代码缪斯，1M 上下文一口气写完整仓库'},

@@ -140,7 +140,7 @@ const hasNB=(S.dex.fihagv1||0)>0;
       if(m.id==='fihagv1'){ const ic=document.createElement('span'); ic.textContent='🌈'; ic.style.cssText='font-size:28px;line-height:1;margin:4px 0'; d.appendChild(ic); }
         else d.appendChild(iconImg(m.icon));
       d.insertAdjacentHTML('beforeend',`<div class="nm">${m.name}</div><div class="tk">${c.tokens>0?fmtK(c.tokens)+' tok':'已耗尽'}</div>`);
-      d.title=`${m.name} · ${m.vendor}\n智能指数 ${m.idx} · 真实成本 ${m.cost}\n${m.quote}`;
+      d.title=`${m.name} · ${m.vendor}\n智能指数 ${Math.round(m.idx)} · 真实成本 ${m.cost}\n${m.quote}`;
       g.appendChild(d);
     }
   }
@@ -231,7 +231,7 @@ function showGacha(cards, pool){
         <div class="ic"></div>
         <div class="nm">${m.name}</div>
         <div class="vd">${m.vendor}${c.half?' · 体验卡':''}</div>
-        <div class="idx">智能指数 ${m.idx}</div>
+        <div class="idx">智能指数 ${Math.round(m.idx)}</div>
         <div class="tk">⚡ ${fmtTok(showTok)} tokens</div>
       </div></div>`;
     const icEl=d.querySelector('.ic');
@@ -311,7 +311,7 @@ function rebindFace(el, c){
   el.querySelector('.rr').textContent=`${r.name} · ${r.label}`;
   el.querySelector('.nm').textContent=m.name;
   el.querySelector('.vd').textContent=m.vendor+(c.half?' · 体验卡':'');
-  el.querySelector('.idx').textContent=`智能指数 ${m.idx}`;
+  el.querySelector('.idx').textContent=`智能指数 ${Math.round(m.idx)}`;
   el.querySelector('.tk').textContent=`⚡ ${fmtTok(c.tokens)} tokens`;
   const ic=el.querySelector('.ic'); ic.innerHTML=''; ic.appendChild(iconImg(m.icon));
   delete c._halluc; // 幻觉揭晓后清除伪装, 让摘要/统计显示真实结果
@@ -660,7 +660,7 @@ function dexHTML(){
     return `<div class="dex-cell ${owned?'':'locked'}" style="--rc:${RARITY[m.r].hex}" title="${m.name} · ${m.vendor}&#10;${m.quote}">
       <span class="rr">${m.r}</span><div class="ic"></div>
       <div class="nm">${owned?m.name:'？？？'}</div>
-      <div class="ct">${owned?`指数 ${m.idx} · 抽到 ${S.dex[m.id]} 次`:'未获得'}</div></div>`;
+      <div class="ct">${owned?`指数 ${Math.round(m.idx)} · 抽到 ${S.dex[m.id]} 次`:'未获得'}</div></div>`;
   }).join('');
   sorted.forEach((m,i)=>{ const ic=grid.children[i].querySelector('.ic'); if(m.id==='fihagv1'){ ic.textContent='🌈'; ic.style.cssText='font-size:30px;line-height:1'; } else ic.appendChild(iconImg(m.icon)); });
 }
