@@ -26,7 +26,7 @@
 
 ### 模型与数值更新
 
-- 模型库扩充至 **63 个**(新增 Grok 4.6、Muse Spark 1.1/1.2、Gemini 3.7 Flash、DeepSeek V4 Pro 0813、Qwen3.8 27B、限定 Claude Opus 6 / Gemini 4 Pro / GLM-6 / Qwen5 Max、神秘 NB 神卡 Fihag V1、GLM-5.3 及 9 张 R 档补强卡等),智能指数按 2026-08 最新数据校准(卡面指数取整显示)
+- 模型库扩充至 **63 个**(新增 Grok 4.6、Muse Spark 1.1/1.2、Gemini 3.7 Flash、DeepSeek V4 Pro 0813、Qwen3.8 27B、限定 Claude Opus 6 / Gemini 4 Pro / GLM-6 / Qwen5 Max、GLM-5.3 及 9 张 R 档补强卡等),智能指数按 2026-08 最新数据校准(卡面指数取整显示)
 - DeepSeek V4 Flash 拆分为 **Preview(R)** 与 **0731** 两张卡
 - 卡池概率、价格、回本率全部按概率公式重新计算并公示
 
