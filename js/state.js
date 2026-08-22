@@ -34,6 +34,12 @@ function load(){
       // 迁移: token 单位 ×10 + 清除耗尽卡
       if(!s.ver || s.ver<3){ for(const c of s.inv){ c.tokens*=10; c.max*=10; } }
       s.inv=s.inv.filter(c=>c.tokens>0);
+      // 迁移: 清除"无法消耗"的卡 —— token 不足一单(20万)的卡永远接不了单也无法自动移除, 会一直卡在卡库列表
+      // (历史bug: 幻觉卡 190万/张, 消耗 9 单后剩 10万 token, 正是"10万卡死"的真凶) → 削减 10万 token, 归零或仍不足一单的一并清除
+      if(Array.isArray(s.inv)) s.inv=s.inv.filter(c=>{
+        if(c.tokens>0 && c.tokens<TASK_TOKENS){ c.tokens=Math.max(0,c.tokens-100000); return c.tokens>=TASK_TOKENS; }
+        return true;
+      });
       // v3 → v4: 新增 UTR / banner / daily / skin
       if(!s.stats.byR.UTR) s.stats.byR.UTR=0;
       if(!s.stats.byR.NB) s.stats.byR.NB=0;

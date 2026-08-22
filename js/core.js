@@ -71,7 +71,8 @@ function maybeHallucinate(c, poolKey){
   if(!rCands.length || !uCands.length) return;
   const real = rCands[Math.floor(Math.random()*rCands.length)];
   const fake = uCands[Math.floor(Math.random()*uCands.length)];
-  const comp = 300000; // 精神损失费 30万 token
+  // 精神损失费必须让总额整除 TASK_TOKENS: R档基准 160万 + 30万 = 190万 → 剩 10万 token 永远无法消耗(卡死列表)
+  const comp = 200000; // 削减10万 → 180万 = 正好 9 单, 消耗殆尽自动移除
   c.m = real.id;
   c.tokens = (real.quota || RARITY.R.quota) + comp;
   c.max = c.tokens;
@@ -186,6 +187,6 @@ function consumeTasks(n){
       break;
     }
   }
-  if(pos>0) S.inv=S.inv.filter(c=>c.tokens>0); // 耗尽卡统一移除
+  if(pos>0) S.inv=S.inv.filter(c=>c.tokens>=TASK_TOKENS); // 耗尽卡与不足一单的残卡统一移除(残卡永远接不了单, 防卡死列表)
   return items;
 }

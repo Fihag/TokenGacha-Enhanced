@@ -144,7 +144,9 @@ const hasNB=(S.dex.fihagv1||0)>0;
       const d=document.createElement('div');
       d.className='inv-card'+(c.tokens<=0?' dead':'');
       d.style.setProperty('--rc', r.hex);
-      d.innerHTML=`<span class="rt">${r.name}</span>${c.half?'<span class="half">体验</span>':''}`;
+      d.innerHTML=`<span class="rt">${r.name}</span>${c.half?'<span class="half">体验</span>':''}
+        <button class="inv-del" data-uid="${c.uid}" title="销毁这张卡（剩余 token 不可找回）">🗑️</button>`;
+      d.classList.toggle('hasHalf', !!c.half); // 有「体验」角标时销毁按钮下移一格, 避免重叠
       if(m.id==='fihagv1'){ const ic=document.createElement('span'); ic.textContent='🌈'; ic.style.cssText='font-size:28px;line-height:1;margin:4px 0'; d.appendChild(ic); }
         else d.appendChild(iconImg(m.icon));
       d.insertAdjacentHTML('beforeend',`<div class="nm">${m.name}</div><div class="tk">${c.tokens>0?fmtK(c.tokens)+' tok':'已耗尽'}</div>`);
@@ -309,7 +311,7 @@ function acceptHalluc(){
   pendingHalluc=[];
   updateGachaSummary();
   closeModal();
-  toast('🧠 幻觉已修正：这张卡实际为 R 档，30 万 token 精神损失费已垫进卡里', 3200);
+  toast('🧠 幻觉已修正：这张卡实际为 R 档，20 万 token 精神损失费已垫进卡里', 3200);
   if(lastRefund>0){ const amt=lastRefund; lastRefund=0; setTimeout(()=>showModal(priceWarHTML(amt)), 400); }
 }
 function rebindFace(el, c){
@@ -526,7 +528,7 @@ function hallucHTML(fakeName){
   return `<h3>🤯 检测到模型幻觉<button class="x" onclick="closeModal()">×</button></h3>
   <p>你抽到的「<b>${fakeName}</b>」其实是模型一本正经地胡说八道——<b>纯纯的幻觉</b>。</p>
   <p>经本站鉴定：<b style="color:var(--blue)">实际结果为 R 档</b>，卡面已强制修正，概不退换。</p>
-  <p style="color:var(--faint)">为表歉意，30 万 token 精神损失费已垫进这张卡里。</p>
+  <p style="color:var(--faint)">为表歉意，20 万 token 精神损失费已垫进这张卡里。</p>
   <button class="big-btn ghost" onclick="acceptHalluc()">接受现实 →</button>`;
 }
 function claudeBanHTML(){
@@ -537,6 +539,30 @@ function claudeBanHTML(){
   <p style="color:var(--faint)">本批剩余订单一并查封作废；已结掉的钱不追回——这是本站最后的人道主义。</p>
   <p>庄家友情提示：下次接单记得用 DeepSeek，量大管饱，就是涨价后贵了点。</p>
   <button class="big-btn ghost" onclick="closeModal()">我认了，继续压榨 →</button>`;
+}
+
+/* ---------- 卡库: 销毁模型卡 ---------- */
+// 手动销毁兜底: 防止「剩 10万 token 无法消耗又清不掉」的残卡永远卡在卡库列表; 任何卡都可销毁
+function destroyCard(uid){
+  const c=S.inv.find(x=>x.uid===uid);
+  if(!c) return;
+  const m=MMAP[c.m], r=RARITY[m.r];
+  showModal(`<h3>🗑️ 销毁模型卡<button class="x" onclick="closeModal()">×</button></h3>
+  <p>确定销毁「<b style="color:${r.hex}">${m.name}</b>」？卡内剩余 <b>${fmtK(c.tokens)} tokens</b> 将直接蒸发，<b>不可找回</b>。</p>
+  <p style="color:var(--faint)">庄家点评：止损是真果断，浪费是真彻底。</p>
+  <button class="big-btn danger" data-confirm-destroy="${uid}">确认销毁</button>
+  <button class="big-btn ghost" onclick="closeModal()">手滑了！留着 →</button>`);
+}
+function confirmDestroy(uid){
+  closeModal();
+  const i=S.inv.findIndex(x=>x.uid===uid);
+  if(i<0) return;
+  const c=S.inv[i], m=MMAP[c.m];
+  const lost=c.tokens;
+  S.inv.splice(i,1);
+  save(); renderAll();
+  SFX.bad();
+  toast(`🗑️ 已销毁 ${m.name}${lost>0?` · ${fmtK(lost)} tokens 化为乌有`:''}`, 3200);
 }
 
 /* ---------- 分享 ---------- */
@@ -743,6 +769,8 @@ document.addEventListener('keydown', e=>{
   }
 });
 document.addEventListener('click', e=>{
+  if(e.target.dataset && e.target.dataset.uid!=null){ SFX.click(); destroyCard(Number(e.target.dataset.uid)); }
+  if(e.target.dataset && e.target.dataset.confirmDestroy!=null){ confirmDestroy(Number(e.target.dataset.confirmDestroy)); }
   if(e.target.id==='btn-reset'){ localStorage.removeItem('tokengacha_v2'); location.reload(); }
   if(e.target.id==='btn-rebirth'){ const keepMuted=muted; S=defaultState(); S.flags.welcomed=true; S.flags.muted=keepMuted; shownMoney=S.money; save(); closeModal(); go('buy'); toast('🔄 新生活开始了！启动资金与免费十连已到账'); }
   if(e.target.id==='btn-start'){ S.flags.welcomed=true; save(); closeModal(); SFX.win(); toast('🎁 启动资金到账！免费十连已放入白银盲盒'); renderAll(); }
