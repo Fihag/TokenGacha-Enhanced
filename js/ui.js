@@ -76,15 +76,19 @@ function renderBuy(){
 
 /* ---------- 渲染: 工作页 ---------- */
 function renderWork(){
-  const tk=totalTokens(), tasks=totalTasks();
-  $('w-tokens').innerHTML=fmtK(tk)+' <small>tokens</small>';
-  $('w-tasks').innerHTML=tasks+' <small>单</small>';
-  $('w-est').textContent=fmt(estValue());
+  const tk=usableTokens(), tasks=usableTasks(), tot=totalTokens(), locked=lockedTokens();
+  const hasLocked = (S.inv.some(c=>c.locked));
+  $('w-tokens').innerHTML=fmtK(tk)+(hasLocked?` <small style="color:var(--faint)">/ ${fmtK(tot)}</small>`:'')+' <small>tokens</small>';
+  $('w-tokens').title = hasLocked ? `可用 ${fmtK(tk)} / 总计 ${fmtK(tot)}（锁定 ${fmtK(locked)} 不计入工作）` : '';
+  $('w-tasks').innerHTML=tasks+(hasLocked?` <small style="color:var(--faint)">/ ${Math.floor(tot/TASK_TOKENS)}</small>`:'')+' <small>单</small>';
+  $('w-tasks').title = hasLocked ? `可用 ${tasks} 单 / 总计 ${Math.floor(tot/TASK_TOKENS)} 单` : '';
+  $('w-est').textContent=fmt(usableEstValue());
+  $('w-est').title = hasLocked ? `仅含未锁定卡估值，总估值 ${fmt(estValue())}` : '';
   const rows=$('rarity-rows'); rows.innerHTML='';
   const maxQ=RARITY.UTR.quota*3;
   const groups={};
   for(const r of RORDER) groups[r]=[];
-  for(const c of S.inv){ if(c.tokens>0) groups[MMAP[c.m].r].push(c); }
+  for(const c of S.inv){ if(c.tokens>0 && !c.locked) groups[MMAP[c.m].r].push(c); }
   for(const r of [...RORDER].reverse()){
     const cards=groups[r];
     const tkR=cards.reduce((s,c)=>s+c.tokens,0);
@@ -153,16 +157,18 @@ const hasNB=(S.dex.fihagv1||0)>0;
     ch.insertAdjacentHTML('beforeend',`<div class="ch-row"><span class="ic"></span><span>${m.vendor} 渠道</span><span class="st ${st.warn?'warn':''}">${st.warn?'● 波动':'● 正常'}</span><span class="lat">${st.lat}ms</span></div>`);
     ch.lastChild.querySelector('.ic').appendChild(iconImg(m.icon));
   }
-  // 卡库（支持筛选/排序/残卡高亮）
+  // 卡库（支持筛选/排序/残卡高亮/锁定）
   const g=$('inv-grid'); g.innerHTML='';
-  const totalTxt = `共 ${S.inv.length} 张 · 耗尽自动移除`;
+  const lockedCnt = S.inv.filter(c=>c.locked).length;
+  const totalTxt = `共 ${S.inv.length} 张${lockedCnt?` · 🔒 ${lockedCnt} 张已锁定` : ''} · 耗尽自动移除`;
   $('inv-total').textContent=totalTxt;
   if(!S.inv.length){ g.innerHTML='<div class="inv-empty" style="grid-column:1/-1">卡库空空如也<br>去「购买Token」抽个盲盒吧</div>'; }
   else{
     const f = window._invFilter || 'all';
     const sortBy = ($('inv-sort')&&$('inv-sort').value) || 'rarity';
     let list = [...S.inv];
-    if(f==='half') list = list.filter(c=>c.half);
+    if(f==='locked') list = list.filter(c=>c.locked);
+    else if(f==='half') list = list.filter(c=>c.half);
     else if(f==='residue') list = list.filter(c=>c.tokens>0 && c.tokens < TASK_TOKENS*2);
     else if(f!=='all') list = list.filter(c=>MMAP[c.m].r===f);
     list.sort((a,b)=>{
@@ -175,17 +181,19 @@ const hasNB=(S.dex.fihagv1||0)>0;
       const m=MMAP[c.m], r=RARITY[m.r];
       const residue = c.tokens>0 && c.tokens < TASK_TOKENS*2;
       const stars = c.stars||0;
+      const locked = !!c.locked;
       const d=document.createElement('div');
-      d.className='inv-card'+(c.tokens<=0?' dead':'')+(residue?' residue':'');
+      d.className='inv-card'+(c.tokens<=0?' dead':'')+(residue?' residue':'')+(locked?' locked':'');
       d.dataset.uid=c.uid;
       d.style.setProperty('--rc', r.hex);
       d.innerHTML=`<span class="rt">${r.name}${stars?' ★'+stars:''}</span>${c.half?'<span class="half">体验</span>':''}
+        <button class="inv-lock" data-lock="${c.uid}" title="${locked?'已锁定（工作不消耗）点击解锁':'未锁定点击锁定（工作不消耗）'}">${locked?'🔒':'🔓'}</button>
         <button class="inv-del" data-uid="${c.uid}" title="销毁这张卡（剩余 token 不可找回）">🗑️</button>`;
       d.classList.toggle('hasHalf', !!c.half);
       if(m.id==='fihagv1'){ const ic=document.createElement('span'); ic.textContent='🌈'; ic.style.cssText='font-size:28px;line-height:1;margin:4px 0'; d.appendChild(ic); }
         else d.appendChild(iconImg(m.icon));
-      d.insertAdjacentHTML('beforeend',`<div class="nm">${m.name}${stars?' ★'+stars:''}</div><div class="tk">${c.tokens>0?fmtK(c.tokens)+' tok':'已耗尽'}</div>`);
-      d.title=`${m.name}${stars?' ★'+stars:''} · ${m.vendor}\n智能指数 ${Math.round(m.idx)} · 真实成本 ${m.cost}\n${m.quote}${stars?' \n⭐ 星级 '+stars+' · 收益+'+(stars*5)+'%':''}${residue?' \n⚠️ 残卡（<2单），建议销毁':''}`;
+      d.insertAdjacentHTML('beforeend',`<div class="nm">${m.name}${stars?' ★'+stars:''}${locked?' 🔒':''}</div><div class="tk">${c.tokens>0?fmtK(c.tokens)+' tok':'已耗尽'}</div>`);
+      d.title=`${m.name}${stars?' ★'+stars:''}${locked?' 🔒已锁定':''} · ${m.vendor}\n智能指数 ${Math.round(m.idx)} · 真实成本 ${m.cost}\n${m.quote}${stars?' \n⭐ 星级 '+stars+' · 收益+'+(stars*5)+'%':''}${locked?' \n🔒 已锁定：工作时不消耗':''}${residue?' \n⚠️ 残卡（<2单），建议销毁':''}`;
       g.appendChild(d);
     }
     if(!list.length) g.innerHTML='<div class="inv-empty" style="grid-column:1/-1">该筛选下暂无卡牌</div>';
@@ -684,6 +692,14 @@ function confirmDestroy(uid){
   SFX.bad();
   toast(`🗑️ 已销毁 ${m.name}${lost>0?` · ${fmtK(lost)} tokens 化为乌有`:''}`, 3200);
 }
+function toggleLock(uid){
+  const c=S.inv.find(x=>x.uid===uid);
+  if(!c) return;
+  c.locked=!c.locked;
+  save(); renderAll();
+  SFX.click();
+  toast(c.locked?`🔒 已锁定 ${MMAP[c.m].name}（工作时不消耗）`:`🔓 已解锁 ${MMAP[c.m].name}`);
+}
 
 /* ---------- 分享 ---------- */
 let shareCtx={cv:null,ms:null};
@@ -915,6 +931,9 @@ document.addEventListener('keydown', e=>{
   }
 });
 document.addEventListener('click', e=>{
+  const lockEl = e.target.closest ? e.target.closest('[data-lock]') : null;
+  if(lockEl){ toggleLock(Number(lockEl.dataset.lock)); return; }
+  if(e.target.dataset && e.target.dataset.lock!=null){ toggleLock(Number(e.target.dataset.lock)); return; }
   if(e.target.dataset && e.target.dataset.uid!=null){ SFX.click(); destroyCard(Number(e.target.dataset.uid)); }
   if(e.target.dataset && e.target.dataset.confirmDestroy!=null){ confirmDestroy(Number(e.target.dataset.confirmDestroy)); }
   if(e.target.id==='btn-reset'){ localStorage.removeItem('tokengacha_v2'); localStorage.removeItem('tokengacha_v4'); location.reload(); }

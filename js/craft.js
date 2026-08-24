@@ -9,6 +9,7 @@ function craftVendorsFor(recipe){
   const need = recipe.need, from = recipe.from;
   const counts = {};
   for(const c of S.inv){
+    if(c.locked) continue;
     if(MMAP[c.m].r !== from) continue;
     const v = MMAP[c.m].vendor;
     counts[v] = (counts[v]||0)+1;
@@ -24,6 +25,7 @@ function doCraft(recipeId, uids){
   if(!Array.isArray(uids) || uids.length!==recipe.need) return {ok:false, msg:`需选择 ${recipe.need} 张卡`};
   const cards = uids.map(uid=> S.inv.find(c=>c.uid===uid)).filter(Boolean);
   if(cards.length!==recipe.need) return {ok:false, msg:'卡片不存在或已消耗'};
+  if(cards.some(c=>c.locked)) return {ok:false, msg:'锁定卡不可用于合成'};
   const vendors = cards.map(c=> MMAP[c.m].vendor);
   const firstV = vendors[0];
   if(!vendors.every(v=>v===firstV)) return {ok:false, msg:'需同厂商（不允许跨 vendor）'};
@@ -70,6 +72,7 @@ function doStarUpgrade(uids){
   if(!Array.isArray(uids)||uids.length!==CRAFT_STAR_NEED) return {ok:false,msg:`需选择 ${CRAFT_STAR_NEED} 张同模型`};
   const cards=uids.map(uid=>S.inv.find(c=>c.uid===uid)).filter(Boolean);
   if(cards.length!==CRAFT_STAR_NEED) return {ok:false,msg:'卡片不存在'};
+  if(cards.some(c=>c.locked)) return {ok:false,msg:'锁定卡不可用于升星'};
   const mid=cards[0].m;
   if(!cards.every(c=>c.m===mid)) return {ok:false,msg:'需同模型 5 张'};
   const maxStar=Math.max(...cards.map(c=>c.stars||0));
@@ -103,7 +106,7 @@ function craftAvailable(){
   }
   // 星级
   const byModel={};
-  for(const c of S.inv){ byModel[c.m]=(byModel[c.m]||0)+1; }
+  for(const c of S.inv){ if(c.locked) continue; byModel[c.m]=(byModel[c.m]||0)+1; }
   const starable=Object.entries(byModel).filter(([mid,n])=>n>=CRAFT_STAR_NEED && MODELS.find(m=>m.id===mid)).map(([mid])=>mid);
   if(starable.length) list.push({recipe:{id:'star', label:'升星', desc:`同模型×${CRAFT_STAR_NEED} 升 1 星 (上限3)`}, vendors:starable});
   return list;
@@ -128,7 +131,7 @@ function renderCraft(){
   }
   // 升星
   const byModel={};
-  for(const c of S.inv) byModel[c.m]=(byModel[c.m]||0)+1;
+  for(const c of S.inv){ if(c.locked) continue; byModel[c.m]=(byModel[c.m]||0)+1; }
   for(const [mid, cnt] of Object.entries(byModel)){
     if(cnt < CRAFT_STAR_NEED) continue;
     const m=MMAP[mid];
@@ -155,12 +158,14 @@ function openCraftPicker(recipeId, vendor){
     const r=CRAFT_RECIPES.find(x=>x.id===recipeId);
     pool=S.inv.filter(c=> MMAP[c.m].r===r.from && MMAP[c.m].vendor===vendor);
   }
-  pool.sort((a,b)=> (a.stars||0)-(b.stars||0) || a.tokens-b.tokens);
+  pool.sort((a,b)=> (a.locked?1:0)-(b.locked?1:0) || (a.stars||0)-(b.stars||0) || a.tokens-b.tokens);
   _craftPick={recipe:recipeId, vendor, selected:new Set()};
   const grid=pool.map(c=>{
     const m=MMAP[c.m];
     const stars=c.stars?` ★${c.stars}`:'';
-    return `<div class="exped-card" data-uid="${c.uid}" style="width:92px"><div class="nm">${m.name}${stars}</div><div class="tk">${fmtK(c.tokens)} tok</div><div style="font-size:10px;color:var(--faint)">${m.r} · ${m.vendor}</div></div>`;
+    const locked=c.locked?`<span style="position:absolute;top:2px;right:4px;font-size:10px">🔒</span>`:'';
+    const dis=c.locked?'opacity:.45;pointer-events:none':'' ;
+    return `<div class="exped-card" data-uid="${c.uid}" style="width:92px;${dis};position:relative">${locked}<div class="nm">${m.name}${stars}</div><div class="tk">${fmtK(c.tokens)} tok</div><div style="font-size:10px;color:var(--faint)">${m.r} · ${m.vendor}${c.locked?' · 已锁定':''}</div></div>`;
   }).join('');
   const html=`<h3>${recipeId==='star'?'⭐ 选5张同模型升星':'🔧 选'+need+'张同厂商合成'}<button class="x" onclick="closeModal()">×</button></h3>
   <div style="display:flex;gap:8px;flex-wrap:wrap;max-height:46vh;overflow-y:auto;padding:6px 2px" id="craft-pick-grid">${grid||'<div style="color:var(--faint)">无可用卡</div>'}</div>

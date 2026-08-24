@@ -81,8 +81,8 @@ function load(){
       if(s.market.next==null) s.market.next=0;
       // 清理远征残留字段
       if(s.expedition) delete s.expedition;
-      // 卡片星级字段兼容
-      if(Array.isArray(s.inv)) for(const c of s.inv) if(c.stars==null) c.stars=0;
+      // 卡片星级/锁定字段兼容
+      if(Array.isArray(s.inv)) for(const c of s.inv){ if(c.stars==null) c.stars=0; if(c.locked==null) c.locked=false; }
       s.ver=4;
       return s;
     }
@@ -99,6 +99,9 @@ const fmtK = n => n>=10000 ? (n/10000).toLocaleString('zh-CN',{maximumFractionDi
 const fmtTok = n => n>=100000000 ? (n/100000000).toLocaleString('zh-CN',{maximumFractionDigits:2})+'亿' : fmtK(n); // 1 亿级 token 显示为「1亿」
 const totalTokens = () => S.inv.reduce((s,c)=>s+c.tokens,0);
 const totalTasks = () => Math.floor(totalTokens()/TASK_TOKENS);
+const usableTokens = () => S.inv.filter(c=>!c.locked).reduce((s,c)=>s+c.tokens,0);
+const usableTasks = () => Math.floor(usableTokens()/TASK_TOKENS);
+const lockedTokens = () => S.inv.filter(c=>c.locked).reduce((s,c)=>s+c.tokens,0);
 const pick = arr => arr[Math.floor(Math.random()*arr.length)];
 function addLedger(label, amt){
   const t=new Date();
@@ -125,6 +128,7 @@ function expectedTaskPay(m, stars){
   return PAY_BOOST*(pO*pay + pG*pay*2.5 + pR*pay*.4 - pD*50*PAY_BOOST);
 }
 const estValue = () => S.inv.reduce((s,c)=> s + (c.tokens/TASK_TOKENS)*expectedTaskPay(MMAP[c.m], c.stars||0), 0);
+const usableEstValue = () => S.inv.filter(c=>!c.locked).reduce((s,c)=> s + (c.tokens/TASK_TOKENS)*expectedTaskPay(MMAP[c.m], c.stars||0), 0);
 
 /* ---------- 卡池真实回本率(按概率公式计算) ---------- */
 // 单抽期望价值 = 1.5%×0731卡价值 + 98.5%×(各稀有度概率×该档平均卡价值)

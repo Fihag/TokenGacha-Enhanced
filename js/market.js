@@ -60,7 +60,7 @@ function refreshMarket(force){
   return true;
 }
 function marketMatchingCards(order){
-  return S.inv.filter(c=> MMAP[c.m].r===order.r && MMAP[c.m].vendor===order.vendor);
+  return S.inv.filter(c=> !c.locked && MMAP[c.m].r===order.r && MMAP[c.m].vendor===order.vendor);
 }
 function marketCanFulfill(order){
   return marketMatchingCards(order).length >= order.need;

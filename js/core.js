@@ -34,7 +34,7 @@ function makeCard(poolKey, rarity, force0731){
   let quota = POOLS[poolKey].half ? Math.round(base/2) : base;
   // 规整到 TASK_TOKENS 倍数，避免 270w/10w 残卡永远卡在卡库 (540w半价 270w→260w)
   quota = Math.floor(quota / TASK_TOKENS) * TASK_TOKENS;
-  return { uid:S.uid++, m:m.id, tokens:quota, max:quota, half:POOLS[poolKey].half, stars:0 };
+  return { uid:S.uid++, m:m.id, tokens:quota, max:quota, half:POOLS[poolKey].half, stars:0, locked:false };
 }
 // 限定池保底: 必出当期限定 UTR (v5 赛季=dsv5pro, 神话回响=opus6/gem4pro)
 function makeLimited(poolKey){
@@ -45,7 +45,7 @@ function makeLimited(poolKey){
   const base = m.quota || RARITY[m.r].quota;
   let quota = POOLS[poolKey].half ? Math.round(base/2) : base;
   quota = Math.floor(quota / TASK_TOKENS) * TASK_TOKENS;
-  return { uid:S.uid++, m:m.id, tokens:quota, max:quota, half:POOLS[poolKey].half, stars:0 };
+  return { uid:S.uid++, m:m.id, tokens:quota, max:quota, half:POOLS[poolKey].half, stars:0, locked:false };
 }
 function recordHist(cards){
   const t=Date.now();
@@ -63,7 +63,7 @@ function maybeBest(c){
 }
 // Fihag V1: 全池 0.01% 隐藏神卡, 固定 1 亿 token, 品质 NB
 function makeFihag(){
-  return { uid:S.uid++, m:'fihagv1', tokens:100000000, max:100000000, half:false, stars:0 };
+  return { uid:S.uid++, m:'fihagv1', tokens:100000000, max:100000000, half:false, stars:0, locked:false };
 }
 // 幻觉彩蛋: 非UR/UTR出货时有 0.2% 概率伪装成UR(gold闪+UR特效), 揭晓后强制变回R并垫少量token作精神损失费
 function maybeHallucinate(c, poolKey){
@@ -166,7 +166,7 @@ function taskPayout(model, stars){
 function bestCard(){
   let best=null;
   for(const c of S.inv){
-    if(c.tokens<TASK_TOKENS) continue;
+    if(c.tokens<TASK_TOKENS || c.locked) continue;
     if(!best || RORDER.indexOf(MMAP[c.m].r)>RORDER.indexOf(MMAP[best.m].r)
       || (MMAP[c.m].r===MMAP[best.m].r && MMAP[c.m].idx>MMAP[best.m].idx)) best=c;
   }
@@ -177,11 +177,11 @@ function banClaudeCards(){
   S.inv=S.inv.filter(c=>c.tokens>0);
   save();
 }
-// 消耗 n 单（按稀有度优先），返回明细
+// 消耗 n 单（按稀有度优先，锁定卡不消耗），返回明细
 // 大单量优化: 一次性排序可用卡 + 指针按序消耗, 避免每单全表扫描与 splice
 function consumeTasks(n){
   const items=[];
-  const usable = S.inv.filter(c=>c.tokens>=TASK_TOKENS)
+  const usable = S.inv.filter(c=>c.tokens>=TASK_TOKENS && !c.locked)
     .sort((a,b)=>{
       // 高稀有度优先(UTR→N): RORDER 升序, 反转为降序, 同档比智能指数高者先
       const r=RORDER.indexOf(MMAP[b.m].r)-RORDER.indexOf(MMAP[a.m].r);
