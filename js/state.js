@@ -14,7 +14,7 @@ function defaultState(){
     daily:{lastSign:null,streak:0,day:null,earnToday:0,pulls:0,tasks:0,claimed:{}},
     skin:'classic', skinsOwned:['classic'], skinTickets:0,
     bannerPulls:0, bannerLimited:0, bannerSeason:null, hist:[],
-    crafts:{count:0,stars:0,last:null}, market:{orders:[],next:0}, expedition:{lv:0,bestLv:0,runs:0,wins:0,history:[]} };
+    crafts:{count:0,stars:0,last:null}, market:{orders:[],next:0} };
 }
 function save(){ try{ const j=JSON.stringify(S); localStorage.setItem('tokengacha_v2', j); try{ localStorage.setItem('tokengacha_v4', j);}catch(e){} }catch(e){} }
 function load(){
@@ -78,12 +78,8 @@ function load(){
       if(!s.market || typeof s.market!=='object') s.market={orders:[],next:0};
       if(!Array.isArray(s.market.orders)) s.market.orders=[];
       if(s.market.next==null) s.market.next=0;
-      if(!s.expedition || typeof s.expedition!=='object') s.expedition={lv:0,bestLv:0,runs:0,wins:0,history:[]};
-      if(s.expedition.lv==null) s.expedition.lv=0;
-      if(s.expedition.bestLv==null) s.expedition.bestLv=0;
-      if(s.expedition.runs==null) s.expedition.runs=0;
-      if(s.expedition.wins==null) s.expedition.wins=0;
-      if(!Array.isArray(s.expedition.history)) s.expedition.history=[];
+      // 清理远征残留字段
+      if(s.expedition) delete s.expedition;
       // 卡片星级字段兼容
       if(Array.isArray(s.inv)) for(const c of s.inv) if(c.stars==null) c.stars=0;
       s.ver=4;

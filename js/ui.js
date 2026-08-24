@@ -5,7 +5,7 @@
    ================================================================ */
 
 /* ---------- 路由 ---------- */
-const PAGES=['buy','work','expedition','balance','activity','data'];
+const PAGES=['buy','work','balance','activity','data'];
 function go(page){
   if(!PAGES.includes(page)) page='buy';
   for(const p of PAGES){
@@ -243,7 +243,6 @@ function renderAll(){
   renderHeader(); tweenMoney(); renderBuy(); renderWork(); renderBalance();
   if(typeof renderCraft==='function') renderCraft();
   if(typeof renderMarket==='function') renderMarket();
-  if(typeof renderExpedition==='function') renderExpedition();
   if(typeof renderActivity==='function') renderActivity();
   if(typeof renderData==='function') renderData();
 }
@@ -852,6 +851,19 @@ function toggleMuteUI(){
   $('btn-mute').innerHTML = muted ? '🔇<span class="lbl"> 静音</span>' : '🔊<span class="lbl"> 音效</span>';
   if(muted) toast('🔇 已静音'); else toast('🔊 音效已开启');
 }
+// 交易工坊 Tab
+document.querySelectorAll('[data-trade]').forEach(b=>{
+  b.onclick=()=>{
+    document.querySelectorAll('[data-trade]').forEach(x=>x.classList.toggle('on', x===b));
+    const t=b.dataset.trade;
+    const craftEl=$('trade-craft'), marketEl=$('trade-market');
+    if(craftEl) craftEl.hidden = t!=='craft';
+    if(marketEl) marketEl.hidden = t!=='market';
+    SFX.click();
+    if(t==='market' && typeof renderMarket==='function') renderMarket();
+    if(t==='craft' && typeof renderCraft==='function') renderCraft();
+  };
+});
 // banner 倒计时: 每秒实时刷新, 活动到期自动下架
 setInterval(()=>{
   const el=$('banner-countdown');

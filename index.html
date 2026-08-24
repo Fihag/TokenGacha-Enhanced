@@ -182,9 +182,10 @@ main{max-width:1180px;margin:0 auto;padding:14px 22px 26px}
 .free-progress .lb{display:flex;justify-content:space-between;font-size:11px;color:var(--faint);margin-bottom:5px}
 .free-progress .bar{height:9px;background:var(--panel2);border:1px solid var(--line);border-radius:6px;overflow:hidden}
 .free-progress .bar i{display:block;height:100%;background:linear-gradient(90deg,var(--gold),#f59e0b);transition:width .4s}
-.two-col{display:grid;grid-template-columns:1.15fr .85fr;gap:14px;margin-bottom:14px}
+.two-col{display:grid;grid-template-columns:1.15fr .85fr;gap:14px;margin-bottom:14px;align-items:start}
 @media(max-width:860px){.two-col{grid-template-columns:1fr}}
-.ledger-list{display:flex;flex-direction:column;max-height:330px;overflow-y:auto}
+.two-col .panel-pad{display:flex;flex-direction:column}
+.ledger-list{flex:1;display:flex;flex-direction:column;min-height:120px;max-height:380px;overflow-y:auto}
 .ledger-list .lrow{display:flex;justify-content:space-between;gap:10px;padding:9px 2px;border-bottom:1px dashed var(--line2);font-size:12.5px}
 .ledger-list .lrow:last-child{border-bottom:none}
 .ledger-list .lrow .lab{color:var(--dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -226,6 +227,8 @@ main{max-width:1180px;margin:0 auto;padding:14px 22px 26px}
 .inv-empty{color:var(--faint);font-size:13px;text-align:center;padding:26px 10px;line-height:1.8}
 .mini-btn{font-size:11.5px;background:var(--panel2);border:1px solid var(--line);border-radius:9px;padding:6px 10px;color:var(--dim)}
 .mini-btn:hover{color:var(--txt);border-color:#c9d2ea;background:#fff}
+.mini-btn.on{background:var(--blue);color:#fff;border-color:var(--blue)}
+.mini-btn.on:hover{background:var(--blue-d);color:#fff;border-color:var(--blue-d)}
 
 /* ---------- 抽卡 overlay ---------- */
 #overlay{position:fixed;inset:0;z-index:100;background:rgba(244,246,251,.94);backdrop-filter:blur(10px);display:none;align-items:center;flex-direction:column;padding:20px;overflow-y:auto}
@@ -422,7 +425,7 @@ footer{text-align:center;color:var(--faint);font-size:11px;padding:22px;line-hei
 .data-grid .panel-pad canvas{width:100%;display:block}
 #wrap-chart-bar,#wrap-chart-line,#wrap-chart-donut,#wrap-chart-dex,#wrap-chart-vendor{position:relative}
 #wrap-chart-bar canvas,#wrap-chart-line canvas,#wrap-chart-donut canvas,#wrap-chart-dex canvas,#wrap-chart-vendor canvas{width:100%}
-/* ---------- 合成/黑市/远征 ---------- */
+/* ---------- 合成/黑市 ---------- */
 .craft-panel{margin-top:14px}
 .craft-recipes{display:flex;flex-direction:column;gap:8px}
 .craft-recipe{display:flex;align-items:center;gap:10px;border:1px solid var(--line);border-radius:12px;padding:10px 12px;background:var(--panel2)}
@@ -435,9 +438,6 @@ footer{text-align:center;color:var(--faint);font-size:11px;padding:22px;line-hei
 .market-order .mo-main{flex:1;min-width:0}
 .market-order .mo-title{font-size:13px;font-weight:800}
 .market-order .mo-desc{font-size:11px;color:var(--dim);margin-top:2px}
-.exped-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
-@media(max-width:860px){.exped-grid{grid-template-columns:1fr}}
-.exped-team{display:flex;gap:8px;flex-wrap:wrap}
 .exped-card{width:92px;border:1.5px solid var(--line);border-radius:12px;padding:8px 6px;text-align:center;background:var(--panel2);cursor:pointer;transition:.15s}
 .exped-card.on{border-color:var(--blue);background:#eef4ff;box-shadow:0 0 0 3px rgba(47,107,255,.15)}
 .exped-card img{width:30px;height:30px;margin:0 auto 4px;display:block}
@@ -453,7 +453,6 @@ footer{text-align:center;color:var(--faint);font-size:11px;padding:22px;line-hei
   <nav class="top-nav">
     <button data-page="buy">购买Token</button>
     <button data-page="work">工作</button>
-    <button data-page="expedition">远征</button>
     <button data-page="balance">余额</button>
     <button data-page="activity">活动</button>
     <button data-page="data">数据</button>
@@ -555,15 +554,22 @@ footer{text-align:center;color:var(--faint);font-size:11px;padding:22px;line-hei
       </div>
       <div class="inv-grid" id="inv-grid"></div>
     </div>
-    <div class="panel panel-pad craft-panel" id="craft-panel">
-      <div class="panel-title">🔧 合成台<span class="right">同厂商×3 合高一档 · 同模型×5 升星</span></div>
-      <div class="craft-recipes" id="craft-recipes"></div>
-      <div class="note" style="margin-top:8px">不允许跨 vendor；合成产出同厂商随机卡。星级上限 3，收益 +5%/星。</div>
-    </div>
-    <div class="panel panel-pad" id="market-panel" style="margin-top:14px">
-      <div class="panel-title">🏦 黑市做市<span class="right" id="market-countdown"></span></div>
-      <div class="market-list" id="market-list"></div>
-      <div style="display:flex;gap:8px;margin-top:8px"><button class="mini-btn" id="btn-market-refresh">🔄 刷新 (每小时自动)</button><span class="note" style="margin-left:auto">溢价 1.10–1.50× · 一键卖卡</span></div>
+    <div class="panel panel-pad" id="trade-panel">
+      <div class="panel-title">🛠️ 交易工坊
+        <span class="right" style="display:flex;gap:6px;align-items:center">
+          <button class="mini-btn on" data-trade="craft">🔧 合成台</button>
+          <button class="mini-btn" data-trade="market">🏦 黑市</button>
+          <span id="market-countdown" style="margin-left:8px"></span>
+        </span>
+      </div>
+      <div id="trade-craft">
+        <div style="font-size:11px;color:var(--faint);margin-bottom:8px">同厂商×3合高一档 · 同模型×5升星 · 禁止跨vendor · 星级上限3收益+5%/星</div>
+        <div class="craft-recipes" id="craft-recipes"></div>
+      </div>
+      <div id="trade-market" hidden>
+        <div class="market-list" id="market-list"></div>
+        <div style="display:flex;gap:8px;margin-top:8px;align-items:center"><button class="mini-btn" id="btn-market-refresh">🔄 刷新 (每小时自动)</button><span class="note" style="margin-left:auto">溢价 1.10–1.50× · 一键卖卡</span></div>
+      </div>
     </div>
   </div>
 
@@ -587,24 +593,6 @@ footer{text-align:center;color:var(--faint);font-size:11px;padding:22px;line-hei
       <div class="panel panel-pad"><div class="panel-title">🗂️ 图鉴进度</div><div id="wrap-chart-dex"><canvas id="chart-dex"></canvas></div></div>
       <div class="panel panel-pad" style="grid-column:1/-1"><div class="panel-title">🏭 厂商分布（已获得）</div><div id="wrap-chart-vendor"><canvas id="chart-vendor"></canvas></div></div>
       <div class="panel panel-pad" style="grid-column:1/-1"><div class="panel-title">🎲 出货记录（最近 100 次）</div><div id="gacha-hist"></div></div>
-    </div>
-  </div>
-
-  <!-- ============ 页面6: 远征 ============ -->
-  <div class="page" id="page-expedition">
-    <div class="page-head"><h2>远征</h2><p>无限 Hackathon · 3 卡组队 · 5 关分支 · 厂商羁绊</p></div>
-    <div class="notice"><span class="dot"></span><span id="exped-notice">远征无重置，Lv.越高事故越高，羁绊可对冲。每次消耗每卡 20w tokens。</span></div>
-    <div class="exped-grid">
-      <div class="panel panel-pad">
-        <div class="panel-title">🚀 组队<span class="right" id="exped-lv"></span></div>
-        <div class="exped-team" id="exped-team"></div>
-        <div style="margin-top:10px;display:flex;gap:8px"><button class="work-btn manual" id="btn-exped-start" style="flex:1">开始远征</button><button class="mini-btn" id="btn-exped-rand">随机选队</button></div>
-        <div class="note" style="margin-top:8px">DeepSeek×2 事故-5% · Anthropic×2 返工-6% · Google×2 大成功+2% · 阿里通义×2 收益+5%（3同厂商 1.5倍）</div>
-      </div>
-      <div class="panel panel-pad">
-        <div class="panel-title">📜 远征记录<span class="right" id="exped-stats"></span></div>
-        <div id="exped-history" style="max-height:360px;overflow-y:auto;display:flex;flex-direction:column;gap:6px"></div>
-      </div>
     </div>
   </div>
 </main>
@@ -637,7 +625,6 @@ footer{text-align:center;color:var(--faint);font-size:11px;padding:22px;line-hei
 <script src="js/core.js?v=2"></script>
 <script src="js/craft.js?v=2"></script>
 <script src="js/market.js?v=2"></script>
-<script src="js/expedition.js?v=2"></script>
 <script src="js/ui.js?v=2"></script>
 <script src="js/banner.js?v=2"></script>
 <script src="js/daily.js?v=2"></script>

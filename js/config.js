@@ -168,15 +168,6 @@ const CRAFT_STAR_NEED = 5; // 同模型×5 升 1 星，上限 3 星，+5% /星
 /* ---------- 黑市做市 ---------- */
 const MARKET_CFG = { slots:6, ttl:3600000, premiumMin:1.10, premiumMax:1.50, refreshMs:3600000 };
 
-/* ---------- 远征 (无限) ---------- */
-const EXPED_CFG = { team:3, stages:5, lvBase:0 };
-const VENDOR_BOND = {
-  'DeepSeek':   {need:2, label:'量大管饱', desc:'DeepSeek×2：远征事故率 -5%'},
-  'Anthropic':  {need:2, label:'稳如老狗', desc:'Anthropic×2：返工率 -6%'},
-  'Google':     {need:2, label:'多模态',   desc:'Google×2：大成功率 +2%'},
-  '阿里通义':   {need:2, label:'国产之光', desc:'阿里通义×2：收益 +5%'},
-};
-
 /* ---------- 限定加成 ---------- */
 const LIMITED_IDS = new Set(['dsv5pro','dsv5fl']);
 const LIMITED_ALL = new Set(BANNER_SEASONS.flatMap(s=>s.limited));
