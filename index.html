@@ -95,6 +95,39 @@
             ><input type="checkbox" id="chk-auto-skip-buy" /> 自动跳过抽卡动画</label
           ><span style="font-size: 11px; color: var(--faint)">勾选后抽卡直接展示结果</span>
         </div>
+        <div class="panel panel-pad" style="margin-top: 14px">
+          <div class="panel-title">🧪 模拟抽卡<span class="right">不消耗余额/不计入统计</span></div>
+          <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 8px">
+            <select id="sim-pool" class="inv-sort" style="margin-left: 0">
+              <option value="standard">白银盲盒</option>
+              <option value="newbie">青铜盲盒</option>
+              <option value="flagship">王者盲盒</option>
+              <option value="banner">限定池</option>
+            </select>
+            <select id="sim-count" class="inv-sort">
+              <option value="10">10 抽</option>
+              <option value="100" selected>100 抽</option>
+              <option value="1000">1000 抽</option>
+            </select>
+            <button class="mini-btn on" id="btn-sim">开始模拟</button>
+            <span style="font-size: 11px; color: var(--faint)">仅演示概率，不影响真实存档</span>
+          </div>
+          <div
+            id="sim-result"
+            style="
+              min-height: 64px;
+              background: var(--panel2);
+              border: 1px solid var(--line);
+              border-radius: 10px;
+              padding: 10px 12px;
+              font-size: 12.5px;
+              line-height: 1.7;
+              color: var(--dim);
+            "
+          >
+            选择卡池与次数，点击“开始模拟”查看分布与回本率对比。
+          </div>
+        </div>
       </div>
 
       <!-- ============ 页面2: 工作 ============ -->
@@ -188,6 +221,10 @@
             <div class="lb"><span>🏆 财富自由进度</span><span id="b-free-txt"></span></div>
             <div class="bar"><i id="b-free-bar"></i></div>
           </div>
+        </div>
+        <div class="panel panel-pad" id="achieve-panel" style="margin-bottom: 14px">
+          <div class="panel-title">🏅 成就墙<span class="right" id="achieve-progress"></span></div>
+          <div class="achieve-grid" id="achieve-grid"></div>
         </div>
         <div class="two-col">
           <div class="panel panel-pad">

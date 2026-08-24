@@ -85,11 +85,12 @@ describe("config.js 数据完整性", () => {
     expect(configText).toContain("BANNER_SEASONS.flatMap");
   });
 
-  it("皮肤 5 套且经典蓝为默认", () => {
+  it("皮肤 6 套且经典蓝为默认（P2 新增薄荷白茶）", () => {
     const body = extractArray("SKINS");
     const ids = [...body.matchAll(/id:\s*'([^']+)'/g)].map(x => x[1]);
-    expect(ids).toEqual(["classic", "night", "cyber", "gold", "pink"]);
+    expect(ids).toEqual(["classic", "night", "cyber", "gold", "pink", "mint"]);
     expect(body).toContain("default:true");
+    expect(body).toContain("mint");
   });
 
   it("签到 21 天奖励单调递增且最后一天 5000", () => {
@@ -101,11 +102,23 @@ describe("config.js 数据完整性", () => {
     for (let i = 1; i < arr.length; i++) expect(arr[i]).toBeGreaterThan(arr[i - 1]);
   });
 
-  it("DAILY_TASKS 三任务且 target/reward 合理", () => {
+  it("DAILY_TASKS 五任务且 target/reward 合理（P2 新增合成/黑市）", () => {
     const body = extractArray("DAILY_TASKS");
     expect(body).toContain("pull100");
     expect(body).toContain("work300");
     expect(body).toContain("earn18000");
+    expect(body).toContain("craft2");
+    expect(body).toContain("market2");
+    const count = (body.match(/id:/g) || []).length;
+    expect(count).toBe(5);
+  });
+
+  it("成就墙 10 档覆盖 5k~500k", () => {
+    const body = extractArray("MILESTONES");
+    const ids = [...body.matchAll(/id:\s*'([^']+)'/g)].map(x => x[1]);
+    expect(ids.length).toBe(10);
+    expect(ids).toEqual(["m5k", "m10k", "m20k", "m35k", "m50k", "m75k", "m100k", "m150k", "m250k", "m500k"]);
+    expect(body).toContain("500000");
   });
 
   it("图标与模型 vendor 覆盖主流厂商", () => {

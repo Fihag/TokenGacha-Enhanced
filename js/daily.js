@@ -17,6 +17,8 @@ function dailyResetIfNeeded(){
     S.daily.earnToday=0;
     S.daily.pulls=0;
     S.daily.tasks=0;
+    S.daily.crafts=0;
+    S.daily.markets=0;
     S.daily.claimed={};
     // 清理旧任务残留
     if(S.daily.signDay!=null) delete S.daily.signDay;
@@ -54,7 +56,11 @@ function dailyTaskProgress(t){
     case 'work800':   return Math.min(t.target, S.daily.tasks||0);
     case 'earn18000':
     case 'earn25000': return Math.min(t.target, Math.round(S.daily.earnToday||0));
+    case 'craft2':    return Math.min(t.target, S.daily.crafts||0);
+    case 'market2':   return Math.min(t.target, S.daily.markets||0);
   }
+  // 通用：若任务自带 check 函数则优先使用
+  if(t.check) try{ return Math.min(t.target, t.check(S)); }catch(e){}
   return 0;
 }
 function claimDailyTask(id){

@@ -53,6 +53,7 @@ function doCraft(recipeId, uids){
     S.crafts.count=(S.crafts.count||0)+1;
     S.crafts.last=m.id;
   }
+  if(S.daily) S.daily.crafts=(S.daily.crafts||0)+1;
   save();
   if(typeof renderAll==='function') renderAll();
   if(typeof SFX!=='undefined' && SFX.coin) SFX.coin();
@@ -91,6 +92,7 @@ function doStarUpgrade(uids){
   S.inv.push(nc);
   S.dex[mid]=(S.dex[mid]||0)+1;
   if(typeof S.crafts==='object'){ S.crafts.stars=(S.crafts.stars||0)+1; }
+  if(S.daily) S.daily.crafts=(S.daily.crafts||0)+1;
   save();
   if(typeof renderAll==='function') renderAll();
   if(typeof SFX!=='undefined' && SFX.coin) SFX.coin();

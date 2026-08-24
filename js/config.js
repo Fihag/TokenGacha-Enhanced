@@ -152,9 +152,16 @@ const VICTORY_AT = 50000;
 const START_MONEY = 800;
 const SITE_URL = 'https://tokengacha.pages.dev';
 const MILESTONES = [
+  {id:'m5k',   at:5000,   title:'🌱 初入江湖', tag:'余额突破 ¥5,000',   hype:'第一桶金到手，中转站开始注意你了。'},
   {id:'m10k',  at:10000,  title:'🎉 小有所成', tag:'余额突破 ¥10,000',  hype:'从电子垃圾堆里爬了出来，开始人模狗样。'},
+  {id:'m20k',  at:20000,  title:'📈 小有盈余', tag:'余额突破 ¥20,000',  hype:'白银池的期望开始显灵，你比一半玩家更懂庄家。'},
+  {id:'m35k',  at:35000,  title:'💼 站稳脚跟', tag:'余额突破 ¥35,000',  hype:'删库也不怕了，余额够赔两次。'},
   {id:'m50k',  at:50000,  title:'🏆 财富自由', tag:'余额突破 ¥50,000',  hype:'你击败了 70% 的玩家，成功跻身"持续赚钱"的那 30%。庄家已拉黑你。'},
+  {id:'m75k',  at:75000,  title:'🚀 势如破竹', tag:'余额突破 ¥75,000',  hype:'UP 池的限定开始为你打工，75k 只是起点。'},
   {id:'m100k', at:100000, title:'👑 传奇大亨', tag:'余额突破 ¥100,000', hype:'中转站庄家看到你都绕道走。建议本站给你立个雕像。'},
+  {id:'m150k', at:150000, title:'🌌 星辰大海', tag:'余额突破 ¥150,000', hype:'你已在中转站食物链顶端，下一步是把中转站买下来。'},
+  {id:'m250k', at:250000, title:'🏛️ 庄家克星', tag:'余额突破 ¥250,000', hype:'庄家连夜改概率，针对的就是你。'},
+  {id:'m500k', at:500000, title:'🌈 神之一手', tag:'余额突破 ¥500,000', hype:'抽到 Fihag V1 的欧皇也不过如此。全服公告：神来了。'},
 ];
 
 /* ---------- 合成台 (同厂商强制) ---------- */
@@ -178,6 +185,8 @@ const DAILY_TASKS = [
   {id:'pull100',  name:'抽卡 100 次',     desc:'今天抽满 100 抽（不限池）',  target:100,  rewardMoney:2000,  rewardTicket:1, rewardFreeTen:0, check:s=>S.daily.pulls},
   {id:'work300',  name:'工作 300 单',     desc:'用 token 接 300 单私活',     target:300,  rewardMoney:2800,  rewardTicket:1, rewardFreeTen:1, check:s=>S.daily.tasks},
   {id:'earn18000',name:'日入 ¥18000',     desc:'今日累计收入 ≥ ¥18000',     target:18000, rewardMoney:3200, rewardTicket:1, rewardFreeTen:0, check:s=>S.daily.earnToday},
+  {id:'craft2',   name:'合成 2 次',       desc:'在交易工坊合成/升星 2 次',  target:2,     rewardMoney:1200,  rewardTicket:1, rewardFreeTen:0, check:s=>S.daily.crafts||0},
+  {id:'market2',  name:'黑市成交 2 单',   desc:'在黑市卖卡成交 2 单',        target:2,     rewardMoney:1500,  rewardTicket:1, rewardFreeTen:0, check:s=>S.daily.markets||0},
 ];
 
 /* ---------- 皮肤系统 ---------- */
@@ -200,6 +209,10 @@ const SKINS = [
     vars:{'--bg':'#fff0f5','--panel':'#fffafc','--panel2':'#fff0f6','--line':'#ffd6e3','--line2':'#ffe3ec',
       '--txt':'#6b3a52','--dim':'#b57f9b','--faint':'#d3a9bf','--blue':'#f472b6','--blue-d':'#db2777'},
     desc:'少女心抽卡机，破产也要体面。'},
+  {id:'mint',    name:'薄荷白茶', icon:'🍃',
+    vars:{'--bg':'#f0fdf6','--panel':'#ffffff','--panel2':'#f6fef9','--line':'#d1f0de','--line2':'#e6f7ec',
+      '--txt':'#1a3d2e','--dim':'#5a8a74','--faint':'#8ab5a0','--blue':'#10b981','--blue-d':'#059669'},
+    desc:'薄荷一夏，清凉不破产——安静抽卡，稳如老狗。'},
 ];
 const SKIN_DROP_RATE = 0.015;
 if(typeof PROBS!=='undefined') PROBS.SKIN_DROP = SKIN_DROP_RATE;

@@ -93,6 +93,7 @@ function doMarketSell(orderId){
   S.money+=payout;
   S.stats.earn+=payout;
   S.daily.earnToday=(S.daily.earnToday||0)+payout;
+  S.daily.markets=(S.daily.markets||0)+1;
   addLedger(`🏦 黑市成交 · ${order.vendor} ${order.r}×${order.need} 溢价×${order.premium}`, payout);
   save();
   if(typeof renderAll==='function') renderAll();

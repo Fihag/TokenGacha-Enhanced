@@ -11,7 +11,7 @@ function defaultState(){
     pity:{newbie:0,standard:0,flagship:0,banner:0}, ledger:[],
     stats:{pulls:0,earn:0,spent:0,tasks:0,best:'',disasters:0,greats:0,byR:{N:0,R:0,SR:0,SSR:0,UR:0,UTR:0,NB:0}},
     dex:{}, flags:{welcomed:false,ms:{},muted:false,cheated:false,autoSkip:false},
-    daily:{lastSign:null,streak:0,day:null,earnToday:0,pulls:0,tasks:0,claimed:{}},
+    daily:{lastSign:null,streak:0,day:null,earnToday:0,pulls:0,tasks:0,crafts:0,markets:0,claimed:{}},
     skin:'classic', skinsOwned:['classic'], skinTickets:0,
     bannerPulls:0, bannerLimited:0, bannerSeason:null, hist:[],
     crafts:{count:0,stars:0,last:null}, market:{orders:[],next:0} };
@@ -63,6 +63,8 @@ function load(){
       if(s.daily.earnToday==null) s.daily.earnToday=0;
       if(s.daily.pulls==null) s.daily.pulls=0;
       if(s.daily.tasks==null) s.daily.tasks=0;
+      if(s.daily.crafts==null) s.daily.crafts=0;
+      if(s.daily.markets==null) s.daily.markets=0;
       if(s.daily.signDay!=null) delete s.daily.signDay;
       // 旧任务 id 兼容：work800→work300, earn25000→earn18000
       if(s.daily.claimed.work800!=null && s.daily.claimed.work300==null) s.daily.claimed.work300 = s.daily.claimed.work800;

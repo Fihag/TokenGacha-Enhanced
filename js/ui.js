@@ -313,6 +313,30 @@ const hasNB=(S.dex.fihagv1||0)>0;
   }
 }
 
+/* ---------- 渲染: 成就墙 ---------- */
+function renderAchievements(){
+  const grid=$('achieve-grid'), prog=$('achieve-progress');
+  if(!grid) return;
+  const unlocked = MILESTONES.filter(m=> S.flags.ms && S.flags.ms[m.id]).length;
+  if(prog) prog.textContent = `${unlocked}/${MILESTONES.length} · 下一档 ${(() => {
+    const nxt = MILESTONES.find(m=> !(S.flags.ms && S.flags.ms[m.id]));
+    return nxt ? fmt(nxt.at) : '已全部解锁';
+  })()}`;
+  // 若作弊，提示关闭
+  if(S.flags.cheated){
+    grid.innerHTML = `<div style="grid-column:1/-1;color:var(--faint);font-size:12px;padding:8px 2px;text-align:center">💳 作弊模式已开启，成就系统关闭（已解锁 ${unlocked} 项保留）</div>` + MILESTONES.map(m=>{
+      const ok = !!(S.flags.ms && S.flags.ms[m.id]);
+      return `<div class="achieve-card ${ok?'unlocked':'locked'}"><div class="ac-ic">${m.title.split(' ')[0]}</div><div class="ac-title">${m.title}</div><div class="ac-tag">${m.tag}</div><div class="ac-hype">${m.hype}</div><div class="ac-at">${fmt(m.at)}</div></div>`;
+    }).join('');
+    return;
+  }
+  grid.innerHTML = MILESTONES.map(m=>{
+    const ok = !!(S.flags.ms && S.flags.ms[m.id]);
+    const pct = Math.min(100, Math.max(0, S.money / m.at * 100));
+    return `<div class="achieve-card ${ok?'unlocked':'locked'}" title="${m.hype}\n${ok?'已解锁':'进度 '+pct.toFixed(0)+'%'}"><div class="ac-ic">${m.title.split(' ')[0]}</div><div class="ac-title">${m.title}</div><div class="ac-tag">${m.tag}</div><div class="ac-hype">${m.hype}</div><div class="ac-at">${fmt(m.at)}${ok?' · 已达成':''}</div>${!ok?`<div style="margin-top:6px;height:4px;background:var(--panel2);border:1px solid var(--line);border-radius:4px;overflow:hidden"><i style="display:block;height:100%;width:${pct.toFixed(1)}%;background:linear-gradient(90deg,var(--gold),#f59e0b)"></i></div>`:''}</div>`;
+  }).join('');
+}
+
 /* ---------- 渲染: 头部 ---------- */
 let shownMoney = S.money;
 function renderHeader(){
@@ -334,7 +358,7 @@ function tweenMoney(){
   })(t0);
 }
 function renderAll(){
-  renderHeader(); tweenMoney(); renderBuy(); renderWork(); renderBalance();
+  renderHeader(); tweenMoney(); renderBuy(); renderWork(); renderBalance(); renderAchievements();
   if(typeof renderCraft==='function') renderCraft();
   if(typeof renderMarket==='function') renderMarket();
   if(typeof renderActivity==='function') renderActivity();
@@ -376,6 +400,104 @@ function tryPull(poolKey, count){
   }
   save(); renderAll();
   showGacha(cards, p);
+}
+function simOne(poolKey, pity){
+  const pool=POOLS[poolKey];
+  const pityMax=pool.pityMax||PITY_MAX;
+  const atPity = pity >= pityMax-1;
+  const FIHAG = (typeof PROBS!=='undefined'?PROBS.FIHAG:0.0001);
+  const DSV73 = (typeof PROBS!=='undefined'?PROBS.DSV73:0.015);
+  const gotFihag = Math.random() < FIHAG;
+  const force0731 = !gotFihag && !atPity && Math.random() < DSV73;
+  let r;
+  if(gotFihag) r='NB';
+  else if(force0731) r='SSR';
+  else if(atPity){
+    r = pool.banner ? 'UTR' : (Math.random()<.2?'UR':'SSR');
+  } else {
+    const rnd=Math.random(); let acc=0;
+    for(const t of RORDER_DESC){ acc+=pool.rates[t]||0; if(rnd<acc){ r=t; break; } }
+    if(!r) r='N';
+  }
+  let m;
+  if(gotFihag){
+    m=MMAP.fihagv1;
+  } else if(atPity && pool.banner){
+    let limited = MODELS.filter(x=>LIMITED_IDS.has(x.id) && x.r==='UTR');
+    if(!limited.length) limited = MODELS.filter(x=>x.r==='UTR' && !x.bannerOnly);
+    if(!limited.length) limited = MODELS.filter(x=>x.r==='UR' && !x.bannerOnly);
+    m=limited[Math.floor(Math.random()*limited.length)];
+  } else if(force0731){
+    m=MMAP.dsv4fl73;
+  } else {
+    const cands = MODELS.filter(x=> x.r===r && x.id!=='dsv4fl73' && (!x.bannerOnly || (poolKey==='banner' && LIMITED_IDS.has(x.id))));
+    const cand = cands.length ? cands : MODELS.filter(x=>x.r===r && !x.bannerOnly);
+    m=cand[Math.floor(Math.random()*cand.length)];
+  }
+  const base = m.quota||RARITY[m.r].quota;
+  let quota = pool.half ? Math.round(base/2) : base;
+  quota = Math.floor(quota / TASK_TOKENS) * TASK_TOKENS;
+  // 下一 pity：限定池只认当期限定 UTR 或 NB，其他池 SSR+ 即清零
+  const realR = m.r;
+  const reset = pool.banner ? (realR==='NB' || (realR==='UTR' && LIMITED_IDS.has(m.id))) : (['SSR','UR','UTR','NB'].includes(realR));
+  const nextPity = reset ? 0 : pity+1;
+  return {m, quota, r: realR, nextPity};
+}
+function doSim(){
+  const selPool=$('sim-pool'), selCount=$('sim-count'), box=$('sim-result');
+  if(!selPool || !selCount || !box) return;
+  const poolKey=selPool.value;
+  const count=Math.min(1000, Math.max(1, parseInt(selCount.value,10)||100));
+  const p=POOLS[poolKey];
+  if(!p){ box.textContent='未知卡池'; return; }
+  // 模拟
+  let pity=0;
+  const dist={N:0,R:0,SR:0,SSR:0,UR:0,UTR:0,NB:0};
+  let totTok=0, totEst=0;
+  const draws=[];
+  for(let i=0;i<count;i++){
+    const cur = simOne(poolKey, pity);
+    pity=cur.nextPity;
+    draws.push(cur);
+    dist[cur.r]=(dist[cur.r]||0)+1;
+    totTok+=cur.quota;
+    totEst+= (cur.quota/TASK_TOKENS)*expectedTaskPay(cur.m);
+  }
+  // 十连保底：若十连且无 SR+，强制替换最后一张为 SR（同步 pity 清零）
+  if(count===10 && !draws.some(d=>['SR','SSR','UR','UTR','NB'].includes(d.r))){
+    const last = draws[draws.length-1];
+    totTok-=last.quota; totEst-= (last.quota/TASK_TOKENS)*expectedTaskPay(last.m);
+    dist[last.r]--;
+    const cands = MODELS.filter(x=> x.r==='SR' && !x.bannerOnly);
+    const m = cands[Math.floor(Math.random()*cands.length)];
+    const base=m.quota||RARITY.SR.quota;
+    let quota=Math.floor((p.half?Math.round(base/2):base)/TASK_TOKENS)*TASK_TOKENS;
+    draws[draws.length-1]={m, quota, r:'SR', nextPity:0};
+    dist.SR++; totTok+=quota; totEst+= (quota/TASK_TOKENS)*expectedTaskPay(m);
+  }
+  const cost = count===10 ? p.tenPrice : (count===100 ? p.tenPrice*10 : (count===1000 ? p.tenPrice*100 : p.price*count));
+  // 针对 100/1000 抽，按单价*次数估算成本（模拟器不消耗，仅参考）
+  const refCost = (()=>{
+    if(count===10) return p.tenPrice;
+    if(count===100) return p.tenPrice*10;
+    if(count===1000) return p.tenPrice*100;
+    return p.price*count;
+  })();
+  const rtp = refCost ? (totEst/refCost*100) : 0;
+  const exp = poolExpectedValue(poolKey);
+  const expRtp = p.price ? (exp/p.price*100) : 0;
+  const rows = RORDER.slice().reverse().filter(r=> r!=='NB' || dist.NB>0).map(r=>`${r}×${dist[r]||0}`).join(' · ');
+  const best = draws.reduce((a,b)=> RORDER.indexOf(b.r)>RORDER.indexOf(a.r)||(b.r===a.r&&b.m.idx>a.m.idx)?b:a, draws[0]);
+  box.innerHTML = `
+    <div><b style="color:var(--blue)">${p.name} · 模拟 ${count} 抽</b> <span style="color:var(--faint)">成本参考 ${fmt(refCost)}（${count}抽）· 期望 ${fmt(Math.round(exp*count/(count===10?10: count)))} vs 模拟 ${fmt(Math.round(totEst))}</span></div>
+    <div style="margin:6px 0;display:flex;gap:6px;flex-wrap:wrap">${RORDER.slice().reverse().filter(r=> r!=='NB' || dist.NB>0).map(r=>{
+      const c=dist[r]||0, pc=c/count*100;
+      return `<span style="background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:2px 8px;font-size:11px"><b style="color:${RARITY[r].hex}">${r}</b> ${c} (${pc.toFixed(1)}%)</span>`;
+    }).join('')}</div>
+    <div>总 token <b>${(totTok/10000).toFixed(1)}万</b> · 总估值 <b style="color:var(--cyan)">${fmt(Math.round(totEst))}</b> · 模拟回本率 <b style="color:${rtp>=100?'var(--green)':'var(--red)'}">${rtp.toFixed(1)}%</b> <span style="color:var(--faint)">（期望 ${expRtp.toFixed(1)}%）</span></div>
+    <div style="margin-top:6px">最佳：<b style="color:${RARITY[best.r].hex}">${best.m.name}</b>（${best.r} · 指数${Math.round(best.m.idx)}） · 分布：${rows}</div>
+    <div style="margin-top:6px;color:var(--faint);font-size:11px">提示：模拟含 1.5% 0731、0.01% 隐藏、保底与十连保底，仅供参考，不影响真实存档与保底计数。</div>
+  `;
 }
 function showGacha(cards, pool){
   pulling=true;
@@ -1087,6 +1209,12 @@ function boot(){
   };
   if(chk) chk.onchange=()=>syncAuto(chk.checked);
   if(chkBuy) chkBuy.onchange=()=>syncAuto(chkBuy.checked);
+  // 模拟抽卡器
+  const btnSim=$('btn-sim');
+  if(btnSim && !btnSim.dataset.bound){
+    btnSim.dataset.bound='1';
+    btnSim.onclick=()=>{ SFX.click(); doSim(); };
+  }
   go(location.hash.slice(1) || 'buy');
   if(!S.flags.welcomed){ showModal(welcomeHTML()); }
   else checkEnd();

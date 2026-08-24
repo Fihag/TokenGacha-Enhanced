@@ -445,3 +445,13 @@ footer{text-align:center;color:var(--faint);font-size:11px;padding:22px;line-hei
 .exped-card img{width:30px;height:30px;margin:0 auto 4px;display:block}
 .exped-card .nm{font-size:10.5px;font-weight:700;line-height:1.25;min-height:26px}
 .exped-card .tk{font-size:10px;color:var(--faint)}
+.achieve-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px}
+.achieve-card{border:1.5px solid var(--line);border-radius:12px;padding:10px 8px;text-align:center;background:var(--panel2);transition:.15s;position:relative}
+.achieve-card.unlocked{border-color:#bbf7d0;background:#f0fdf4}
+.achieve-card.locked{opacity:.55;filter:grayscale(.3)}
+.achieve-card .ac-ic{font-size:22px;line-height:1}
+.achieve-card .ac-title{font-size:11.5px;font-weight:900;margin-top:4px}
+.achieve-card .ac-tag{font-size:10px;color:var(--dim);margin-top:2px}
+.achieve-card .ac-hype{font-size:9.5px;color:var(--faint);margin-top:4px;line-height:1.4}
+.achieve-card .ac-at{font-size:9px;color:var(--faint);margin-top:4px}
+.achieve-card.unlocked::after{content:'✔';position:absolute;top:6px;right:6px;width:18px;height:18px;border-radius:50%;background:var(--green);color:#fff;font-size:11px;display:flex;align-items:center;justify-content:center}
