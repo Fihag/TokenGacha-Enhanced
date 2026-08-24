@@ -1151,7 +1151,10 @@ document.addEventListener('click', e=>{
   const lockEl = e.target.closest ? e.target.closest('[data-lock]') : null;
   if(lockEl){ toggleLock(Number(lockEl.dataset.lock)); return; }
   if(e.target.dataset && e.target.dataset.lock!=null){ toggleLock(Number(e.target.dataset.lock)); return; }
-  if(e.target.dataset && e.target.dataset.uid!=null){ SFX.click(); destroyCard(Number(e.target.dataset.uid)); }
+  const delEl = e.target.closest ? e.target.closest('.inv-del') : null;
+  if(delEl && delEl.dataset.uid!=null){ SFX.click(); destroyCard(Number(delEl.dataset.uid)); return; }
+  // 兼容旧：仅当目标本身是 inv-del 时触发，避免合成/批量卡牌（exped-card/inv-card）的 data-uid 误触
+  // if(e.target.dataset && e.target.dataset.uid!=null){ ... } 已移除
   if(e.target.dataset && e.target.dataset.confirmDestroy!=null){ confirmDestroy(Number(e.target.dataset.confirmDestroy)); }
   if(e.target.id==='btn-reset'){ localStorage.removeItem('tokengacha_v2'); localStorage.removeItem('tokengacha_v4'); location.reload(); }
   if(e.target.id==='btn-rebirth'){ const keepMuted=muted; S=defaultState(); S.flags.welcomed=true; S.flags.muted=keepMuted; shownMoney=S.money; save(); closeModal(); go('buy'); toast('🔄 新生活开始了！启动资金与免费十连已到账'); }
