@@ -1,0 +1,25 @@
+{
+  "name": "TokenGacha · LLM API 中转站",
+  "short_name": "TokenGacha",
+  "description": "一家不按量计费只卖盲盒的 LLM API 中转站。抽到顶级模型还是电子垃圾全看命，token 接私活变现。",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f2f4fa",
+  "theme_color": "#2f6bff",
+  "lang": "zh-CN",
+  "icons": [
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

@@ -10,9 +10,17 @@ function go(page){
   if(!PAGES.includes(page)) page='buy';
   for(const p of PAGES){
     $('page-'+p).classList.toggle('active', p===page);
+    const el=$('page-'+p);
+    if(el) el.setAttribute('aria-hidden', p===page ? 'false' : 'true');
   }
-  document.querySelectorAll('.top-nav button').forEach(b=>b.classList.toggle('active', b.dataset.page===page));
+  document.querySelectorAll('.top-nav button').forEach(b=>{
+    const on=b.dataset.page===page;
+    b.classList.toggle('active', on);
+    if(on) b.setAttribute('aria-current','page');
+    else b.removeAttribute('aria-current');
+  });
   if(location.hash!=='#'+page) history.replaceState(null,'','#'+page);
+  if(window.tgTrack) window.tgTrack('nav', {page});
   renderAll();
 }
 document.querySelectorAll('.top-nav button').forEach(b=>b.onclick=()=>{ SFX.click(); go(b.dataset.page); });
@@ -379,6 +387,7 @@ function tryPull(poolKey, count){
   if(useFree){ S.freeTen--; addLedger('新手赠送 · 白银盲盒十连', 0); }
   else { S.money-=cost; S.stats.spent+=cost; addLedger(`购买${p.name} ×${count}`, -cost); }
   SFX.pull();
+  if(window.tgTrack) window.tgTrack('pull', {pool:poolKey, count, cost: useFree?0:cost});
   const cards = doPulls(poolKey, count);
   // GPU 过热彩蛋: 3.5s 内连点抽卡 ≥5 次, 0.1% 触发机房冻结 3s(假补偿 10 token)
   const now=performance.now();

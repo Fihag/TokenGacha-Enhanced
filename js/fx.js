@@ -132,7 +132,7 @@ let toastTimer=null;
 function toast(msg, ms=2200){
   clearTimeout(toastTimer);
   document.querySelectorAll('.toast').forEach(t=>t.remove());
-  const d=document.createElement('div'); d.className='toast'; d.innerHTML=msg;
+  const d=document.createElement('div'); d.className='toast'; d.setAttribute('role','status'); d.setAttribute('aria-live','polite'); d.innerHTML=msg;
   document.body.appendChild(d);
   toastTimer=setTimeout(()=>d.remove(), ms);
 }

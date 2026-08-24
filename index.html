@@ -29,35 +29,40 @@
       name="twitter:description"
       content="LLM API 抽卡模拟器 — 70% 玩家最终破产，你能成为持续赚钱的那 30% 吗？"
     />
+    <link rel="manifest" href="manifest.json" />
+    <link rel="apple-touch-icon" href="icons/icon-192.png" />
     <link rel="stylesheet" href="css/style.css?v=2" />
   </head>
   <body>
-    <canvas id="fx"></canvas>
+    <a href="#main" class="skip-link">跳到主要内容</a>
+    <canvas id="fx" aria-hidden="true"></canvas>
 
-    <header>
-      <div class="logo"><span class="mark">🎰</span>TokenGacha<small>LLM API 中转站</small></div>
-      <nav class="top-nav">
-        <button data-page="buy">购买Token</button>
-        <button data-page="work">工作</button>
-        <button data-page="balance">余额</button>
-        <button data-page="activity">活动</button>
-        <button data-page="data">数据</button>
-      </nav>
-      <div class="stat-chips">
-        <div class="chip money">余额 <b id="h-money">¥0</b></div>
-        <div class="chip">⚡ <b id="h-tokens">0</b></div>
-        <div class="chip hide-m">抽卡 <b id="h-pulls">0</b></div>
+    <header role="banner">
+      <div class="logo" aria-label="TokenGacha LLM API 中转站">
+        <span class="mark" aria-hidden="true">🎰</span>TokenGacha<small>LLM API 中转站</small>
       </div>
-      <button class="hbtn" id="btn-skin">🎨<span class="lbl"> 皮肤</span></button>
-      <button class="hbtn" id="btn-mute">🔊<span class="lbl"> 音效</span></button>
-      <button class="hbtn" id="btn-rates">📊<span class="lbl"> 概率公示</span></button>
-      <button class="hbtn" id="btn-dex">📖<span class="lbl"> 图鉴</span></button>
-      <button class="hbtn" id="btn-help">❓<span class="lbl"> 玩法</span></button>
+      <nav class="top-nav" aria-label="主导航" role="navigation">
+        <button data-page="buy" aria-label="购买 Token" aria-current="page">购买Token</button>
+        <button data-page="work" aria-label="工作">工作</button>
+        <button data-page="balance" aria-label="余额">余额</button>
+        <button data-page="activity" aria-label="活动">活动</button>
+        <button data-page="data" aria-label="数据">数据</button>
+      </nav>
+      <div class="stat-chips" aria-live="polite" aria-atomic="true">
+        <div class="chip money" aria-label="余额">余额 <b id="h-money">¥0</b></div>
+        <div class="chip" aria-label="剩余 Token">⚡ <b id="h-tokens">0</b></div>
+        <div class="chip hide-m" aria-label="抽卡次数">抽卡 <b id="h-pulls">0</b></div>
+      </div>
+      <button class="hbtn" id="btn-skin" aria-label="皮肤中心">🎨<span class="lbl"> 皮肤</span></button>
+      <button class="hbtn" id="btn-mute" aria-label="切换音效">🔊<span class="lbl"> 音效</span></button>
+      <button class="hbtn" id="btn-rates" aria-label="概率公示">📊<span class="lbl"> 概率公示</span></button>
+      <button class="hbtn" id="btn-dex" aria-label="模型图鉴">📖<span class="lbl"> 图鉴</span></button>
+      <button class="hbtn" id="btn-help" aria-label="玩法说明">❓<span class="lbl"> 玩法</span></button>
     </header>
 
-    <main>
+    <main id="main">
       <!-- ============ 页面1: 购买Token ============ -->
-      <div class="page" id="page-buy">
+      <div class="page" id="page-buy" role="tabpanel" aria-label="购买 Token">
         <div class="page-head">
           <h2>购买 Token</h2>
           <p>盲盒计费 · 抽到顶级模型还是电子垃圾全看命 · 明码标价 · 概不退换</p>
@@ -389,8 +394,8 @@
     </div>
 
     <!-- 抽卡动画层 -->
-    <div id="overlay">
-      <button id="skip-btn">跳过 ▶▶</button>
+    <div id="overlay" role="dialog" aria-modal="true" aria-label="抽卡结果">
+      <button id="skip-btn" aria-label="跳过动画">跳过 ▶▶</button>
       <label
         style="
           position: absolute;
@@ -426,7 +431,9 @@
     </div>
 
     <!-- 弹窗 -->
-    <div class="modal-mask" id="modal-mask"><div class="modal" id="modal-box"></div></div>
+    <div class="modal-mask" id="modal-mask" role="dialog" aria-modal="true" aria-label="弹窗">
+      <div class="modal" id="modal-box" role="document"></div>
+    </div>
 
     <script src="js/config.js?v=2"></script>
     <script src="js/fx.js?v=2"></script>
@@ -439,5 +446,21 @@
     <script src="js/daily.js?v=2"></script>
     <script src="js/skins.js?v=2"></script>
     <script src="js/analytics.js?v=2"></script>
+    <script>
+      // PWA
+      if ("serviceWorker" in navigator) {
+        window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js").catch(() => {}));
+      }
+      // 极简埋点（控制台可见，预留 Cloudflare GA）
+      window.tgTrack = function (evt, data) {
+        try {
+          console.debug("[TG]", evt, data || "");
+        } catch (e) {}
+      };
+      document.addEventListener("DOMContentLoaded", () =>
+        window.tgTrack("page_view", { hash: location.hash || "#buy" })
+      );
+      window.addEventListener("hashchange", () => window.tgTrack("nav", { hash: location.hash }));
+    </script>
   </body>
 </html>

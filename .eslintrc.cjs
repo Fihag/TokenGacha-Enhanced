@@ -141,6 +141,14 @@ module.exports = {
       }
     },
     {
+      files: ["sw.js"],
+      env: { serviceworker: true, browser: true },
+      globals: {
+        caches: "readonly",
+        self: "readonly"
+      }
+    },
+    {
       files: ["tests/**/*.js"],
       env: { node: true },
       parserOptions: { sourceType: "module" }
