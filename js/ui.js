@@ -345,7 +345,16 @@ function showGacha(cards, pool){
     }
     if(flippedCount>=cards.length) finish();
   }
-  cards.forEach((c,i)=> setTimeout(()=>{ if(!skipped) flipOne(i); }, 450+i*380));
+  // 自动跳过：勾选后直接翻完（同步双复选框与存档）
+  const autoChk=$('chk-auto-skip');
+  const autoChkBuy=$('chk-auto-skip-buy');
+  const isAuto = (autoChk && autoChk.checked) || (autoChkBuy && autoChkBuy.checked) || !!S.flags.autoSkip;
+  if(isAuto){
+    skipped=true;
+    els.forEach((_,i)=> flipOne(i));
+  }else{
+    cards.forEach((c,i)=> setTimeout(()=>{ if(!skipped) flipOne(i); }, 450+i*380));
+  }
   $('skip-btn').onclick=()=>{ skipped=true; els.forEach((e,i)=>{ if(!e.classList.contains('flipped')) setTimeout(()=>flipOne(i), i*40); }); };
   function finish(){
     updateGachaSummary();
@@ -928,6 +937,19 @@ function boot(){
     ? `${bannerSlot().season.name} · ${bannerCountdownText()} ｜ ` : '';
   $('notice-text').textContent = seasonInfo + pick(NOTICES);
   $('btn-mute').innerHTML = muted ? '🔇<span class="lbl"> 静音</span>' : '🔊<span class="lbl"> 音效</span>';
+  // 自动跳过复选框（抽卡界面+购买页双控同步）
+  const chk=$('chk-auto-skip'), chkBuy=$('chk-auto-skip-buy');
+  if(chk) chk.checked=!!S.flags.autoSkip;
+  if(chkBuy) chkBuy.checked=!!S.flags.autoSkip;
+  const syncAuto = (v)=>{
+    S.flags.autoSkip=v;
+    save();
+    if(chk) chk.checked=v;
+    if(chkBuy) chkBuy.checked=v;
+    toast(v?'已开启自动跳过抽卡动画':'已关闭自动跳过');
+  };
+  if(chk) chk.onchange=()=>syncAuto(chk.checked);
+  if(chkBuy) chkBuy.onchange=()=>syncAuto(chkBuy.checked);
   go(location.hash.slice(1) || 'buy');
   if(!S.flags.welcomed){ showModal(welcomeHTML()); }
   else checkEnd();

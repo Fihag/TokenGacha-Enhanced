@@ -10,7 +10,7 @@ function defaultState(){
   return { ver:4, money:START_MONEY, inv:[], uid:1, freeTen:1,
     pity:{newbie:0,standard:0,flagship:0,banner:0}, ledger:[],
     stats:{pulls:0,earn:0,spent:0,tasks:0,best:'',disasters:0,greats:0,byR:{N:0,R:0,SR:0,SSR:0,UR:0,UTR:0,NB:0}},
-    dex:{}, flags:{welcomed:false,ms:{},muted:false,cheated:false},
+    dex:{}, flags:{welcomed:false,ms:{},muted:false,cheated:false,autoSkip:false},
     daily:{lastSign:null,streak:0,day:null,earnToday:0,pulls:0,tasks:0,claimed:{}},
     skin:'classic', skinsOwned:['classic'], skinTickets:0,
     bannerPulls:0, bannerLimited:0, bannerSeason:null, hist:[],
@@ -33,6 +33,7 @@ function load(){
       if(!s.flags.ms){ s.flags.ms={}; if(s.flags.rich) s.flags.ms.m50k=true; }
       delete s.flags.rich;
       if(s.flags.cheated==null) s.flags.cheated=false;
+      if(s.flags.autoSkip==null) s.flags.autoSkip=false;
       // 迁移: token 单位 ×10 + 清除耗尽卡
       if(!s.ver || s.ver<3){ for(const c of s.inv){ c.tokens*=10; c.max*=10; } }
       s.inv=s.inv.filter(c=>c.tokens>0);
