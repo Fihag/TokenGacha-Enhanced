@@ -74,6 +74,7 @@ let parts = [];
 function fxResize(){ fx.width=innerWidth; fx.height=innerHeight; }
 addEventListener('resize', fxResize); fxResize();
 function burst(x, y, colors, n=60, power=7){
+  if(typeof matchMedia!=='undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches) return;
   for(let i=0;i<n;i++){
     const a=Math.random()*Math.PI*2, v=(Math.random()*.7+.3)*power;
     parts.push({x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v-2,g:.15,life:1,decay:.008+Math.random()*.012,
@@ -91,7 +92,7 @@ function burst(x, y, colors, n=60, power=7){
   fctx.globalAlpha=1;
   requestAnimationFrame(fxLoop);
 })();
-function shake(){ document.body.classList.remove('shake'); void document.body.offsetWidth; document.body.classList.add('shake'); }
+function shake(){ if(typeof matchMedia!=='undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches) return; document.body.classList.remove('shake'); void document.body.offsetWidth; document.body.classList.add('shake'); }
 function floater(text, x, y, color){
   const d=document.createElement('div'); d.className='floater'; d.textContent=text;
   d.style.left=x+'px'; d.style.top=y+'px'; d.style.color=color;

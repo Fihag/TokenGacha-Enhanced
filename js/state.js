@@ -11,14 +11,15 @@ function defaultState(){
     pity:{newbie:0,standard:0,flagship:0,banner:0}, ledger:[],
     stats:{pulls:0,earn:0,spent:0,tasks:0,best:'',disasters:0,greats:0,byR:{N:0,R:0,SR:0,SSR:0,UR:0,UTR:0,NB:0}},
     dex:{}, flags:{welcomed:false,ms:{},muted:false,cheated:false},
-    daily:{lastSign:null,streak:0,day:null,earnToday:0,pulls:0,tasks:0,claimed:{},signDay:null},
+    daily:{lastSign:null,streak:0,day:null,earnToday:0,pulls:0,tasks:0,claimed:{}},
     skin:'classic', skinsOwned:['classic'], skinTickets:0,
     bannerPulls:0, bannerLimited:0, bannerSeason:null, hist:[] };
 }
-function save(){ try{ localStorage.setItem('tokengacha_v2', JSON.stringify(S)); }catch(e){} }
+function save(){ try{ const j=JSON.stringify(S); localStorage.setItem('tokengacha_v2', j); try{ localStorage.setItem('tokengacha_v4', j);}catch(e){} }catch(e){} }
 function load(){
   try{
-    const s=JSON.parse(localStorage.getItem('tokengacha_v2'));
+    const raw = localStorage.getItem('tokengacha_v4') || localStorage.getItem('tokengacha_v2');
+    const s=JSON.parse(raw);
     if(s&&typeof s.money==='number'){
       if(!Array.isArray(s.ledger)) s.ledger=[];
       if(!s.stats.byR) s.stats.byR={N:0,R:0,SR:0,SSR:0,UR:0};
@@ -34,12 +35,17 @@ function load(){
       // 迁移: token 单位 ×10 + 清除耗尽卡
       if(!s.ver || s.ver<3){ for(const c of s.inv){ c.tokens*=10; c.max*=10; } }
       s.inv=s.inv.filter(c=>c.tokens>0);
-      // 迁移: 清除"无法消耗"的卡 —— token 不足一单(20万)的卡永远接不了单也无法自动移除, 会一直卡在卡库列表
-      // (历史bug: 幻觉卡 190万/张, 消耗 9 单后剩 10万 token, 正是"10万卡死"的真凶) → 削减 10万 token, 归零或仍不足一单的一并清除
-      if(Array.isArray(s.inv)) s.inv=s.inv.filter(c=>{
-        if(c.tokens>0 && c.tokens<TASK_TOKENS){ c.tokens=Math.max(0,c.tokens-100000); return c.tokens>=TASK_TOKENS; }
-        return true;
-      });
+      // 迁移: 规整 token 到 TASK_TOKENS 倍数，避免 270w 残卡 (540w半价) 永远卡库
+      if(Array.isArray(s.inv)){
+        for(const c of s.inv){
+          c.tokens = Math.floor(c.tokens / TASK_TOKENS) * TASK_TOKENS;
+          c.max = Math.floor((c.max||c.tokens) / TASK_TOKENS) * TASK_TOKENS;
+          if(c.max < TASK_TOKENS) c.max = c.tokens;
+        }
+        s.inv = s.inv.filter(c=>c.tokens>=TASK_TOKENS);
+      }
+      // 清理死字段
+      if(s.daily && s.daily.signDay!=null) delete s.daily.signDay;
       // v3 → v4: 新增 UTR / banner / daily / skin
       if(!s.stats.byR.UTR) s.stats.byR.UTR=0;
       if(!s.stats.byR.NB) s.stats.byR.NB=0;
@@ -50,15 +56,21 @@ function load(){
       if(!s.bannerPulls) s.bannerPulls=0;
       if(!s.bannerLimited) s.bannerLimited=0;
       if(s.bannerSeason==null) s.bannerSeason=null;
-      if(!s.daily) s.daily={lastSign:null,streak:0,day:null,earnToday:0,claimed:{},signDay:null};
+      if(!s.daily) s.daily={lastSign:null,streak:0,day:null,earnToday:0,claimed:{}};
       if(s.daily.claimed==null) s.daily.claimed={};
       if(s.daily.earnToday==null) s.daily.earnToday=0;
       if(s.daily.pulls==null) s.daily.pulls=0;
       if(s.daily.tasks==null) s.daily.tasks=0;
+      if(s.daily.signDay!=null) delete s.daily.signDay;
+      // 旧任务 id 兼容：work800→work300, earn25000→earn18000
+      if(s.daily.claimed.work800!=null && s.daily.claimed.work300==null) s.daily.claimed.work300 = s.daily.claimed.work800;
+      if(s.daily.claimed.earn25000!=null && s.daily.claimed.earn18000==null) s.daily.claimed.earn18000 = s.daily.claimed.earn25000;
       if(!s.skin) s.skin='classic';
       if(!Array.isArray(s.skinsOwned)) s.skinsOwned=['classic'];
       if(s.skinTickets==null) s.skinTickets=0;
       if(!Array.isArray(s.hist)) s.hist=[];
+      // hist 补 season 字段（旧存档仅 pool:'banner'，补当前赛季）
+      if(Array.isArray(s.hist)) for(const h of s.hist){ if(h.pool==='banner' && !h.season) h.season = s.bannerSeason||null; }
       s.ver=4;
       return s;
     }
@@ -90,7 +102,8 @@ function payFactor(m){
 }
 function expectedTaskPay(m){
   let pay=RARITY[m.r].basePay*payFactor(m);
-  if(LIMITED_IDS.has(m.id)) pay*=2; // 与 taskPayout 结算保持一致: 限定卡接单收入翻倍
+  const allLim = (typeof LIMITED_ALL!=='undefined'?LIMITED_ALL:LIMITED_IDS);
+  if(allLim.has(m.id)) pay*=2; // 与 taskPayout 结算保持一致: 永久限定加成
   const pG=.02+m.idx/800, pR=Math.min(.25,Math.max(.04,.25-m.idx/250)), pD=Math.min(.02,Math.max(0,(28-m.idx)/1200));
   const pO=Math.max(0,1-pG-pR-pD);
   return PAY_BOOST*(pO*pay + pG*pay*2.5 + pR*pay*.4 - pD*50*PAY_BOOST);
@@ -102,10 +115,12 @@ const estValue = () => S.inv.reduce((s,c)=> s + (c.tokens/TASK_TOKENS)*expectedT
 function poolExpectedValue(poolKey){
   const p = POOLS[poolKey];
   let ev = 0;
-  // 0731 独立 1.5%: 固定出 dsv4fl73(540万 token, 青铜池减半)
+  // 0731 独立 1.5%: 固定出 dsv4fl73(540万 token, 青铜池减半，已规整)
   const d73 = MMAP.dsv4fl73;
-  const d73q = p.half ? Math.round((d73.quota||RARITY.SSR.quota)/2) : (d73.quota||RARITY.SSR.quota);
-  ev += 0.015 * (d73q/TASK_TOKENS) * expectedTaskPay(d73);
+  let d73q = p.half ? Math.round((d73.quota||RARITY.SSR.quota)/2) : (d73.quota||RARITY.SSR.quota);
+  d73q = Math.floor(d73q / TASK_TOKENS) * TASK_TOKENS;
+  const d73Rate = (typeof PROBS!=='undefined'?PROBS.DSV73:0.015);
+  ev += d73Rate * (d73q/TASK_TOKENS) * expectedTaskPay(d73);
   // 其余 98.5% 走稀有度概率
   for(const r of RORDER){
     const pr = p.rates[r]||0;
@@ -115,10 +130,12 @@ function poolExpectedValue(poolKey){
       : MODELS.filter(m=>m.r===r && m.id!=='dsv4fl73' && !m.bannerOnly);
     if(!cands.length) continue;
     const avg = cands.reduce((s,m)=>{
-      const q = p.half ? Math.round((m.quota||RARITY[r].quota)/2) : (m.quota||RARITY[r].quota);
+      let q = p.half ? Math.round((m.quota||RARITY[r].quota)/2) : (m.quota||RARITY[r].quota);
+      q = Math.floor(q / TASK_TOKENS) * TASK_TOKENS;
       return s + (q/TASK_TOKENS)*expectedTaskPay(m);
     },0)/cands.length;
-    ev += 0.985 * pr * avg;
+    const restRate = 1 - (typeof PROBS!=='undefined'?PROBS.DSV73:0.015);
+    ev += restRate * pr * avg;
   }
   return ev;
 }

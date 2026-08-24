@@ -22,7 +22,7 @@ const MODELS = [
   {id:'gpt56sol', name:'GPT-5.6 Sol',        vendor:'OpenAI',     icon:'openai',         idx:61, r:'UR',  cost:'$1.54/任务', spd:67,  quote:'OpenAI 的 Solaris，亮瞎同行'},
   {id:'grok46',   name:'Grok 4.6',           vendor:'xAI',        icon:'grok',           idx:60.92, r:'UR',  cost:'$0.84/任务', spd:58,  quote:'马斯克：地表最强 2.0，这次是说真的，60.92 分工单杀手'},
   {id:'kimik3',   name:'Kimi K3',            vendor:'Moonshot AI',icon:'moonshot',      idx:60, r:'UR',  cost:'$0.72/任务', spd:32,  quote:'月之暗面杀进总榜前三，国产之光'},
-  {id:'glm53',    name:'GLM-5.3',           vendor:'智谱 Z.ai',  icon:'zai',            idx:60, r:'UR',  cost:'$0.45/任务', spd:66,  quote:'找 bug 的王，后训练仙人——智谱把开源卷成了神话'},
+  {id:'glm53',    name:'GLM-5.3',           vendor:'智谱 Z.ai',  icon:'zai',            idx:60, r:'UR',  cost:'$0.45/任务', spd:66,  quote:'后训练仙人的前传——GLM-5.3 把开源天花板又抬高一截'},
   {id:'qwen38',   name:'Qwen3.8 Max',        vendor:'阿里通义',   icon:'qwen-color',     idx:58, r:'UR',  cost:'$1.13/任务', spd:82,  quote:'通义顶配 Max，58 分杀进神话榜'},
   {id:'gpt56ter', name:'GPT-5.6 Terra',      vendor:'OpenAI',     icon:'openai',         idx:57, r:'UR',  cost:'$0.78/任务', spd:143, quote:'143 tok/s 的速度与激情'},
   {id:'mspark12', name:'Muse Spark 1.2',     vendor:'Meta',       icon:'meta-color',     idx:56.76, r:'UR',  cost:'$0.40/任务', spd:140, quote:'Meta 的代码缪斯，1M 上下文一口气写完整仓库'},
@@ -76,7 +76,7 @@ const MODELS = [
   {id:'hunyuan',  name:'混元 Turbo',         vendor:'腾讯',       icon:'hunyuan-color',  idx:19, r:'N',   cost:'$0.03/任务', spd:66,  quote:'腾讯混元，混就完事了'},
   {id:'wenxin',   name:'文心一言 4.5',       vendor:'百度',       icon:'wenxin-color',   idx:9, r:'N',   cost:'$0.03/任务', spd:58,  quote:'百度：我曾经也是中国 ChatGPT'},
   {id:'spark',    name:'讯飞星火 Spark',     vendor:'科大讯飞',   icon:'spark-color',    idx:16, r:'N',   cost:'$0.02/任务', spd:60,  quote:'星火燎原，可惜风太大'},
-  {id:'doubao',   name:'豆包 1.5 Pro',       vendor:'字节跳动',   icon:'doubao-color',   idx:14, r:'N',   cost:'$0.02/任务', spd:72,  quote:'「垃圾。」—— 某位玩家的个人想法'},
+  {id:'doubao',   name:'豆包 1.5 Pro',       vendor:'字节跳动',   icon:'doubao-color',   idx:14, r:'N',   cost:'$0.02/任务', spd:72,  quote:'字节轻量王，72 tok/s 够快，可惜队友总喊“再便宜点”——便宜没好货的反面教材'},
   {id:'gemma4',   name:'Gemma 4 E4B',        vendor:'Google',     icon:'gemma-color',    idx:12, r:'N',   cost:'$0.01/任务', spd:95,  quote:'4B 小模型，手机带得动，活干不动'},
 ];
 const MMAP = Object.fromEntries(MODELS.map(m=>[m.id,m]));
@@ -88,29 +88,47 @@ const RARITY = {
   SR: {name:'SR', label:'精锐', hex:'#9333ea', min:40,max:46, tasks:12, basePay:15.5,quota:2400000},
   SSR:{name:'SSR',label:'传说', hex:'#f59e0b', min:47,max:54, tasks:16, basePay:35,  quota:3200000},
   UR: {name:'UR', label:'神话', hex:'#ec4899', min:55,max:63, tasks:20, basePay:80,  quota:4000000},
-  UTR:{name:'UTR',label:'超神话',hex:'#ff2d55',min:64,max:99, tasks:24, basePay:480, quota:6000000},
+  UTR:{name:'UTR',label:'超神话',hex:'#ff2d55',min:64,max:99, tasks:24, basePay:420, quota:6000000},
   NB: {name:'NB', label:'神迹', hex:'#ff6ec7', min:64,max:100, tasks:30, basePay:640,  quota:100000000, secret:true},
 };
 const RORDER = ['N','R','SR','SSR','UR','UTR','NB'];
 const RORDER_DESC = ['NB','UTR','UR','SSR','SR','R','N']; // 抽卡概率累加用(高→低)
 
+/* ---------- 集中常量 (概率/数值/动效) ---------- */
+const PROBS = {
+  DSV73: 0.015,
+  FIHAG: 0.0001,
+  HALLUC: 0.002,
+  ANTH_BAN: 0.006,
+  SKIN_DROP: 0.015,
+};
+const TUNING = {
+  ACCEL_START: 260,
+  ACCEL_BLOCK: 32,
+  ACCEL_DECAY: 0.68,
+  MIN_INTERVAL: 1,
+  SFX_GAP_MIN: 20,
+  SFX_GAP_RATIO: 4,
+  TERM_MAX_NODES: 600,
+};
+
 /* ---------- 限定池轮换 (每赛季 1 天, 到期自动轮换) ---------- */
 const BANNER_SEASONS = [
-  { id:'v5',  name:'流光限定池', sub:'限定 UP · DeepSeek V5 系列 · 牢梁又涨价了 · 仅此期间', color:'#ff2d55', price:1000, tenPrice:9600, oldPrice:900, oldTenPrice:8600, rec:true,
+  { id:'v5',  name:'流光限定池', sub:'限定 UP · DeepSeek V5 系列 · 牢梁又涨价了 · 仅此期间', color:'#ff2d55', price:950, tenPrice:9025, oldPrice:900, oldTenPrice:8600, rec:true,
     rates:{N:0,R:0,SR:.62,SSR:.295,UR:.075,UTR:.01}, half:false, pityMax:100, banner:true,
     note:'⏳ 限定卡池！UTR 超神话 DeepSeek V5 Pro 专属。100 抽大保底必出限定 UTR，赛季结束自动轮换。',
     featured:['dsv5pro','dsv5fl'], limited:['dsv5pro','dsv5fl'] },
-  { id:'cog', name:'神话回响池', sub:'限定 UP · Claude Opus 6 & Gemini 4 Pro · 仅此期间', color:'#8b5cf6', price:900, tenPrice:8700, rec:true,
+  { id:'cog', name:'神话回响池', sub:'限定 UP · Claude Opus 6 & Gemini 4 Pro · 仅此期间', color:'#8b5cf6', price:900, tenPrice:8550, rec:true,
     rates:{N:0,R:0,SR:.62,SSR:.295,UR:.075,UTR:.01}, half:false, pityMax:100, banner:true,
     note:'⏳ 限定卡池！神秘的克劳德先生与 Gemini 4 Pro 降临。100 抽大保底必出限定 UTR，赛季结束自动轮换。',
     featured:['opus6','gem4pro'], limited:['opus6','gem4pro'] },
-  { id:'oss', name:'开源之光池', sub:'限定 UP · GLM-6 & Qwen5 Max 双开源神话 · 与神话回响同价', color:'#22c55e', price:900, tenPrice:8700, rec:true,
+  { id:'oss', name:'开源之光池', sub:'限定 UP · GLM-6 & Qwen5 Max 双开源神话 · 与神话回响同价', color:'#22c55e', price:900, tenPrice:8550, rec:true,
     rates:{N:0,R:0,SR:.60,SSR:.31,UR:.08,UTR:.01}, half:false, pityMax:100, banner:true,
     note:'⏳ 限定卡池！智谱 GLM-6 与阿里 Qwen5 Max 双开源神话同台，国产之光×2。100 抽大保底必出限定 UTR，赛季结束自动轮换。',
     featured:['glm6','qwen5max','glm53','qwen38'], limited:['glm6','qwen5max'] },
 ];
-const BANNER_DUR = 86400000;   // 每个赛季 1 天, 次日自动轮换
-const BANNER_EPOCH = Date.parse('2026-08-18T00:00:00+08:00'); // 赛季1起点(DeepSeek)
+const BANNER_DUR = 86400000;
+const BANNER_EPOCH = Date.parse('2026-08-18T00:00:00+08:00');
 const POOLS = {
   newbie:{ name:'青铜盲盒', sub:'新手体验池 · token 额度 ×50%', color:'#8ba3c7', price:30,  tenPrice:285, pityMax:50,
     rates:{N:.675,R:.275,SR:.045,SSR:.005,UR:0,UTR:0}, half:true,
@@ -120,16 +138,16 @@ const POOLS = {
     rates:{N:.372,R:.35,SR:.195,SSR:.065,UR:.018,UTR:0}, half:false,
     note:'主力卡池。UR 爆率 1.8%，出一张 Claude Opus 5 直接起飞。',
     featured:['opus5','gpt56sol','glm52','dsv4pro'] },
-  flagship:{ name:'王者盲盒', sub:'旗舰池 · 不出 N 垃圾 · 欧皇专属', color:'#f59e0b', price:500, tenPrice:4700,
+  flagship:{ name:'王者盲盒', sub:'旗舰池 · 不出 N 垃圾 · 欧皇专属', color:'#f59e0b', price:500, tenPrice:4750,
     rates:{N:0,R:.075,SR:.645,SSR:.225,UR:.055,UTR:0}, half:false,
     note:'⚠️ UR 爆率 5.5%。庄家镰刀最锋利的一关：欧皇的天堂，赌狗的坟场。',
     featured:['opus5','fable5','grok46','mspark12','kimik3','grok45'] },
   banner:Object.assign({}, BANNER_SEASONS[0]),
 };
-const PITY_MAX = 60;   // 普通池保底 (青铜盲盒单独 50)
+const PITY_MAX = 60;
 const TASK_TOKENS = 200000;
-const PAY_BOOST = 1.3;   // 工作报酬提升 30%（正反馈加强）
-const BATCH_TASKS = 10;          // 手动一次工作 = 10 单
+const PAY_BOOST = 1.3;
+const BATCH_TASKS = 10;
 const VICTORY_AT = 50000;
 const START_MONEY = 800;
 const SITE_URL = 'https://tokengacha.pages.dev';
@@ -140,15 +158,15 @@ const MILESTONES = [
 ];
 
 /* ---------- 限定加成 ---------- */
-// 限定模型用卡接单时, 该单结算收入 ×2 (删库赔偿不翻倍)
 const LIMITED_IDS = new Set(['dsv5pro','dsv5fl']);
+const LIMITED_ALL = new Set(BANNER_SEASONS.flatMap(s=>s.limited));
 
 /* ---------- 每日签到 & 任务定义 ---------- */
-const SIGN_REWARDS = [200, 250, 300, 350, 400, 500, 600, 700, 800, 900, 1000, 1200, 1500, 1800, 2200, 2800, 3500, 4500, 6000, 8000, 10000]; // 21 天循环
+const SIGN_REWARDS = [200, 240, 280, 330, 380, 440, 510, 590, 680, 780, 900, 1050, 1220, 1420, 1650, 1920, 2240, 2620, 3060, 3600, 5000];
 const DAILY_TASKS = [
   {id:'pull100',  name:'抽卡 100 次',     desc:'今天抽满 100 抽（不限池）',  target:100,  rewardMoney:2000,  rewardTicket:1, rewardFreeTen:0, check:s=>S.daily.pulls},
-  {id:'work800',  name:'工作 800 单',     desc:'用 token 接 800 单私活',     target:800,  rewardMoney:3000,  rewardTicket:1, rewardFreeTen:0, check:s=>S.daily.tasks},
-  {id:'earn25000',name:'日入 ¥25000',     desc:'今日累计收入 ≥ ¥25000',     target:25000, rewardMoney:4000, rewardTicket:2, rewardFreeTen:1, check:s=>S.daily.earnToday},
+  {id:'work300',  name:'工作 300 单',     desc:'用 token 接 300 单私活',     target:300,  rewardMoney:2800,  rewardTicket:1, rewardFreeTen:1, check:s=>S.daily.tasks},
+  {id:'earn18000',name:'日入 ¥18000',     desc:'今日累计收入 ≥ ¥18000',     target:18000, rewardMoney:3200, rewardTicket:1, rewardFreeTen:0, check:s=>S.daily.earnToday},
 ];
 
 /* ---------- 皮肤系统 ---------- */
@@ -172,7 +190,8 @@ const SKINS = [
       '--txt':'#6b3a52','--dim':'#b57f9b','--faint':'#d3a9bf','--blue':'#f472b6','--blue-d':'#db2777'},
     desc:'少女心抽卡机，破产也要体面。'},
 ];
-const SKIN_DROP_RATE = 0.015; // 抽卡时掉皮肤的概率
+const SKIN_DROP_RATE = 0.015;
+if(typeof PROBS!=='undefined') PROBS.SKIN_DROP = SKIN_DROP_RATE;
 
 /* ---------- 终端文本库 ---------- */
 const CLIENT_REQS = [
@@ -263,21 +282,21 @@ const EVT_TXT = {
 };
 const NOTICES = [
 '📢 公告：本站已上线 Kimi K3 / GPT-5.6 系列渠道；Claude 渠道今日波动，出货率概不补偿。',
-'📢 公告：DeepSeek API 疯狂涨价，价格屠夫的帽子已摘——牢梁连夜改了价目表。',
+'📢 公告：DeepSeek API 疯狂涨价，价格屠夫的帽子已摘——牢梁连夜改了价目表（2026-08-18 起）。',
 '📢 公告：接到投诉，某玩家抽到豆包后要求退钱。本站声明：垃圾是概率的一部分。',
 '📢 公告：GPT-4 渠道已进博物馆，抽中概不退换，权当收藏。',
-'📢 公告：本月中转成本上涨，但盲盒价格不变——庄家还能亏不成？',
+'📢 公告：本月中转成本上涨，限定池已跟进调价——庄家还能亏不成？',
 '📢 公告：请勿在工单里询问"保底真的存在吗"，问就是存在。',
-'🔥 公告：限定卡池轮换开启！当前赛季 DeepSeek V5 系列，100 抽大保底必出限定 UTR，赛季结束自动轮换！',
-'🔥 公告：牢梁官宣二度涨价！DeepSeek 限定池单抽 ¥900 → ¥1000，十连 ¥8600 → ¥9600，早买早享受（可惜你赶不上了）。',
+'🔥 公告：限定卡池已开启轮换！每季 100 抽大保底必出当季限定 UTR，赛季结束自动轮换，当前赛季见顶部倒计时。',
+'🔥 公告：牢梁官宣二度涨价！DeepSeek 限定池单抽 ¥900 → ¥950，十连 ¥8600 → ¥9025，早买早享受（可惜你赶不上了）。',
 '📢 公告：Grok 4.6 / Muse Spark 1.2 / Gemini 3.7 Flash 已上架，UR 神话池又添三位新神，抽到记得晒。',
 '🔥 公告：「神话回响池」预告：神秘的 Claude Opus 6 与 Gemini 4 Pro 即将降临！',
 '🔥 公告：「神话回响池」今日降临！Claude Opus 6 与 Gemini 4 Pro 双限定同台，100 抽大保底见真章，错过这班等明天。',
 '📢 公告：有玩家提议限定池常驻，庄家婉拒——常驻了还怎么叫限定？',
 '📢 公告：总有人问是不是偷偷改了 token 数，天地良心——我们改，但从不偷偷。',
 '📢 公告：新增 R 档返厂潮，GPT-5.1 / Claude 4.5 Sonnet 等 14 位老将重登卡池，量大管饱，抽到别嫌弃。',
-'🔥 公告：「开源之光池」预告：GLM-6 与 Qwen5 Max 双开源神话即将降临，全场最低限定价，国产之光×2！',
-'🔥 公告：「开源之光池」今日降临！GLM-6（66 分）与 Qwen5 Max（64 分）同台，双开源神话的含金量，抽到就是见证历史。',
+'🔥 公告：「开源之光池」预告：GLM-6 与 Qwen5 Max 双开源神话即将降临，与神话回响同价，国产之光×2！',
+'🔥 公告：「开源之光池」今日降临！GLM-6（66 分）与 Qwen5 Max（64 分）同台，双开源神话含金量拉满，抽到就是见证历史。',
 '📢 公告：温馨提示——白银盲盒的免费十连不用白不用，白嫖党永不破产（大概）。',
 '📢 公告：概率公示页写的回本率仅供参考，别问为什么王者池 101% 还老破产，问就是方差。',
 ];

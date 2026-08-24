@@ -4,11 +4,12 @@
    ================================================================ */
 
 function todayStr(){
-  const t=new Date();
-  return `${t.getFullYear()}-${String(t.getMonth()+1).padStart(2,'0')}-${String(t.getDate()).padStart(2,'0')}`;
+  // 统一用 +08:00 日切，与 BANNER_EPOCH 一致
+  const d = new Date(Date.now() + 8*3600000);
+  return `${d.getUTCFullYear()}-${String(d.getUTCMonth()+1).padStart(2,'0')}-${String(d.getUTCDate()).padStart(2,'0')}`;
 }
 
-// 每日 0 点重置任务进度
+// 每日 0 点重置任务进度（+08 日切，与 BANNER_EPOCH 一致）
 function dailyResetIfNeeded(){
   const today=todayStr();
   if(S.daily.day!==today){
@@ -17,6 +18,8 @@ function dailyResetIfNeeded(){
     S.daily.pulls=0;
     S.daily.tasks=0;
     S.daily.claimed={};
+    // 清理旧任务残留
+    if(S.daily.signDay!=null) delete S.daily.signDay;
     save();
   }
 }
@@ -25,9 +28,9 @@ function doSign(){
   dailyResetIfNeeded();
   const today=todayStr();
   if(S.daily.lastSign===today){ toast('今天已经签过到啦！明天再来'); SFX.bad(); return; }
-  // 连续签到判断: 昨天签过 → streak+1, 否则重新 1
-  const y=new Date(); y.setDate(y.getDate()-1);
-  const yStr=`${y.getFullYear()}-${String(y.getMonth()+1).padStart(2,'0')}-${String(y.getDate()).padStart(2,'0')}`;
+  // 连续签到判断: 昨天签过 → streak+1, 否则重新 1（+08 日切）
+  const d = new Date(Date.now() + 8*3600000 - 86400000);
+  const yStr=`${d.getUTCFullYear()}-${String(d.getUTCMonth()+1).padStart(2,'0')}-${String(d.getUTCDate()).padStart(2,'0')}`;
   S.daily.streak = (S.daily.lastSign===yStr) ? S.daily.streak+1 : 1;
   S.daily.lastSign=today;
   const idx=(S.daily.streak-1)%SIGN_REWARDS.length;
@@ -43,11 +46,13 @@ function doSign(){
   checkEnd();
 }
 
-// 日常任务: 进度查询 / 领取
+// 日常任务: 进度查询 / 领取（兼容旧 id work800/earn25000）
 function dailyTaskProgress(t){
   switch(t.id){
     case 'pull100':   return Math.min(t.target, S.daily.pulls||0);
+    case 'work300':
     case 'work800':   return Math.min(t.target, S.daily.tasks||0);
+    case 'earn18000':
     case 'earn25000': return Math.min(t.target, Math.round(S.daily.earnToday||0));
   }
   return 0;

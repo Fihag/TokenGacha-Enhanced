@@ -14,7 +14,8 @@ function applySkin(id){
 }
 
 function rollSkinDrop(cards){
-  if(Math.random() < SKIN_DROP_RATE){
+  const rate = (typeof PROBS!=='undefined'?PROBS.SKIN_DROP:SKIN_DROP_RATE);
+  if(Math.random() < rate){
     const owned = new Set(S.skinsOwned);
     const unowned = SKINS.filter(s=>!owned.has(s.id));
     if(unowned.length){
@@ -42,9 +43,10 @@ function skinPickerHTML(){
         : `<button class="mini-btn" data-skin-buy="${s.id}" ${(S.skinTickets||0)<1?'disabled':''}>🎫 兑换</button>`}
     </div>`;
   }).join('');
+  const dropRate = (typeof PROBS!=='undefined'?PROBS.SKIN_DROP:SKIN_DROP_RATE);
   const html=`<h3>🎨 皮肤中心 <span style="font-size:12px;color:var(--faint)">持有皮肤券 <b id="skin-tk-now" style="color:var(--gold)">${S.skinTickets||0}</b> 张</span><button class="x" onclick="closeModal()">×</button></h3>
   <div class="skin-list">${rows}</div>
-  <div class="note">· 抽卡有 ${(SKIN_DROP_RATE*100).toFixed(1)}% 概率随机掉落未拥有皮肤<br>· 签到与日常任务可获皮肤券，1 张兑换 1 个皮肤<br>· 皮肤仅改变配色与氛围，不影响任何概率（吧）</div>`;
+  <div class="note">· 抽卡有 ${(dropRate*100).toFixed(1)}% 概率随机掉落未拥有皮肤<br>· 签到与日常任务可获皮肤券，1 张兑换 1 个皮肤<br>· 皮肤仅改变配色与氛围，不影响任何概率（吧）</div>`;
   showModal(html);
   document.querySelectorAll('[data-skin-use]').forEach(b=>b.onclick=()=>{
     applySkin(b.dataset.skinUse); SFX.click(); closeModal(); skinPickerHTML();

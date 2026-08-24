@@ -4,9 +4,10 @@
    抽卡核心 (含 UTR / 限定池 / 0731 独立爆率) / 工作核心 (含限定翻倍)
    ================================================================ */
 
-const DSV73_DROP = 0.015; // DeepSeek V4 Flash 0731 独立爆率(每次抽卡固定 1.5%)
-const FIHAG_DROP = 0.0001; // Fihag V1 隐藏神卡: 每个池子 0.01% 独立出货
-const ANTH_BAN_CHANCE = 0.006; // Claude 封禁彩蛋: 每张 Anthropic 卡 0.6%
+const DSV73_DROP = (typeof PROBS!=='undefined'?PROBS.DSV73:0.015);
+const FIHAG_DROP = (typeof PROBS!=='undefined'?PROBS.FIHAG:0.0001);
+const ANTH_BAN_CHANCE = (typeof PROBS!=='undefined'?PROBS.ANTH_BAN:0.006);
+const HALLUC_RATE = (typeof PROBS!=='undefined'?PROBS.HALLUC:0.002);
 
 /* ---------- 抽卡核心 ---------- */
 function drawRarity(poolKey){
@@ -30,7 +31,9 @@ function makeCard(poolKey, rarity, force0731){
   }
   const m = cands[Math.floor(Math.random()*cands.length)];
   const base = m.quota || RARITY[rarity].quota;
-  const quota = POOLS[poolKey].half ? Math.round(base/2) : base;
+  let quota = POOLS[poolKey].half ? Math.round(base/2) : base;
+  // 规整到 TASK_TOKENS 倍数，避免 270w/10w 残卡永远卡在卡库 (540w半价 270w→260w)
+  quota = Math.floor(quota / TASK_TOKENS) * TASK_TOKENS;
   return { uid:S.uid++, m:m.id, tokens:quota, max:quota, half:POOLS[poolKey].half };
 }
 // 限定池保底: 必出当期限定 UTR (v5 赛季=dsv5pro, 神话回响=opus6/gem4pro)
@@ -40,12 +43,14 @@ function makeLimited(poolKey){
   if(!limited.length) limited = MODELS.filter(m=>m.r==='UTR' && !m.bannerOnly); // 终极兜底: 任意非限定UTR
   const m = limited[Math.floor(Math.random()*limited.length)];
   const base = m.quota || RARITY[m.r].quota;
-  const quota = POOLS[poolKey].half ? Math.round(base/2) : base;
+  let quota = POOLS[poolKey].half ? Math.round(base/2) : base;
+  quota = Math.floor(quota / TASK_TOKENS) * TASK_TOKENS;
   return { uid:S.uid++, m:m.id, tokens:quota, max:quota, half:POOLS[poolKey].half };
 }
 function recordHist(cards){
   const t=Date.now();
-  for(const c of cards) S.hist.push({t, pool:c._pool, m:c.m, r:MMAP[c.m].r});
+  const season = S.bannerSeason || null;
+  for(const c of cards) S.hist.push({t, pool:c._pool, season: c._pool==='banner'?season:null, m:c.m, r:MMAP[c.m].r});
   if(S.hist.length>100) S.hist.splice(0, S.hist.length-100);
 }
 // 最佳出货: 先比稀有度, 同档比智能指数
@@ -64,7 +69,7 @@ function makeFihag(){
 function maybeHallucinate(c, poolKey){
   if(c.m==='dsv4fl73') return; // 0731 是独立爆率联名, 不参与
   if(RORDER.indexOf(MMAP[c.m].r) >= RORDER.indexOf('UR')) return; // 真UR/UTR不装幻觉
-  if(Math.random() >= 0.002) return;
+  if(Math.random() >= HALLUC_RATE) return;
   const legal = m => m.r==='R' && m.id!=='dsv4fl73' && (!m.bannerOnly || (poolKey==='banner' && LIMITED_IDS.has(m.id)));
   const rCands = MODELS.filter(legal);
   const uCands = MODELS.filter(m=> m.r==='UR' && m.id!=='dsv4fl73' && (!m.bannerOnly || (poolKey==='banner' && LIMITED_IDS.has(m.id))));
@@ -117,7 +122,11 @@ function doPulls(poolKey, count){
     }
   }
   if(count===10 && !cards.some(c=>['SR','SSR','UR','UTR','NB'].includes(MMAP[c.m].r))){
-    let idx = cards.length-1; while(idx>=0 && cards[idx]._halluc) idx--; if(idx>=0){ const old = cards[idx];
+    // 十连保底：跳过幻觉伪装卡，避免把幻觉UR当有效保底
+    let idx = cards.length-1; while(idx>=0 && cards[idx]._halluc) idx--;
+    // 二次校验：确保被替换的不是幻觉衍生的真实R（双重保险）
+    if(idx>=0 && cards[idx]._halluc) idx=-1;
+    if(idx>=0){ const old = cards[idx];
     S.stats.byR[MMAP[old.m].r]--;
     if(S.dex[old.m]){ S.dex[old.m]--; if(S.dex[old.m]<=0) delete S.dex[old.m]; }
     cards[idx] = makeCard(poolKey,'SR');
@@ -139,8 +148,9 @@ function doPulls(poolKey, count){
 /* ---------- 工作核心 ---------- */
 function taskPayout(model){
   let pay = RARITY[model.r].basePay*payFactor(model);
-  const boosted = LIMITED_IDS.has(model.id);
-  if(boosted) pay *= 2; // 限定卡加成: 用卡接单收入翻倍
+  const allLimited = (typeof LIMITED_ALL!=='undefined'?LIMITED_ALL:LIMITED_IDS);
+  const boosted = allLimited.has(model.id);
+  if(boosted) pay *= 2; // 限定卡加成: 永久限定集合，跨季不失效
   const roll = Math.random();
   const pGreat = .02 + model.idx/800;
   const pRework = Math.min(.25,Math.max(.04,.25-model.idx/250));

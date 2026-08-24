@@ -29,7 +29,11 @@ function renderHist(){
     const m=MMAP[h.m];
     const t=new Date(h.t);
     const ts=`${String(t.getMonth()+1).padStart(2,'0')}-${String(t.getDate()).padStart(2,'0')} ${String(t.getHours()).padStart(2,'0')}:${String(t.getMinutes()).padStart(2,'0')}`;
-    const poolName=(POOLS[h.pool]&&POOLS[h.pool].name)||h.pool||'';
+    let poolName=(POOLS[h.pool]&&POOLS[h.pool].name)||h.pool||'';
+    if(h.pool==='banner' && h.season){
+      const s=BANNER_SEASONS.find(x=>x.id===h.season);
+      if(s) poolName=s.name;
+    }
     return `<div style="display:flex;align-items:center;gap:10px;padding:6px 8px;border-bottom:1px solid var(--line2)">
       <span style="color:var(--faint);font-size:11px;white-space:nowrap">${ts}</span>
       <span style="color:var(--faint);font-size:11px;white-space:nowrap">${poolName}</span>

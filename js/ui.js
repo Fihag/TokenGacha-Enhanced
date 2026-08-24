@@ -52,6 +52,26 @@ function renderBuy(){
   $('buy-tokens').textContent = fmtK(totalTokens())+' tokens';
   $('buy-tasks').textContent = totalTasks();
   box.querySelectorAll('.pull-btn').forEach(b=>b.onclick=()=>tryPull(b.dataset.pool, +b.dataset.n));
+  // 移动端横滑指示点
+  const dots=$('pool-dots');
+  if(dots){
+    const n=box.children.length;
+    dots.innerHTML = Array.from({length:n},(_,i)=>`<i class="${i===0?'on':''}"></i>`).join('');
+    let tick=null;
+    box.onscroll=()=>{
+      if(tick) return;
+      tick=requestAnimationFrame(()=>{
+        tick=null;
+        const idx=Math.round(box.scrollLeft / (box.scrollWidth/n));
+        dots.querySelectorAll('i').forEach((d,i)=>d.classList.toggle('on', i===idx));
+      });
+    };
+  }
+  // 保底旁加期望值提示
+  box.querySelectorAll('.pity-row').forEach((row,i)=>{
+    const k=Object.keys(POOLS).filter(k=>!(POOLS[k].banner&&!isBannerActive()))[i];
+    if(k) row.insertAdjacentHTML('beforeend', `<span class="pity-ev">期望 ¥${Math.round(poolExpectedValue(k))}</span>`);
+  });
 }
 
 /* ---------- 渲染: 工作页 ---------- */
@@ -133,26 +153,68 @@ const hasNB=(S.dex.fihagv1||0)>0;
     ch.insertAdjacentHTML('beforeend',`<div class="ch-row"><span class="ic"></span><span>${m.vendor} 渠道</span><span class="st ${st.warn?'warn':''}">${st.warn?'● 波动':'● 正常'}</span><span class="lat">${st.lat}ms</span></div>`);
     ch.lastChild.querySelector('.ic').appendChild(iconImg(m.icon));
   }
-  // 卡库
+  // 卡库（支持筛选/排序/残卡高亮）
   const g=$('inv-grid'); g.innerHTML='';
-  $('inv-total').textContent=`共 ${S.inv.length} 张 · 耗尽自动移除`;
+  const totalTxt = `共 ${S.inv.length} 张 · 耗尽自动移除`;
+  $('inv-total').textContent=totalTxt;
   if(!S.inv.length){ g.innerHTML='<div class="inv-empty" style="grid-column:1/-1">卡库空空如也<br>去「购买Token」抽个盲盒吧</div>'; }
   else{
-    const sorted=[...S.inv].sort((a,b)=> RORDER.indexOf(MMAP[b.m].r)-RORDER.indexOf(MMAP[a.m].r) || b.tokens-a.tokens);
-    for(const c of sorted){
+    const f = window._invFilter || 'all';
+    const sortBy = ($('inv-sort')&&$('inv-sort').value) || 'rarity';
+    let list = [...S.inv];
+    if(f==='half') list = list.filter(c=>c.half);
+    else if(f==='residue') list = list.filter(c=>c.tokens>0 && c.tokens < TASK_TOKENS*2);
+    else if(f!=='all') list = list.filter(c=>MMAP[c.m].r===f);
+    list.sort((a,b)=>{
+      if(sortBy==='tokens') return b.tokens-a.tokens;
+      if(sortBy==='idx') return MMAP[b.m].idx-MMAP[a.m].idx;
+      return RORDER.indexOf(MMAP[b.m].r)-RORDER.indexOf(MMAP[a.m].r) || b.tokens-a.tokens;
+    });
+    // 残卡判定：<2单视为残卡（红色标记）
+    for(const c of list){
       const m=MMAP[c.m], r=RARITY[m.r];
+      const residue = c.tokens>0 && c.tokens < TASK_TOKENS*2;
       const d=document.createElement('div');
-      d.className='inv-card'+(c.tokens<=0?' dead':'');
+      d.className='inv-card'+(c.tokens<=0?' dead':'')+(residue?' residue':'');
+      d.dataset.uid=c.uid;
       d.style.setProperty('--rc', r.hex);
       d.innerHTML=`<span class="rt">${r.name}</span>${c.half?'<span class="half">体验</span>':''}
         <button class="inv-del" data-uid="${c.uid}" title="销毁这张卡（剩余 token 不可找回）">🗑️</button>`;
-      d.classList.toggle('hasHalf', !!c.half); // 有「体验」角标时销毁按钮下移一格, 避免重叠
+      d.classList.toggle('hasHalf', !!c.half);
       if(m.id==='fihagv1'){ const ic=document.createElement('span'); ic.textContent='🌈'; ic.style.cssText='font-size:28px;line-height:1;margin:4px 0'; d.appendChild(ic); }
         else d.appendChild(iconImg(m.icon));
       d.insertAdjacentHTML('beforeend',`<div class="nm">${m.name}</div><div class="tk">${c.tokens>0?fmtK(c.tokens)+' tok':'已耗尽'}</div>`);
-      d.title=`${m.name} · ${m.vendor}\n智能指数 ${Math.round(m.idx)} · 真实成本 ${m.cost}\n${m.quote}`;
+      d.title=`${m.name} · ${m.vendor}\n智能指数 ${Math.round(m.idx)} · 真实成本 ${m.cost}\n${m.quote}${residue?' \n⚠️ 残卡（<2单），建议销毁':''}`;
       g.appendChild(d);
     }
+    if(!list.length) g.innerHTML='<div class="inv-empty" style="grid-column:1/-1">该筛选下暂无卡牌</div>';
+  }
+  // 绑定筛选/排序（仅一次）
+  const filt=$('inv-filter');
+  if(filt && !filt.dataset.bound){
+    filt.dataset.bound='1';
+    filt.querySelectorAll('button[data-f]').forEach(b=>{
+      b.onclick=()=>{
+        window._invFilter=b.dataset.f;
+        filt.querySelectorAll('button[data-f]').forEach(x=>x.classList.toggle('on', x===b));
+        renderBalance();
+      };
+    });
+    // 初始化选中态
+    const curF=window._invFilter||'all';
+    filt.querySelectorAll('button[data-f]').forEach(b=>b.classList.toggle('on', b.dataset.f===curF));
+  }
+  const sel=$('inv-sort');
+  if(sel && !sel.dataset.bound){ sel.dataset.bound='1'; sel.onchange=()=>renderBalance(); }
+  const clearN=$('btn-clear-n');
+  if(clearN && !clearN.dataset.bound){
+    clearN.dataset.bound='1';
+    clearN.onclick=()=>{
+      const nCards=S.inv.filter(c=>MMAP[c.m].r==='N');
+      if(!nCards.length){ toast('没有 N 卡可清'); SFX.bad(); return; }
+      SFX.click();
+      showModal(`<h3>🗑️ 一键清理 N 卡<button class="x" onclick="closeModal()">×</button></h3><p>将销毁 <b>${nCards.length} 张 N 卡</b>（含 ${fmtK(nCards.reduce((s,c)=>s+c.tokens,0))} tokens），不可找回。</p><button class="big-btn danger" id="btn-confirm-clear-n">确认清理</button><button class="big-btn ghost" onclick="closeModal()">取消</button>`);
+    };
   }
 }
 
@@ -312,6 +374,17 @@ function acceptHalluc(){
   updateGachaSummary();
   closeModal();
   toast('🧠 幻觉已修正：这张卡实际为 R 档，20 万 token 精神损失费已垫进卡里', 3200);
+  // 高亮对应卡库卡牌
+  setTimeout(()=>{
+    renderBalance();
+    for(const c of S.inv){ if(c._halluc) continue; }
+    // 找到刚修正的 R 卡并 pulse
+    const ids = gachaCards.filter(c=>!c._halluc).map(c=>c.m);
+    for(const uid of ids){
+      const el = document.querySelector(`.inv-card[data-uid="${S.inv.find(x=>x.m===uid)?.uid}"]`);
+      if(el){ el.classList.add('pulse'); el.scrollIntoView({behavior:'smooth', block:'nearest'}); }
+    }
+  }, 400);
   if(lastRefund>0){ const amt=lastRefund; lastRefund=0; setTimeout(()=>showModal(priceWarHTML(amt)), 400); }
 }
 function rebindFace(el, c){
@@ -329,10 +402,10 @@ function rebindFace(el, c){
 }
 
 /* ---------- 工作流（批量 + 自动） ---------- */
-let working=false, skipFlag=false; // skipFlag: 点击「跳过」后下一拍直接快进结算
-const ACCEL_START=260, ACCEL_BLOCK=32, ACCEL_DECAY=0.68, MIN_INTERVAL=1; // 加速度曲线(稍提速, 间隔下限 1ms)
-const SFX_GAP_MIN=20, SFX_GAP_RATIO=4; // 音效节流: gap=max(20ms, 当前间隔×4)
-const TERM_MAX_NODES=600;  // term-body 节点截断上限
+let working=false, skipFlag=false;
+const ACCEL_START=(typeof TUNING!=='undefined'?TUNING.ACCEL_START:260), ACCEL_BLOCK=(typeof TUNING!=='undefined'?TUNING.ACCEL_BLOCK:32), ACCEL_DECAY=(typeof TUNING!=='undefined'?TUNING.ACCEL_DECAY:0.68), MIN_INTERVAL=(typeof TUNING!=='undefined'?TUNING.MIN_INTERVAL:1);
+const SFX_GAP_MIN=(typeof TUNING!=='undefined'?TUNING.SFX_GAP_MIN:20), SFX_GAP_RATIO=(typeof TUNING!=='undefined'?TUNING.SFX_GAP_RATIO:4);
+const TERM_MAX_NODES=(typeof TUNING!=='undefined'?TUNING.TERM_MAX_NODES:600);
 function termPrint(){
   const term=$('term-body');
   const trim=()=>{ while(term.childNodes.length>TERM_MAX_NODES) term.firstChild.remove(); };
@@ -375,12 +448,19 @@ function settleItems(items){
 // 音效节流: 事件行按 gap=max(SFX_GAP_MIN, 当前间隔×SFX_GAP_RATIO) 节流, 加速度越高越密但不过快
 function runLines(lines, interval, onDone){
   const tp=termPrint(); tp.reset();
+  const tprog=$('tprog'), tbar=$('tprog-bar'), ttxt=$('tprog-txt');
+  if(tprog){ tprog.hidden=false; if(tbar) tbar.style.width='0%'; if(ttxt) ttxt.textContent=`0/${lines.length}`; }
   let i=0, timer=null, lastSfx=0, boosted=false;
-  const finish=()=>{ document.removeEventListener('visibilitychange', onVis); onDone(tp); };
+  const finish=()=>{
+    document.removeEventListener('visibilitychange', onVis);
+    if(tprog) tprog.hidden=true;
+    onDone(tp);
+  };
   // 一次性快进所有剩余行(单次 DOM 写入 + 单次滚动, 避免逐行 reflow), 手动跳过与后台静默共用
   const fastFwd=(why)=>{
     const rest=[];
     while(i<lines.length){ rest.push(lines[i].text); i++; }
+    if(tprog && tbar && ttxt){ tbar.style.width='100%'; ttxt.textContent=`${lines.length}/${lines.length}`; }
     tp.done((rest.length? rest.join('\n')+'\n' : '') + why);
     finish();
   };
@@ -403,6 +483,7 @@ function runLines(lines, interval, onDone){
     }
     const L=lines[i];
     tp.line(L.text);
+    if(tprog && tbar && ttxt){ tbar.style.width=(i/lines.length*100).toFixed(1)+'%'; ttxt.textContent=`${i+1}/${lines.length}`; }
     const now=performance.now();
     if((L.evt==='disaster'||L.evt==='great') && now-lastSfx>=Math.max(SFX_GAP_MIN, next*SFX_GAP_RATIO)){
       lastSfx=now;
@@ -494,9 +575,16 @@ function checkEnd(){
       return;
     }
   }
-  // 破产: token 全部耗尽 且 余额不足以最便宜单抽
+  // 破产: token 全部耗尽 且 余额不足以最便宜单抽（先检查是否有可领任务，避免误判）
   const minCost=minPoolPrice();
   if(S.money<minCost && totalTasks()<=0 && S.freeTen<=0 && !pulling && !working){
+    if(typeof dailyResetIfNeeded==='function') dailyResetIfNeeded();
+    const hasClaimable = typeof DAILY_TASKS!=='undefined' && typeof dailyTaskProgress==='function'
+      && DAILY_TASKS.some(t=> dailyTaskProgress(t)>=t.target && !S.daily.claimed[t.id]);
+    if(hasClaimable){
+      toast('💡 还有日常任务可领取，去「活动」页领奖励再战！');
+      return;
+    }
     SFX.bad();
     showModal(bankruptHTML(), true);
   }
@@ -666,28 +754,33 @@ function ratesHTML(){
       ${['N','R','SR','SSR','UR','UTR'].map(r=>`<td>${p.rates[r]?rtCell(r)+'<br>'+((p.rates[r]||0)*100).toFixed(1)+'%':'—'}</td>`).join('')}
       <td>${(poolRTP(k)*100).toFixed(0)}%</td></tr>`;
   }
+  const verStr='v4.1.1';
   return `<h3>📊 概率公示（像正规抽卡游戏一样诚实）<button class="x" onclick="closeModal()">×</button></h3>
   <table><tr><th>卡池</th><th>N 垃圾</th><th>R 普通</th><th>SR 精锐</th><th>SSR 传说</th><th>UR 神话</th><th>UTR 超神话</th><th>期望回本率</th></tr>${rows}</table>
 <div class="note">
   · ⚠️ 卡池页展示的「回本率」为宣传口径，你懂的；上表才是实测数学期望。本站保留最终解释权。<br>
-  · 稀有度按 <a href="https://artificialanalysis.ai/leaderboards/models" target="_blank">Artificial Analysis 智能指数 v4.1</a> 分档：UTR≥64 / UR 55-63 / SSR 47-54 / SR 40-46 / R 28-39 / N&lt;28<br>
+  · 稀有度按 <a href="https://artificialanalysis.ai/leaderboards/models" target="_blank">Artificial Analysis 智能指数 ${verStr}</a> 分档：UTR≥64 / UR 55-63 / SSR 47-54 / SR 40-46 / R 28-39 / N&lt;28<br>
+  · 卡面标价（如 $0.09/任务）仅为角色设定，不参与结算；结算按稀有度 basePay 驱动。<br>
   · 全池另有 <b>DeepSeek V4 Flash 0731 独立 1.5%</b> 出货（记入 SSR，表内概率不含此项，故 SSR 实际略高于表列）<br>
   · 全池另有 0.01% 隐藏神卡概率（比 SSR 稀有得多，抽到自然知道）<br>
   · 每池 ${PITY_MAX} 抽（青铜盲盒 50 抽）无 SSR+ 触发保底（80% SSR / 20% UR）；限定池 100 抽大保底必出当期限定 UTR（约 1% 自然 UTR 另计）；十连必出 SR 及以上<br>
-  · 新手池为「体验卡」，token 额度 ×50%<br>
-  · 工作收入 = 模型报价 × 事件倍率（大成功×2.5 / 返工×0.4 / 删库赔¥65，垃圾模型事故率高）；限定池出卡接单收入 ×2<br>
+  · 新手池为「体验卡」，token 额度 ×50% 且已规整到 20w 倍数<br>
+  · 工作收入 = 模型报价 × 事件倍率（大成功×2.5 / 返工×0.4 / 删库赔¥65，垃圾模型事故率高）；限定卡（永久限定集）接单收入 ×2<br>
   · 本中转站期望约 7 成玩家最终破产。庄家永远赢，除非……你抽到那张卡。</div>`;
 }
 function dexHTML(){
   const ownNB = (S.dex.fihagv1||0)>0;
-  const visible = MODELS.filter(m=> m.id!=='fihagv1' || ownNB); // Fihag V1 未抽到前在图鉴中隐藏
+  const visible = MODELS.filter(m=> m.id!=='fihagv1' || ownNB);
   const counts={};
   for(const r of RORDER) counts[r]=visible.filter(m=>m.r===r).length;
   const got=Object.keys(S.dex).length;
+  const vendorSet = new Set(MODELS.map(m=>m.vendor));
+  const vendorCount = vendorSet.size;
+  const vendorList = [...vendorSet].slice(0,8).join(' / ') + ' 等';
   const html=`<h3>📖 模型图鉴 ${got}/${visible.length}<button class="x" onclick="closeModal()">×</button></h3>
   <div class="dex-legend">${RORDER.filter(r=> r!=='NB' || ownNB).map(r=>`<span style="color:${RARITY[r].hex}">■</span> ${r} ${RARITY[r].label} ×${counts[r]}`).join('　')}</div>
   <div class="dex-grid" id="dex-grid"></div>
-  <div class="note" style="margin-top:10px">收录 OpenAI / Anthropic / Google / xAI / DeepSeek / Moonshot / 智谱 / 阿里 / Meta / Mistral / NVIDIA / Amazon / 小米 / MiniMax / 字节 / 百度 / 腾讯 / 讯飞 等 18 家厂商。排名参考 Artificial Analysis 智能指数 v4.1.1。</div>`;
+  <div class="note" style="margin-top:10px">收录 ${vendorList} 等 ${vendorCount} 家厂商。排名参考 Artificial Analysis 智能指数 v4.1.1。</div>`;
   showModal(html);
   const grid=$('dex-grid');
   const sorted=[...visible].sort((a,b)=>RORDER.indexOf(b.r)-RORDER.indexOf(a.r)||b.idx-a.idx);
@@ -732,7 +825,7 @@ function milestoneHTML(ms){
 function welcomeHTML(){
   return `<h3>🎰 欢迎来到 TokenGacha</h3>
   <p>这是一家神秘的 <b>LLM API 中转站</b>。它不按量计费，只卖<b>盲盒</b>——</p>
-  <p>你可能抽到 <b>Claude Opus 6</b>（限定超神话，智能指数 79，接单收入翻倍），也可能抽到<b>豆包</b>（「垃圾。」——某玩家的个人想法）。</p>
+  <p>你可能抽到 <b>Claude Opus 6</b>（限定超神话，智能指数 79，接单收入翻倍），也可能抽到<b>豆包</b>（72 tok/s 够快，可惜队友总喊“再便宜点”）。</p>
   <p>💰 启动资金 <b>${fmt(START_MONEY)}</b> 已到账，另赠<b>白银盲盒免费十连 ×1</b>。<br>三个页面完成整个循环：<b>购买Token → 工作 → 余额</b>。是破产收场还是财富自由，看你的命了。</p>
   <button class="big-btn" id="btn-start">🎁 收下启动资金，开抽！</button>`;
 }
@@ -762,6 +855,14 @@ setInterval(()=>{
   if(isBannerActive()) el.textContent='⏳ '+bannerCountdownText();
   else renderAll();
 },1000);
+// 公告倒计时刷新（每60s）
+setInterval(()=>{
+  const el=$('notice-text');
+  if(!el || typeof bannerSlot!=='function' || typeof bannerCountdownText!=='function') return;
+  // 仅在购买页可见时刷新，避免干扰
+  if(!$('page-buy')?.classList.contains('active')) return;
+  el.textContent = `${bannerSlot().season.name} · ${bannerCountdownText()} ｜ ` + pick(NOTICES);
+}, 60000);
 document.addEventListener('keydown', e=>{
   if(e.target.tagName==='INPUT') return;
   if(e.code==='Space'){ e.preventDefault();
@@ -771,7 +872,7 @@ document.addEventListener('keydown', e=>{
 document.addEventListener('click', e=>{
   if(e.target.dataset && e.target.dataset.uid!=null){ SFX.click(); destroyCard(Number(e.target.dataset.uid)); }
   if(e.target.dataset && e.target.dataset.confirmDestroy!=null){ confirmDestroy(Number(e.target.dataset.confirmDestroy)); }
-  if(e.target.id==='btn-reset'){ localStorage.removeItem('tokengacha_v2'); location.reload(); }
+  if(e.target.id==='btn-reset'){ localStorage.removeItem('tokengacha_v2'); localStorage.removeItem('tokengacha_v4'); location.reload(); }
   if(e.target.id==='btn-rebirth'){ const keepMuted=muted; S=defaultState(); S.flags.welcomed=true; S.flags.muted=keepMuted; shownMoney=S.money; save(); closeModal(); go('buy'); toast('🔄 新生活开始了！启动资金与免费十连已到账'); }
   if(e.target.id==='btn-start'){ S.flags.welcomed=true; save(); closeModal(); SFX.win(); toast('🎁 启动资金到账！免费十连已放入白银盲盒'); renderAll(); }
   if(e.target.dataset && e.target.dataset.shareMs){ SFX.click(); const ms=MILESTONES.find(m=>m.id===e.target.dataset.shareMs); if(ms) openShare(ms); }
@@ -779,6 +880,14 @@ document.addEventListener('click', e=>{
   if(e.target.id==='btn-dl-share'){ SFX.click(); const a=document.createElement('a'); a.href=shareCtx.cv.toDataURL('image/png'); a.download='tokengacha-share.png'; a.click(); toast('🖼️ 分享图已保存'); }
   if(e.target.id==='btn-sys-share'&&typeof navigator!=='undefined'&&navigator.share){ navigator.share({title:'TokenGacha · LLM API 中转站',text:shareText(shareCtx.ms),url:SITE_URL}).catch(()=>{}); }
   if(e.target.id==='btn-do-topup'){ doTopup(); }
+  if(e.target.id==='btn-confirm-clear-n'){
+    const before=S.inv.length;
+    S.inv=S.inv.filter(c=>MMAP[c.m].r!=='N');
+    const removed=before-S.inv.length;
+    save(); closeModal(); renderAll();
+    SFX.bad();
+    toast(`🗑️ 已清理 ${removed} 张 N 卡`);
+  }
   if(e.target.dataset && e.target.dataset.amt){ const inp=$('topup-amt'); if(inp) inp.value=e.target.dataset.amt; SFX.click(); }
 });
 
@@ -793,7 +902,15 @@ document.querySelector('.logo').onclick=()=>{
 
 /* ---------- 启动(在所有模块加载后,由 analytics.js 末尾触发) ---------- */
 function boot(){
-  $('notice-text').textContent = pick(NOTICES);
+  // 同步 RARITY 色值到 CSS 变量（单源）
+  try{
+    const root=document.documentElement.style;
+    for(const [k,v] of Object.entries(RARITY)) root.setProperty('--'+k, v.hex);
+  }catch(e){}
+  // 公告：顶部动态赛季倒计时 + 随机 NOTICES
+  const seasonInfo = (typeof bannerSlot==='function' && typeof bannerCountdownText==='function')
+    ? `${bannerSlot().season.name} · ${bannerCountdownText()} ｜ ` : '';
+  $('notice-text').textContent = seasonInfo + pick(NOTICES);
   $('btn-mute').innerHTML = muted ? '🔇<span class="lbl"> 静音</span>' : '🔊<span class="lbl"> 音效</span>';
   go(location.hash.slice(1) || 'buy');
   if(!S.flags.welcomed){ showModal(welcomeHTML()); }

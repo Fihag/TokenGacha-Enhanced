@@ -84,6 +84,12 @@ main{max-width:1180px;margin:0 auto;padding:14px 22px 26px}
 .pool-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
 @media(max-width:900px){.pool-cards{grid-template-columns:1fr}}
 .pool-card{background:var(--panel);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);overflow:hidden;transition:.18s;position:relative;display:flex;flex-direction:column}
+.pool-scroll-hint{display:none;text-align:center;font-size:11px;color:var(--faint);margin-top:6px}
+@media(max-width:900px){.pool-scroll-hint{display:block}}
+.pool-scroll-dots{display:none;justify-content:center;gap:6px;margin-top:8px}
+@media(max-width:900px){.pool-scroll-dots{display:flex}}
+.pool-scroll-dots i{width:6px;height:6px;border-radius:50%;background:var(--line);transition:.2s}
+.pool-scroll-dots i.on{background:var(--blue)}
 .pool-card:hover{transform:translateY(-3px);box-shadow:var(--shadow-lg)}
 .pool-card .accent{height:5px;background:var(--pc)}
 .pool-card.rec::after{content:'★ 热门';position:absolute;top:14px;right:14px;background:linear-gradient(135deg,#f59e0b,#f97316);color:#fff;font-size:10.5px;font-weight:800;padding:3px 9px;border-radius:20px}
@@ -102,8 +108,9 @@ main{max-width:1180px;margin:0 auto;padding:14px 22px 26px}
 .featured-row span{font-size:10.5px;color:var(--faint);margin-left:2px}
 .rates-bar{display:flex;height:7px;border-radius:5px;overflow:hidden;border:1px solid var(--line)}
 .rates-bar i{display:block;height:100%}
-.rates-legend{display:flex;gap:8px;flex-wrap:wrap;font-size:9.5px;color:var(--faint)}
-.pity-row{display:flex;align-items:center;gap:8px;font-size:10.5px;color:var(--dim)}
+.rates-legend{display:flex;gap:8px;flex-wrap:wrap;font-size:11px;color:var(--faint)}
+.pity-row{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--dim)}
+.pity-row .pity-ev{margin-left:6px;color:var(--faint);font-size:10px}
 .pity-bar{flex:1;height:7px;background:var(--panel2);border-radius:5px;overflow:hidden;border:1px solid var(--line)}
 .pity-bar i{display:block;height:100%;background:linear-gradient(90deg,var(--SR),var(--SSR));transition:width .3s}
 .pool-btns{display:flex;gap:8px;margin-top:auto}
@@ -146,6 +153,9 @@ main{max-width:1180px;margin:0 auto;padding:14px 22px 26px}
 .terminal .tbar .skip:hover{filter:brightness(1.25);color:#fff}
 .terminal .tbar .skip:active{transform:scale(.95)}
 .terminal .tbar .skip[hidden]{display:none}
+.terminal .tbar .tprog{margin-left:auto;display:flex;align-items:center;gap:6px;font-size:11px;color:#9fb0e8}
+.terminal .tbar .tprog .bar{width:80px;height:6px;background:#1d2742;border-radius:4px;overflow:hidden;border:1px solid #2a3554}
+.terminal .tbar .tprog .bar i{display:block;height:100%;background:linear-gradient(90deg,#41d9ff,#2f6bff);transition:width .2s}
 @keyframes blink{50%{opacity:0}}
 .work-actions{display:flex;gap:10px;margin-top:12px}
 .work-btn{flex:1;padding:12px;border-radius:13px;font-size:14px;font-weight:900;letter-spacing:1px;transition:.15s;border:1px solid transparent;position:relative}
@@ -195,8 +205,15 @@ main{max-width:1180px;margin:0 auto;padding:14px 22px 26px}
 .apikey{display:flex;gap:8px;align-items:center;background:var(--panel2);border:1px dashed #c9d2ea;border-radius:10px;padding:8px 12px;font-size:12px;color:var(--dim);margin-bottom:14px;font-family:monospace}
 .apikey .cp{margin-left:auto;color:var(--blue);font-size:11.5px;font-weight:700;font-family:inherit}
 .apikey .cp:hover{text-decoration:underline}
+.inv-filter{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}
+.inv-filter button{font-size:11px;padding:4px 10px;border-radius:999px;border:1px solid var(--line);background:var(--panel2);color:var(--dim)}
+.inv-filter button.on{background:var(--blue);color:#fff;border-color:var(--blue)}
 .inv-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:9px;max-height:420px;overflow-y:auto;padding-right:2px}
 .inv-card{border-radius:12px;padding:8px 6px;text-align:center;background:var(--panel2);border:1.5px solid var(--rc,var(--line));position:relative}
+.inv-card.residue{border-color:#f59e0b;box-shadow:0 0 0 2px rgba(245,158,11,.25)}
+.inv-card.pulse{animation:invPulse 1.2s ease 2}
+@keyframes invPulse{0%,100%{box-shadow:0 0 0 0 rgba(47,107,255,.0)}50%{box-shadow:0 0 0 6px rgba(47,107,255,.35)}}
+.inv-sort{margin-left:auto;font-size:11px;color:var(--dim);border:1px solid var(--line);border-radius:8px;padding:4px 8px;background:var(--panel2)}
 .inv-card.dead{opacity:.42;filter:grayscale(.75)}
 .inv-card img{width:36px;height:36px;margin:2px auto 5px;display:block}
 .inv-card .nm{font-size:10.5px;font-weight:700;line-height:1.25;min-height:26px;display:flex;align-items:center;justify-content:center}
@@ -227,13 +244,13 @@ main{max-width:1180px;margin:0 auto;padding:14px 22px 26px}
 .gcard .back .q{font-size:clamp(22px,5vw,40px);font-weight:900;color:#ffffffee;animation:pulseQ 1.2s ease-in-out infinite}
 @keyframes pulseQ{50%{transform:scale(1.15);opacity:.75}}
 .gcard .back small{color:#ffffffaa;font-size:clamp(7px,1.2vw,10px);letter-spacing:2px}
-.gcard .front{transform:rotateY(180deg);background:#fff;border:2px solid var(--rc);box-shadow:0 0 0 1px #fff,0 8px 26px -8px var(--rc);display:flex;flex-direction:column;align-items:center;padding:8px 5px;text-align:center}
+.gcard .front{transform:rotateY(180deg);background:#fff;border:2px solid var(--rc);box-shadow:0 0 0 1px #fff,0 8px 26px -8px var(--rc);display:flex;flex-direction:column;align-items:center;padding:6px 4px;gap:2px;text-align:center}
 .gcard .front .rr{font-size:clamp(7px,1.1vw,10px);font-weight:900;color:var(--rc);letter-spacing:1.5px}
 .gcard .front img{width:clamp(24px,4vw,42px);height:clamp(24px,4vw,42px);margin:8px 0 6px}
-.gcard .front .nm{font-size:clamp(8px,1.3vw,12px);font-weight:800;line-height:1.3}
-.gcard .front .vd{font-size:clamp(6.5px,1vw,9.5px);color:var(--faint);margin-top:2px}
-.gcard .front .idx{font-size:clamp(6.5px,1vw,9px);color:var(--dim);margin-top:auto;background:var(--panel2);border:1px solid var(--line);padding:1px 6px;border-radius:7px}
-.gcard .front .tk{font-size:clamp(7px,1.1vw,10.5px);color:var(--cyan);margin-top:3px;font-weight:800}
+.gcard .front .nm{font-size:clamp(8px,1.3vw,12px);font-weight:800;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:1.8em}
+.gcard .front .vd{font-size:clamp(6.5px,1vw,9.5px);color:var(--faint);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.gcard .front .idx{font-size:clamp(6.5px,1vw,9px);color:var(--dim);margin-top:auto;background:var(--panel2);border:1px solid var(--line);padding:1px 6px;border-radius:7px;min-height:16px}
+.gcard .front .tk{font-size:clamp(7px,1.1vw,10.5px);color:var(--cyan);margin-top:3px;font-weight:800;min-height:14px}
 .gcard.pop{animation:pop .5s cubic-bezier(.2,.9,.3,1.4)}
 @keyframes pop{0%{transform:scale(.6)}100%{transform:scale(1)}}
 .gcard.ur .front{animation:urGlow 1.4s linear infinite}
@@ -360,6 +377,13 @@ footer{text-align:center;color:var(--faint);font-size:11px;padding:22px;line-hei
 
 /* ---------- UTR 超神话 ---------- */
 .rt-UTR{background:linear-gradient(90deg,#ff2d55,#ff7a3c,#ff2d55);-webkit-background-clip:text;background-clip:text;color:transparent;font-weight:900}
+@media(prefers-reduced-motion:reduce){
+  .shake{animation:none !important}
+  .gcard.pop{animation:none !important}
+  .floater{animation:none !important; opacity:0}
+  #goldflash.go{animation:none !important; opacity:0}
+  .danmaku{animation:none !important}
+}
 
 /* ---------- 活动页 ---------- */
 .act-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
@@ -428,8 +452,10 @@ footer{text-align:center;color:var(--faint);font-size:11px;padding:22px;line-hei
   <!-- ============ 页面1: 购买Token ============ -->
   <div class="page" id="page-buy">
     <div class="page-head"><h2>购买 Token</h2><p>盲盒计费 · 抽到顶级模型还是电子垃圾全看命 · 明码标价 · 概不退换</p></div>
-    <div class="notice"><span class="dot"></span><span id="notice-text">📢 公告：「开源之光池」轮换上线中——GLM-6 与 Qwen5 Max 双开源神话同台，全场最低限定价。</span></div>
+    <div class="notice"><span class="dot"></span><span id="notice-text">📢 公告：限定池每日 00:00+08 轮换，当前赛季见倒计时。</span></div>
     <div class="pool-cards" id="pool-cards"></div>
+    <div class="pool-scroll-dots" id="pool-dots" aria-hidden="true"></div>
+    <div class="pool-scroll-hint">← 左右滑动查看更多卡池 →</div>
     <div class="buy-hint">💡 当前持有 <b id="buy-tokens">0 tokens</b>（约 <b id="buy-tasks">0</b> 单工作量）<button class="go" id="go-work">去「工作」变现 →</button></div>
   </div>
 
@@ -450,7 +476,7 @@ footer{text-align:center;color:var(--faint);font-size:11px;padding:22px;line-hei
       </div>
       <div class="work-main">
         <div class="terminal">
-          <div class="tbar"><i style="background:#ff5f56"></i><i style="background:#ffbd2e"></i><i style="background:#27c93f"></i><span id="term-title">agent — 自动调度（稀有度优先）</span><button id="btn-skip" class="skip" hidden>⏭ 跳过</button></div>
+          <div class="tbar"><i style="background:#ff5f56"></i><i style="background:#ffbd2e"></i><i style="background:#27c93f"></i><span id="term-title">agent — 自动调度（稀有度优先）</span><span class="tprog" id="tprog" hidden><span id="tprog-txt">0/0</span><span class="bar"><i id="tprog-bar" style="width:0%"></i></span></span><button id="btn-skip" class="skip" hidden>⏭ 跳过</button></div>
           <pre id="term-body">> 等待接单…<span class="cursor"></span></pre>
         </div>
         <div class="work-actions">
@@ -493,7 +519,18 @@ footer{text-align:center;color:var(--faint);font-size:11px;padding:22px;line-hei
       </div>
     </div>
     <div class="panel panel-pad">
-      <div class="panel-title">🗃️ 我的模型卡<span class="right" id="inv-total"></span></div>
+      <div class="panel-title">🗃️ 我的模型卡<span class="right" id="inv-total"></span><select class="inv-sort" id="inv-sort"><option value="rarity">按稀有度</option><option value="tokens">按剩余token</option><option value="idx">按智能指数</option></select></div>
+      <div class="inv-filter" id="inv-filter">
+        <button data-f="all" class="on">全部</button>
+        <button data-f="UTR">UTR</button>
+        <button data-f="UR">UR</button>
+        <button data-f="SSR">SSR</button>
+        <button data-f="R">R</button>
+        <button data-f="N">N</button>
+        <button data-f="half">体验</button>
+        <button data-f="residue">残卡</button>
+        <button id="btn-clear-n" title="一键销毁全部 N 卡">🗑️ 清N</button>
+      </div>
       <div class="inv-grid" id="inv-grid"></div>
     </div>
   </div>

@@ -25,12 +25,14 @@ function syncBanner(){
     p._end = slot.end;
     switched = true;
   }
-  // 当前赛季限定卡集合
+  // 当前赛季限定卡集合（LIMITED_IDS 仅当季，LIMITED_ALL 永久）
   const cur = [...LIMITED_IDS].slice().sort().join(',');
   const want = slot.season.limited.slice().sort().join(',');
   if(cur !== want){
     LIMITED_IDS.clear();
     slot.season.limited.forEach(id => LIMITED_IDS.add(id));
+    // 同步永久集合，确保 ×2 加成跨季不失效
+    if(typeof LIMITED_ALL!=='undefined') slot.season.limited.forEach(id=>LIMITED_ALL.add(id));
     switched = true;
   }
   if(switched && S.bannerSeason !== slot.season.id){
