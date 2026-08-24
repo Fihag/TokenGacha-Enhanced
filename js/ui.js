@@ -225,6 +225,92 @@ const hasNB=(S.dex.fihagv1||0)>0;
       showModal(`<h3>🗑️ 一键清理 N 卡<button class="x" onclick="closeModal()">×</button></h3><p>将销毁 <b>${nCards.length} 张 N 卡</b>（含 ${fmtK(nCards.reduce((s,c)=>s+c.tokens,0))} tokens），不可找回。</p><button class="big-btn danger" id="btn-confirm-clear-n">确认清理</button><button class="big-btn ghost" onclick="closeModal()">取消</button>`);
     };
   }
+  // 批量操作绑定（仅一次）
+  const btnBatchToggle=$('btn-batch-toggle');
+  if(btnBatchToggle && !btnBatchToggle.dataset.bound){
+    btnBatchToggle.dataset.bound='1';
+    if(window._batchMode==null) window._batchMode=false;
+    if(!window._batchSet) window._batchSet=new Set();
+    const bar=$('inv-batch-bar'), cntEl=$('inv-batch-cnt');
+    const updateBatchBar=()=>{
+      const n=window._batchSet.size;
+      if(cntEl) cntEl.textContent=`已选 ${n} 张`+(n?` · ${fmtK([...window._batchSet].reduce((s,uid)=>{const c=S.inv.find(x=>x.uid===uid); return s+(c?c.tokens:0);},0))} tok`:'');
+      const lockBtn=$('btn-batch-lock'), unlockBtn=$('btn-batch-unlock'), destroyBtn=$('btn-batch-destroy');
+      const hasSel=n>0;
+      if(lockBtn) lockBtn.disabled=!hasSel;
+      if(unlockBtn) unlockBtn.disabled=!hasSel;
+      if(destroyBtn) destroyBtn.disabled=!hasSel;
+    };
+    window._updateBatchBar=updateBatchBar;
+    btnBatchToggle.onclick=()=>{
+      window._batchMode=!window._batchMode;
+      if(!window._batchMode) window._batchSet.clear();
+      btnBatchToggle.textContent = window._batchMode ? '✖️ 退出批量' : '☑️ 批量';
+      btnBatchToggle.classList.toggle('on', window._batchMode);
+      if(bar) bar.hidden=!window._batchMode;
+      updateBatchBar();
+      renderBalance();
+      if(window._batchMode) toast('☑️ 已进入批量模式，点击卡牌选择');
+    };
+    const bindBatchBtn=(id, fn)=>{
+      const b=$(id);
+      if(b && !b.dataset.bound){ b.dataset.bound='1'; b.onclick=()=>{ SFX.click(); fn(); }; }
+    };
+    bindBatchBtn('btn-batch-all', ()=>{
+      const f=window._invFilter||'all', sortBy=($('inv-sort')&&$('inv-sort').value)||'rarity';
+      let list=[...S.inv];
+      if(f==='locked') list=list.filter(c=>c.locked);
+      else if(f==='half') list=list.filter(c=>c.half);
+      else if(f==='residue') list=list.filter(c=>c.tokens>0 && c.tokens < TASK_TOKENS*2);
+      else if(f!=='all') list=list.filter(c=>MMAP[c.m].r===f);
+      if(window._batchSet.size===list.length) window._batchSet.clear();
+      else list.forEach(c=>window._batchSet.add(c.uid));
+      updateBatchBar(); renderBalance();
+    });
+    bindBatchBtn('btn-batch-lock', ()=>{
+      let n=0; for(const uid of [...window._batchSet]){ const c=S.inv.find(x=>x.uid===uid); if(c && !c.locked){ c.locked=true; n++; } }
+      if(!n){ toast('选中的卡已是锁定状态'); SFX.bad(); return; }
+      save(); window._batchSet.clear(); updateBatchBar(); renderAll();
+      toast(`🔒 已锁定 ${n} 张`);
+    });
+    bindBatchBtn('btn-batch-unlock', ()=>{
+      let n=0; for(const uid of [...window._batchSet]){ const c=S.inv.find(x=>x.uid===uid); if(c && c.locked){ c.locked=false; n++; } }
+      if(!n){ toast('选中的卡已是未锁定'); SFX.bad(); return; }
+      save(); window._batchSet.clear(); updateBatchBar(); renderAll();
+      toast(`🔓 已解锁 ${n} 张`);
+    });
+    bindBatchBtn('btn-batch-destroy', ()=>{
+      const uids=[...window._batchSet];
+      if(!uids.length) return;
+      const toks=uids.reduce((s,uid)=>{const c=S.inv.find(x=>x.uid===uid); return s+(c?c.tokens:0);},0);
+      showModal(`<h3>🗑️ 批量销毁<button class="x" onclick="closeModal()">×</button></h3><p>将销毁 <b>${uids.length} 张</b>（含 ${fmtK(toks)} tokens），不可找回。</p><button class="big-btn danger" id="btn-confirm-batch-destroy">确认销毁</button><button class="big-btn ghost" onclick="closeModal()">取消</button>`);
+    });
+    bindBatchBtn('btn-batch-cancel', ()=>{
+      window._batchSet.clear(); updateBatchBar(); renderBalance();
+    });
+  }
+  // 卡牌批量选中样式与点击代理
+  if(window._batchMode && window._batchSet){
+    g.querySelectorAll('.inv-card').forEach(el=>{
+      const uid=Number(el.dataset.uid);
+      if(window._batchSet.has(uid)) el.classList.add('batched');
+    });
+    if(!g.dataset.batchBound){
+      g.dataset.batchBound='1';
+      g.addEventListener('click', e=>{
+        if(!window._batchMode) return;
+        const card=e.target.closest('.inv-card');
+        if(!card) return;
+        // 批量模式下，点击锁定/销毁按钮仍走原逻辑，不触发选中
+        if(e.target.closest('.inv-lock') || e.target.closest('.inv-del')) return;
+        const uid=Number(card.dataset.uid);
+        if(window._batchSet.has(uid)) window._batchSet.delete(uid);
+        else window._batchSet.add(uid);
+        if(window._updateBatchBar) window._updateBatchBar();
+        card.classList.toggle('batched', window._batchSet.has(uid));
+      });
+    }
+  }
 }
 
 /* ---------- 渲染: 头部 ---------- */
@@ -951,6 +1037,18 @@ document.addEventListener('click', e=>{
     save(); closeModal(); renderAll();
     SFX.bad();
     toast(`🗑️ 已清理 ${removed} 张 N 卡`);
+  }
+  if(e.target.id==='btn-confirm-batch-destroy'){
+    const uids=[...(window._batchSet||[])];
+    if(!uids.length){ closeModal(); return; }
+    const before=S.inv.length;
+    S.inv=S.inv.filter(c=>!uids.includes(c.uid));
+    const removed=before-S.inv.length;
+    window._batchSet.clear();
+    if(window._updateBatchBar) window._updateBatchBar();
+    save(); closeModal(); renderAll();
+    SFX.bad();
+    toast(`🗑️ 已销毁 ${removed} 张`);
   }
   if(e.target.dataset && e.target.dataset.amt){ const inp=$('topup-amt'); if(inp) inp.value=e.target.dataset.amt; SFX.click(); }
 });

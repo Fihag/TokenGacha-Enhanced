@@ -117,10 +117,13 @@ function renderMarket(){
   for(const o of S.market.orders){
     const have=marketMatchingCards(o).length;
     const can=have>=o.need;
+    const limitedHint = MODELS.some(m=> m.vendor===o.vendor && m.r===o.r && (typeof LIMITED_ALL!=='undefined'?LIMITED_ALL.has(m.id):LIMITED_IDS.has(m.id))) ? ' · 已含限定×2' : '';
+    const est = have? Math.round(marketEstForCards(marketMatchingCards(o).slice(0,o.need))*o.premium) : 0;
     const row=document.createElement('div');
     row.className='market-order';
     row.style.opacity=can?'1':'.55';
-    row.innerHTML=`<div class="mo-main"><div class="mo-title">🏦 求购 ${o.vendor} · ${o.r} ×${o.need}</div><div class="mo-desc">溢价 ×${o.premium.toFixed(2)} · 持有 ${have}/${o.need} · 预估 ${have?fmt(Math.round(marketEstForCards(marketMatchingCards(o).slice(0,o.need))*o.premium)):'—'}</div></div><button class="mini-btn" data-market="${o.id}" ${can?'':'disabled'}>${can?'卖出':'不足'}</button>`;
+    row.innerHTML=`<div class="mo-main"><div class="mo-title">🏦 求购 ${o.vendor} · ${o.r} ×${o.need}</div><div class="mo-desc">溢价 ×${o.premium.toFixed(2)}${limitedHint} · 持有 ${have}/${o.need} · 预估 ${have?fmt(est):'—'}</div></div><button class="mini-btn" data-market="${o.id}" ${can?'':'disabled'}>${can?'卖出':'不足'}</button>`;
+    row.title = limitedHint ? '该求购涉及限定模型，预估已含限定×2加成，溢价为额外倍率' : '溢价在卡面估值（含星级/限定加成）基础上额外×';
     box.appendChild(row);
   }
   box.querySelectorAll('[data-market]').forEach(b=> b.onclick=()=>{

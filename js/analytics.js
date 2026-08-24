@@ -15,6 +15,11 @@ function renderData(){
   drawDexChart();
   drawVendorChart();
   renderHist();
+  // 绑定导出按钮（仅一次）
+  const bl=$('btn-export-ledger');
+  if(bl && !bl.dataset.bound){ bl.dataset.bound='1'; bl.onclick=()=>{ if(typeof SFX!=='undefined'&&SFX.click) SFX.click(); exportLedgerCSV(); }; }
+  const bh=$('btn-export-hist');
+  if(bh && !bh.dataset.bound){ bh.dataset.bound='1'; bh.onclick=()=>{ if(typeof SFX!=='undefined'&&SFX.click) SFX.click(); exportHistCSV(); }; }
 }
 
 function renderHist(){
@@ -59,6 +64,12 @@ function drawBarChart(){
   const {g,w,h}=c;
   const arr=RORDER.slice().reverse().filter(r=> r!=='NB' || (S.stats.byR.NB||0)>0); // NB 未抽到前隐藏
   const data=arr.map(r=>S.stats.byR[r]||0);
+  const total=data.reduce((a,b)=>a+b,0);
+  if(!total){
+    g.font='12px system-ui'; g.fillStyle='#9aa4c8'; g.textAlign='center';
+    g.fillText('暂无出货，抽卡后这里会展示分布', w/2, h/2);
+    return;
+  }
   const max=Math.max(1,...data);
   const pad=36, bw=(w-pad*2)/data.length;
   g.font='11px system-ui'; g.textAlign='center';
@@ -77,12 +88,16 @@ function drawBarChart(){
 function drawLineChart(){
   const c=chartCanvas('line'); if(!c) return;
   const {g,w,h}=c;
-  // 按收支明细累计余额曲线(与结算一致: 余额不跌穿 0)
-  const pts=[]; let bal=START_MONEY;
+  // 按收支明细累计余额曲线（与结算一致：余额不跌穿 0，剔除重复尾点，截断历史时补充 S.money）
+  const pts=[];
   const led=[...S.ledger].reverse();
-  for(const l of led){ bal=Math.max(0,bal+l.amt); pts.push(bal); }
-  if(!pts.length) pts.push(S.money);
-  pts.push(S.money);
+  if(!led.length){
+    pts.push(S.money);
+  }else{
+    let bal=START_MONEY;
+    for(const l of led){ bal=Math.max(0,bal+l.amt); pts.push(bal); }
+    if(pts[pts.length-1]!==S.money) pts.push(S.money);
+  }
   const min=Math.min(...pts), max=Math.max(...pts), span=Math.max(1,max-min);
   const pad=40;
   g.font='11px system-ui';
@@ -102,13 +117,24 @@ function drawLineChart(){
   g.textAlign='right'; g.fillText('¥'+Math.round(min).toLocaleString('zh-CN'), w-pad, h-14);
   g.textAlign='center'; g.fillStyle='#1c2340';
   g.fillText('当前 '+fmt(S.money), w/2, h-14);
+  // 若 ledger 被截断（80 条上限）则标注
+  if(S.ledger.length>=80){
+    g.textAlign='right'; g.fillStyle='#9aa4c8'; g.font='10px system-ui';
+    g.fillText('仅最近80条', w-pad, pad-4);
+  }
 }
 
 function drawDonutChart(){
   const c=chartCanvas('donut'); if(!c) return;
   const {g,w,h}=c;
   const data=RORDER.filter(r=> r!=='NB' || (S.stats.byR.NB||0)>0).map(r=>[r,S.stats.byR[r]||0]); // NB 未抽到前隐藏
-  const total=Math.max(1,data.reduce((s,x)=>s+x[1],0));
+  const rawTotal=data.reduce((s,x)=>s+x[1],0);
+  if(!rawTotal){
+    g.font='12px system-ui'; g.fillStyle='#9aa4c8'; g.textAlign='center';
+    g.fillText('暂无占比，抽卡后自动统计', w/2, h/2);
+    return;
+  }
+  const total=Math.max(1,rawTotal);
   const R=Math.min(w*0.32, h/2-22);
   const cx=R+30, cy=h/2;
   let a=-Math.PI/2;
@@ -163,6 +189,13 @@ function drawVendorChart(){
   const counts={};
   for(const m of MODELS){ if(S.dex[m.id]) counts[m.vendor]=(counts[m.vendor]||0)+1; }
   const entries=Object.entries(counts).sort((a,b)=>b[1]-a[1]);
+  if(!entries.length){
+    const c=chartCanvas('vendor', 180); if(!c) return;
+    const {g,w,h}=c;
+    g.font='12px system-ui'; g.fillStyle='#9aa4c8'; g.textAlign='center';
+    g.fillText('暂无厂商数据，抽卡后自动统计', w/2, h/2);
+    return;
+  }
   const rowH=34; // 固定行距, 足够大
   const needH=Math.max(220, entries.length*rowH+70);
   const c=chartCanvas('vendor', needH); if(!c) return;
@@ -182,6 +215,49 @@ function drawVendorChart(){
   });
   g.textAlign='left'; g.fillStyle='#98a2c8';
   g.fillText('已获得模型按厂商分布', pad, 18);
+}
+
+/* ---------- CSV 导出 ---------- */
+function _csvEscape(s){
+  s=String(s);
+  return /[",\n]/.test(s) ? '"'+s.replace(/"/g,'""')+'"' : s;
+}
+function _downloadCSV(rows, filename){
+  const csv = rows.map(r=>r.map(_csvEscape).join(',')).join('\n');
+  const blob = new Blob(['\uFEFF'+csv], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href=url; a.download=filename; a.click();
+  setTimeout(()=>URL.revokeObjectURL(url), 1000);
+}
+function exportLedgerCSV(){
+  const rows=[['时间','收支','金额','余额']];
+  // ledger 是倒序（新在前），导出按时间正序并重算余额更直观
+  let bal=START_MONEY;
+  const led=[...S.ledger].reverse();
+  if(!led.length) rows.push(['-','初始资金', START_MONEY, START_MONEY]);
+  else {
+    for(const l of led){ bal=Math.max(0,bal+l.amt); rows.push([l.ts, l.label, l.amt, bal]); }
+  }
+  // 若截断，提示
+  if(S.ledger.length>=80) rows.unshift(['# 仅最近80条（更早记录已截断）','','','']);
+  _downloadCSV(rows, `tokengacha-ledger-${new Date().toISOString().slice(0,10)}.csv`);
+  toast('📥 收支明细已导出 CSV');
+}
+function exportHistCSV(){
+  const rows=[['时间','卡池','模型','稀有度','智能指数','厂商']];
+  const hist=[...(S.hist||[])].slice().reverse();
+  if(!hist.length) { toast('暂无出货记录'); if(typeof SFX!=='undefined'&&SFX.bad) SFX.bad(); return; }
+  for(const h of hist){
+    const m=MMAP[h.m];
+    const t=new Date(h.t);
+    const ts=`${t.getFullYear()}-${String(t.getMonth()+1).padStart(2,'0')}-${String(t.getDate()).padStart(2,'0')} ${String(t.getHours()).padStart(2,'0')}:${String(t.getMinutes()).padStart(2,'0')}`;
+    let poolName=(POOLS[h.pool]&&POOLS[h.pool].name)||h.pool||'';
+    if(h.pool==='banner' && h.season){ const s=BANNER_SEASONS.find(x=>x.id===h.season); if(s) poolName=s.name; }
+    rows.push([ts, poolName, m.name, h.r, Math.round(m.idx), m.vendor]);
+  }
+  _downloadCSV(rows, `tokengacha-hist-${new Date().toISOString().slice(0,10)}.csv`);
+  toast('📥 出货记录已导出 CSV');
 }
 
 /* ---------- 启动 ---------- */

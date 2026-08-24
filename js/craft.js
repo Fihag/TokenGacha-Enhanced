@@ -14,10 +14,11 @@ function craftVendorsFor(recipe){
     const v = MMAP[c.m].vendor;
     counts[v] = (counts[v]||0)+1;
   }
-  return Object.entries(counts).filter(([v,n])=>n>=need).map(([v])=>v);
+  return Object.entries(counts).filter(([v,n])=>n>=need && craftOutputCands(recipe, v).length>0).map(([v])=>v);
 }
 function craftOutputCands(recipe, vendor){
-  return MODELS.filter(m=> m.r===recipe.to && m.vendor===vendor);
+  // 限定卡（bannerOnly）不可被合成产出，避免绕过抽卡获取
+  return MODELS.filter(m=> m.r===recipe.to && m.vendor===vendor && !m.bannerOnly);
 }
 function doCraft(recipeId, uids){
   const recipe = CRAFT_RECIPES.find(r=>r.id===recipeId);

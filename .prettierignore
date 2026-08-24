@@ -1,0 +1,4 @@
+css/style.css
+js/
+# 旧代码暂不强制格式化，新测试与新配置仍受控
+# 若需格式化旧代码：npx prettier --write "js/**/*.js"
