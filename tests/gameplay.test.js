@@ -5,10 +5,21 @@ import path from "path";
 const coreText = fs.readFileSync(path.resolve("js/core.js"), "utf8");
 const configText = fs.readFileSync(path.resolve("js/config.js"), "utf8");
 const stateText = fs.readFileSync(path.resolve("js/state.js"), "utf8");
+const economyText = fs.readFileSync(path.resolve("js/economy.js"), "utf8");
 const craftText = fs.readFileSync(path.resolve("js/craft.js"), "utf8");
 const marketText = fs.readFileSync(path.resolve("js/market.js"), "utf8");
 const bannerText = fs.readFileSync(path.resolve("js/banner.js"), "utf8");
-const uiText = fs.readFileSync(path.resolve("js/ui.js"), "utf8");
+const uiText = [
+  "js/ui/router.js",
+  "js/ui/render.js",
+  "js/ui/gacha.js",
+  "js/ui/work.js",
+  "js/ui/modals.js",
+  "js/ui/share.js",
+  "js/ui/boot.js",
+]
+  .map(p => fs.readFileSync(path.resolve(p), "utf8"))
+  .join("\n");
 
 describe("抽卡保底与概率", () => {
   it("普通池保底 PITY_MAX=60，青铜池 50，限定池 100", () => {
@@ -76,8 +87,9 @@ describe("工作与消耗", () => {
   });
 
   it("锁定卡估值与可用估值分离（usableEstValue）", () => {
-    expect(stateText).toContain("usableEstValue");
+    expect(economyText).toContain("usableEstValue");
     expect(stateText).toContain("locked");
+    expect(economyText).toContain("locked");
     expect(uiText).toContain("usableEstValue");
   });
 });
@@ -159,12 +171,20 @@ describe("工程与体验回归", () => {
     const html = fs.readFileSync(path.resolve("index.html"), "utf8");
     const order = [
       "config.js",
+      "validate.js",
       "fx.js",
       "state.js",
+      "economy.js",
       "core.js",
       "craft.js",
       "market.js",
-      "ui.js",
+      "ui/router.js",
+      "ui/render.js",
+      "ui/gacha.js",
+      "ui/work.js",
+      "ui/modals.js",
+      "ui/share.js",
+      "ui/boot.js",
       "banner.js",
       "daily.js",
       "skins.js",

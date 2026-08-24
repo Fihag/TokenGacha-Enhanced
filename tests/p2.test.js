@@ -5,7 +5,17 @@ import path from "path";
 const config = fs.readFileSync(path.resolve("js/config.js"), "utf8");
 const html = fs.readFileSync(path.resolve("index.html"), "utf8");
 const css = fs.readFileSync(path.resolve("css/style.css"), "utf8");
-const ui = fs.readFileSync(path.resolve("js/ui.js"), "utf8");
+const ui = [
+  "js/ui/router.js",
+  "js/ui/render.js",
+  "js/ui/gacha.js",
+  "js/ui/work.js",
+  "js/ui/modals.js",
+  "js/ui/share.js",
+  "js/ui/boot.js",
+]
+  .map(p => fs.readFileSync(path.resolve(p), "utf8"))
+  .join("\n");
 const state = fs.readFileSync(path.resolve("js/state.js"), "utf8");
 const daily = fs.readFileSync(path.resolve("js/daily.js"), "utf8");
 const craft = fs.readFileSync(path.resolve("js/craft.js"), "utf8");

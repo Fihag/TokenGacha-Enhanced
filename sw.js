@@ -1,18 +1,26 @@
 "use strict";
 /* TokenGacha · Service Worker (PWA) — 离线缓存静态资源，零构建 */
-const CACHE = "tokengacha-v1";
+const CACHE = "tokengacha-v2";
 const ASSETS = [
   "./",
   "./index.html",
   "./manifest.json",
   "./css/style.css",
   "./js/config.js",
+  "./js/validate.js",
   "./js/fx.js",
   "./js/state.js",
+  "./js/economy.js",
   "./js/core.js",
   "./js/craft.js",
   "./js/market.js",
-  "./js/ui.js",
+  "./js/ui/router.js",
+  "./js/ui/render.js",
+  "./js/ui/gacha.js",
+  "./js/ui/work.js",
+  "./js/ui/modals.js",
+  "./js/ui/share.js",
+  "./js/ui/boot.js",
   "./js/banner.js",
   "./js/daily.js",
   "./js/skins.js",

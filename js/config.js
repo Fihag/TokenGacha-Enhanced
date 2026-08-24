@@ -5,7 +5,26 @@
    图标: @lobehub/icons (unpkg + npmmirror 双 CDN 兜底)
    ================================================================ */
 
+/**
+ * @typedef {'N'|'R'|'SR'|'SSR'|'UR'|'UTR'|'NB'} Rarity
+ * @typedef {Object} Model
+ * @property {string} id - 唯一标识
+ * @property {string} name - 显示名
+ * @property {string} vendor - 厂商
+ * @property {string} icon - @lobehub/icons slug
+ * @property {number} idx - 智能指数
+ * @property {Rarity} r - 稀有度
+ * @property {number} [quota] - 初始 token 额度
+ * @property {boolean} [bannerOnly] - 仅限定池可出
+ * @property {string} cost - 卡面标价（展示用）
+ * @property {number} spd - 出字速度 tok/s
+ * @property {string} quote - 趣味文案
+ * @typedef {Record<Rarity, {name:string,label:string,hex:string,min:number,max:number,tasks:number,basePay:number,quota:number}>} RarityMap
+ * @typedef {Record<string, {name:string,sub:string,color:string,price:number,tenPrice:number,pityMax?:number,rates:Partial<Record<Rarity,number>>,half?:boolean,banner?:boolean,note:string,featured:string[],limited?:string[]}>} PoolMap
+ */
+
 /* ---------- 模型数据 (指数参考 artificialanalysis.ai 排行榜) ---------- */
+/** @type {Model[]} */
 const MODELS = [
   // UTR —— 智能指数 ≥64, 限定超神话
   {id:'dsv5pro', name:'DeepSeek V5 Pro',     vendor:'DeepSeek',   icon:'deepseek-color', idx:72, r:'UTR', quota:6000000, bannerOnly:true, cost:'$0.09/任务', spd:120, quote:'限定·超神话！72 分新王登基，接单收入翻倍，价格也翻倍'},

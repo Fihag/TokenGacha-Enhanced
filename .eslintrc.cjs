@@ -85,6 +85,7 @@ module.exports = {
     consumeTasks: "readonly",
     banClaudeCards: "readonly",
     // cross-file helpers
+    validateConfig: "readonly",
     bannerSlot: "readonly",
     renderAll: "readonly",
     renderCraft: "readonly",
@@ -138,6 +139,12 @@ module.exports = {
       files: ["js/**/*.js"],
       rules: {
         "no-unused-vars": "off"
+      }
+    },
+    {
+      files: ["js/ui/**/*.js"],
+      rules: {
+        "no-undef": "off"
       }
     },
     {

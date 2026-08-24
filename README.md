@@ -20,9 +20,9 @@
 - **限定活动卡池「限定池」**:每赛季 1 天自动轮换,到期自动换下一批限定模型(DeepSeek 赛季单抽已涨价至 ¥950,十连 ¥9025,卡面会显示划掉的原价)。赛季按 **DeepSeek V5 系列 → 神话回响 Claude Opus 6 / Gemini 4 Pro → 开源之光 GLM-6 / Qwen5 Max** 循环;100 抽大保底必出当期限定 UTR
 - **限定卡加成**:使用限定模型接单,该单收入 **×2**（永久限定集，跨季不失效，删库赔偿不翻倍）
 - **每日签到**:21 天循环奖励 ¥200 → ¥5000,断签重置，曲线更平滑
-- **日常任务**:抽卡 100 次 / 工作 300 单 / 日入 ¥18000,每日 0 点（+08）刷新
-- **皮肤系统**:5 套主题(经典蓝/暗夜紫/赛博霓虹/金色传说/粉甜梦境),抽卡 1.5% 概率掉落,皮肤券可兑换
-- **数据分析页**:抽卡分布柱状图、余额走势折线图、稀有度占比环形图、图鉴进度、厂商分布,全部 canvas 手绘
+  - **日常任务**:抽卡 100 次 / 工作 300 单 / 日入 ¥18000 / 合成 2 次 / 黑市成交 2 单，每日 0 点（+08）刷新
+  - **皮肤系统**:6 套主题(经典蓝/暗夜紫/赛博霓虹/金色传说/粉甜梦境/**薄荷白茶**),抽卡 1.5% 概率掉落,皮肤券可兑换
+  - **数据分析页**:抽卡分布柱状图、余额走势折线图（悬浮/长按显值+范围）、稀有度占比环形图、图鉴进度、厂商分布,全部 canvas 手绘，支持 CSV 导出
 
 ### 模型与数值更新
 
@@ -32,8 +32,9 @@
 
 ### 工程重构
 
-- 单文件 1425 行拆分为 **11 个模块化 JS 文件**(config / fx / state / core / craft / market / ui / banner / daily / skins / analytics) + `css/style.css` 外置样式
-- 存档升级至 v4，旧存档自动迁移；新增本地化单测与 lint 基建（`npm test` / `npm run lint`）
+- 单文件 1425 行拆分为 **19 个模块化 JS 文件**（`config`+`validate`+`fx`+`state`+`economy`+`core`+`craft`+`market`+`ui/{router,render,gacha,work,modals,share,boot}`+`banner`+`daily`+`skins`+`analytics`）+ `css/style.css` 外置样式，`ui.js` 1233 行巨石已拆为 7 子模块，`state` 经济计算已抽至 `economy.js`
+- 存档升级至 v4，旧存档自动迁移；`config` 新增 JSDoc + `validate.js` 运行时校验（`zod` 仅单测），`state`/`core` 通过全局 `S` 解耦（`economy` 纯函数化）
+- 新增本地化单测与 lint 基建（`npm test` 82 用例覆盖 `config/economy/gameplay/validate` + `npm run lint`），`banner/skins/analytics/ui` 已补 8+ 用例，`ui` 拆分后 `renderBalance` 单函数 <180 行
 
 ## 玩法速览
 
@@ -55,18 +56,26 @@
 ```
 index.html            页面骨架
 css/style.css         全局样式（外置，原内联 450 行已拆分）
-js/config.js          数据层:模型/卡池/皮肤/任务定义
+js/config.js          数据层:模型/卡池/皮肤/任务定义（JSDoc + zod 校验）
+js/validate.js        运行时校验（MODELS/RARITY/POOLS）
 js/fx.js              特效层:图标 CDN/音效/粒子
-js/state.js           存档(v4)+ 期望计算 + 回本率
+js/state.js           存档(v4) + 通用工具（S 全局，迁移集中）
+js/economy.js         经济层:期望计算/估值/回本率（纯函数）
 js/core.js            抽卡/工作核心逻辑
 js/craft.js           合成台（同厂商 3 合 1 + 5 升星）
 js/market.js          黑市做市（6 槽/1h 刷新/1.10-1.50×溢价）
-js/ui.js              渲染/路由/弹窗/事件
+js/ui/router.js       路由
+js/ui/render.js       购买/工作/余额/成就/头部渲染
+js/ui/gacha.js        抽卡流程 + 模拟抽卡器
+js/ui/work.js         工作流（批量 + 自动）
+js/ui/modals.js       弹窗/彩蛋/销毁
+js/ui/share.js        分享/充值/概率/图鉴弹窗
+js/ui/boot.js         事件绑定 + 启动
 js/banner.js          限定活动池
 js/daily.js           签到/日常任务
 js/skins.js           皮肤系统
-js/analytics.js       数据图表 + 启动
-tests/                单测（vitest, 42 用例覆盖配置/经济/玩法回归）
+js/analytics.js       数据图表 + 启动（含悬浮/长按数值）
+tests/                单测（vitest, 82 用例覆盖 config/economy/gameplay/validate 等）
 ```
 
 ## 本地运行
@@ -84,7 +93,7 @@ python -m http.server 8123
 ```bash
 npm install
 npm run lint      # eslint
-npm test          # vitest 42 用例
+npm test          # vitest 82 用例
 npm run format    # prettier
 ```
 

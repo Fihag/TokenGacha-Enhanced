@@ -67,3 +67,38 @@ describe("P3-3 可访问性", () => {
     expect(fx).toContain("role");
   });
 });
+
+describe("拆分与校验", () => {
+  it("ui.js 已拆为 7 模块且 index 按序引入", () => {
+    for (const f of [
+      "js/ui/router.js",
+      "js/ui/render.js",
+      "js/ui/gacha.js",
+      "js/ui/work.js",
+      "js/ui/modals.js",
+      "js/ui/share.js",
+      "js/ui/boot.js",
+    ])
+      expect(fs.existsSync(path.resolve(f))).toBe(true);
+    expect(html).toContain("ui/router.js");
+    expect(html).toContain("ui/boot.js");
+    expect(sw).toContain("ui/router.js");
+    expect(sw).toContain("ui/boot.js");
+  });
+  it("validate.js 与 economy.js 存在且被 index/sw 引入", () => {
+    expect(fs.existsSync(path.resolve("js/validate.js"))).toBe(true);
+    expect(fs.existsSync(path.resolve("js/economy.js"))).toBe(true);
+    expect(html).toContain("validate.js");
+    expect(html).toContain("economy.js");
+    expect(sw).toContain("validate.js");
+    expect(sw).toContain("economy.js");
+  });
+  it("config JSDoc 与校验", () => {
+    const cfg = fs.readFileSync(path.resolve("js/config.js"), "utf8");
+    expect(cfg).toContain("@typedef");
+    expect(cfg).toContain("@type {Model[]}");
+    const v = fs.readFileSync(path.resolve("js/validate.js"), "utf8");
+    expect(v).toContain("validateConfig");
+    expect(v).toContain("MODELS");
+  });
+});

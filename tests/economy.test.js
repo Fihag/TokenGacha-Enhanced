@@ -7,6 +7,7 @@ import path from "path";
 
 const configText = fs.readFileSync(path.resolve("js/config.js"), "utf8");
 const stateText = fs.readFileSync(path.resolve("js/state.js"), "utf8");
+const economyText = fs.readFileSync(path.resolve("js/economy.js"), "utf8");
 const coreText = fs.readFileSync(path.resolve("js/core.js"), "utf8");
 
 // 从 config 提取的简化 RARITY（与生产一致）
@@ -68,18 +69,18 @@ describe("经济公式回归", () => {
     expect(h3).toBeCloseTo(h0 * 1.15, 2);
   });
 
-  it("state.js 的 expectedTaskPay 含 LIMITED_ALL 与星级逻辑", () => {
-    expect(stateText).toContain("LIMITED_ALL");
-    expect(stateText).toContain("stars");
-    expect(stateText).toMatch(/payFactor/);
-    expect(stateText).toMatch(/PAY_BOOST/);
+  it("economy.js 的 expectedTaskPay 含 LIMITED_ALL 与星级逻辑", () => {
+    expect(economyText).toContain("LIMITED_ALL");
+    expect(economyText).toContain("stars");
+    expect(economyText).toMatch(/payFactor/);
+    expect(economyText).toMatch(/PAY_BOOST/);
   });
 
   it("poolExpectedValue 包含 0731 独立 1.5% 与限定过滤", () => {
-    expect(stateText).toContain("poolExpectedValue");
-    expect(stateText).toContain("DSV73");
-    expect(stateText).toContain("bannerOnly");
-    expect(stateText).toContain("LIMITED_IDS");
+    expect(economyText).toContain("poolExpectedValue");
+    expect(economyText).toContain("DSV73");
+    expect(economyText).toContain("bannerOnly");
+    expect(economyText).toContain("LIMITED_IDS");
   });
 
   it("core.js taskPayout 事件概率与 payFactor 一致", () => {
@@ -114,11 +115,11 @@ describe("经济公式回归", () => {
   });
 
   it("消耗 token 必须整除 TASK_TOKENS（避免残卡）", () => {
-    expect(stateText).toContain("TASK_TOKENS");
+    expect(economyText).toContain("TASK_TOKENS");
     expect(coreText).toContain("Math.floor");
     expect(coreText).toContain("TASK_TOKENS");
-    // state.js 与 core.js 都应有规整逻辑
-    expect((stateText.match(/TASK_TOKENS/g) || []).length).toBeGreaterThan(2);
+    // economy.js 与 core.js 都应有规整逻辑
+    expect((economyText.match(/TASK_TOKENS/g) || []).length).toBeGreaterThan(2);
     expect((coreText.match(/TASK_TOKENS/g) || []).length).toBeGreaterThan(2);
   });
 });
