@@ -13,7 +13,8 @@ function defaultState(){
     dex:{}, flags:{welcomed:false,ms:{},muted:false,cheated:false},
     daily:{lastSign:null,streak:0,day:null,earnToday:0,pulls:0,tasks:0,claimed:{}},
     skin:'classic', skinsOwned:['classic'], skinTickets:0,
-    bannerPulls:0, bannerLimited:0, bannerSeason:null, hist:[] };
+    bannerPulls:0, bannerLimited:0, bannerSeason:null, hist:[],
+    crafts:{count:0,stars:0,last:null}, market:{orders:[],next:0}, expedition:{lv:0,bestLv:0,runs:0,wins:0,history:[]} };
 }
 function save(){ try{ const j=JSON.stringify(S); localStorage.setItem('tokengacha_v2', j); try{ localStorage.setItem('tokengacha_v4', j);}catch(e){} }catch(e){} }
 function load(){
@@ -71,6 +72,20 @@ function load(){
       if(!Array.isArray(s.hist)) s.hist=[];
       // hist 补 season 字段（旧存档仅 pool:'banner'，补当前赛季）
       if(Array.isArray(s.hist)) for(const h of s.hist){ if(h.pool==='banner' && !h.season) h.season = s.bannerSeason||null; }
+      if(!s.crafts || typeof s.crafts!=='object') s.crafts={count:0,stars:0,last:null};
+      if(s.crafts.count==null) s.crafts.count=0;
+      if(s.crafts.stars==null) s.crafts.stars=0;
+      if(!s.market || typeof s.market!=='object') s.market={orders:[],next:0};
+      if(!Array.isArray(s.market.orders)) s.market.orders=[];
+      if(s.market.next==null) s.market.next=0;
+      if(!s.expedition || typeof s.expedition!=='object') s.expedition={lv:0,bestLv:0,runs:0,wins:0,history:[]};
+      if(s.expedition.lv==null) s.expedition.lv=0;
+      if(s.expedition.bestLv==null) s.expedition.bestLv=0;
+      if(s.expedition.runs==null) s.expedition.runs=0;
+      if(s.expedition.wins==null) s.expedition.wins=0;
+      if(!Array.isArray(s.expedition.history)) s.expedition.history=[];
+      // 卡片星级字段兼容
+      if(Array.isArray(s.inv)) for(const c of s.inv) if(c.stars==null) c.stars=0;
       s.ver=4;
       return s;
     }
@@ -100,15 +115,19 @@ function payFactor(m){
   const t=RARITY[m.r], span=Math.max(1,t.max-t.min);
   return .8 + .4*Math.min(1,Math.max(0,(m.idx-t.min)/span));
 }
-function expectedTaskPay(m){
+function expectedTaskPay(m, stars){
+  stars = stars||0;
+  // card 传入时 m 可能带 stars
+  if(m && m.stars!=null && !stars) stars=m.stars;
   let pay=RARITY[m.r].basePay*payFactor(m);
   const allLim = (typeof LIMITED_ALL!=='undefined'?LIMITED_ALL:LIMITED_IDS);
   if(allLim.has(m.id)) pay*=2; // 与 taskPayout 结算保持一致: 永久限定加成
+  if(stars) pay *= (1 + stars*0.05); // 星级 +5%/星
   const pG=.02+m.idx/800, pR=Math.min(.25,Math.max(.04,.25-m.idx/250)), pD=Math.min(.02,Math.max(0,(28-m.idx)/1200));
   const pO=Math.max(0,1-pG-pR-pD);
   return PAY_BOOST*(pO*pay + pG*pay*2.5 + pR*pay*.4 - pD*50*PAY_BOOST);
 }
-const estValue = () => S.inv.reduce((s,c)=> s + (c.tokens/TASK_TOKENS)*expectedTaskPay(MMAP[c.m]), 0);
+const estValue = () => S.inv.reduce((s,c)=> s + (c.tokens/TASK_TOKENS)*expectedTaskPay(MMAP[c.m], c.stars||0), 0);
 
 /* ---------- 卡池真实回本率(按概率公式计算) ---------- */
 // 单抽期望价值 = 1.5%×0731卡价值 + 98.5%×(各稀有度概率×该档平均卡价值)

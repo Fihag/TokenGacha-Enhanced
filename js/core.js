@@ -34,7 +34,7 @@ function makeCard(poolKey, rarity, force0731){
   let quota = POOLS[poolKey].half ? Math.round(base/2) : base;
   // 规整到 TASK_TOKENS 倍数，避免 270w/10w 残卡永远卡在卡库 (540w半价 270w→260w)
   quota = Math.floor(quota / TASK_TOKENS) * TASK_TOKENS;
-  return { uid:S.uid++, m:m.id, tokens:quota, max:quota, half:POOLS[poolKey].half };
+  return { uid:S.uid++, m:m.id, tokens:quota, max:quota, half:POOLS[poolKey].half, stars:0 };
 }
 // 限定池保底: 必出当期限定 UTR (v5 赛季=dsv5pro, 神话回响=opus6/gem4pro)
 function makeLimited(poolKey){
@@ -45,7 +45,7 @@ function makeLimited(poolKey){
   const base = m.quota || RARITY[m.r].quota;
   let quota = POOLS[poolKey].half ? Math.round(base/2) : base;
   quota = Math.floor(quota / TASK_TOKENS) * TASK_TOKENS;
-  return { uid:S.uid++, m:m.id, tokens:quota, max:quota, half:POOLS[poolKey].half };
+  return { uid:S.uid++, m:m.id, tokens:quota, max:quota, half:POOLS[poolKey].half, stars:0 };
 }
 function recordHist(cards){
   const t=Date.now();
@@ -63,7 +63,7 @@ function maybeBest(c){
 }
 // Fihag V1: 全池 0.01% 隐藏神卡, 固定 1 亿 token, 品质 NB
 function makeFihag(){
-  return { uid:S.uid++, m:'fihagv1', tokens:100000000, max:100000000, half:false };
+  return { uid:S.uid++, m:'fihagv1', tokens:100000000, max:100000000, half:false, stars:0 };
 }
 // 幻觉彩蛋: 非UR/UTR出货时有 0.2% 概率伪装成UR(gold闪+UR特效), 揭晓后强制变回R并垫少量token作精神损失费
 function maybeHallucinate(c, poolKey){
@@ -146,11 +146,14 @@ function doPulls(poolKey, count){
 }
 
 /* ---------- 工作核心 ---------- */
-function taskPayout(model){
+function taskPayout(model, stars){
+  stars = stars||0;
+  if(model && model.stars!=null && !stars) stars=model.stars;
   let pay = RARITY[model.r].basePay*payFactor(model);
   const allLimited = (typeof LIMITED_ALL!=='undefined'?LIMITED_ALL:LIMITED_IDS);
   const boosted = allLimited.has(model.id);
   if(boosted) pay *= 2; // 限定卡加成: 永久限定集合，跨季不失效
+  if(stars) pay *= (1 + stars*0.05); // 星级 +5%/星
   const roll = Math.random();
   const pGreat = .02 + model.idx/800;
   const pRework = Math.min(.25,Math.max(.04,.25-model.idx/250));
@@ -189,7 +192,7 @@ function consumeTasks(n){
     const c=usable[pos];
     c.tokens-=TASK_TOKENS;
     const m=MMAP[c.m];
-    items.push({m, res:taskPayout(m)});
+    items.push({m, card:c, res:taskPayout(m, c.stars||0)});
     if(c.tokens<TASK_TOKENS) pos++; // 余量不足一单: 换下一张, 最后统一过滤
     if(m.vendor==='Anthropic' && Math.random() < ANTH_BAN_CHANCE){
       banClaudeCards();

@@ -5,7 +5,7 @@
    ================================================================ */
 
 /* ---------- 路由 ---------- */
-const PAGES=['buy','work','balance','activity','data'];
+const PAGES=['buy','work','expedition','balance','activity','data'];
 function go(page){
   if(!PAGES.includes(page)) page='buy';
   for(const p of PAGES){
@@ -174,17 +174,18 @@ const hasNB=(S.dex.fihagv1||0)>0;
     for(const c of list){
       const m=MMAP[c.m], r=RARITY[m.r];
       const residue = c.tokens>0 && c.tokens < TASK_TOKENS*2;
+      const stars = c.stars||0;
       const d=document.createElement('div');
       d.className='inv-card'+(c.tokens<=0?' dead':'')+(residue?' residue':'');
       d.dataset.uid=c.uid;
       d.style.setProperty('--rc', r.hex);
-      d.innerHTML=`<span class="rt">${r.name}</span>${c.half?'<span class="half">体验</span>':''}
+      d.innerHTML=`<span class="rt">${r.name}${stars?' ★'+stars:''}</span>${c.half?'<span class="half">体验</span>':''}
         <button class="inv-del" data-uid="${c.uid}" title="销毁这张卡（剩余 token 不可找回）">🗑️</button>`;
       d.classList.toggle('hasHalf', !!c.half);
       if(m.id==='fihagv1'){ const ic=document.createElement('span'); ic.textContent='🌈'; ic.style.cssText='font-size:28px;line-height:1;margin:4px 0'; d.appendChild(ic); }
         else d.appendChild(iconImg(m.icon));
-      d.insertAdjacentHTML('beforeend',`<div class="nm">${m.name}</div><div class="tk">${c.tokens>0?fmtK(c.tokens)+' tok':'已耗尽'}</div>`);
-      d.title=`${m.name} · ${m.vendor}\n智能指数 ${Math.round(m.idx)} · 真实成本 ${m.cost}\n${m.quote}${residue?' \n⚠️ 残卡（<2单），建议销毁':''}`;
+      d.insertAdjacentHTML('beforeend',`<div class="nm">${m.name}${stars?' ★'+stars:''}</div><div class="tk">${c.tokens>0?fmtK(c.tokens)+' tok':'已耗尽'}</div>`);
+      d.title=`${m.name}${stars?' ★'+stars:''} · ${m.vendor}\n智能指数 ${Math.round(m.idx)} · 真实成本 ${m.cost}\n${m.quote}${stars?' \n⭐ 星级 '+stars+' · 收益+'+(stars*5)+'%':''}${residue?' \n⚠️ 残卡（<2单），建议销毁':''}`;
       g.appendChild(d);
     }
     if(!list.length) g.innerHTML='<div class="inv-empty" style="grid-column:1/-1">该筛选下暂无卡牌</div>';
@@ -240,6 +241,9 @@ function tweenMoney(){
 }
 function renderAll(){
   renderHeader(); tweenMoney(); renderBuy(); renderWork(); renderBalance();
+  if(typeof renderCraft==='function') renderCraft();
+  if(typeof renderMarket==='function') renderMarket();
+  if(typeof renderExpedition==='function') renderExpedition();
   if(typeof renderActivity==='function') renderActivity();
   if(typeof renderData==='function') renderData();
 }
