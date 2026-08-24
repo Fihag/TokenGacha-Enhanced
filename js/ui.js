@@ -317,6 +317,23 @@ function showGacha(cards, pool){
     return d;
   });
   gachaEls=els;
+  // 仅最佳音效一次：预计算最佳稀有度（叠加修复）
+  let bestR=null, bestIsNB=false;
+  {
+    let maxIdx=-1;
+    for(const c of cards){
+      const rr=dispOf(c).r;
+      const idx=RORDER.indexOf(rr);
+      if(idx>maxIdx){ maxIdx=idx; bestR=rr; bestIsNB=(rr==='NB'); }
+    }
+  }
+  let bestSfxPlayed=false;
+  function playBestSfx(){
+    if(bestSfxPlayed) return;
+    bestSfxPlayed=true;
+    if(bestIsNB) SFX.nb();
+    else if(bestR==='SSR'||bestR==='UR'||bestR==='UTR') SFX.rarity(bestR);
+  }
   function flipOne(i){
     const el=els[i];
     if(el.classList.contains('flipped')) return;
@@ -326,15 +343,14 @@ function showGacha(cards, pool){
     SFX.flip(i);
     if(rr==='NB'){
       setTimeout(()=>{
-        SFX.nb();
-        goldFlash();
+        if(cards[i]._halluc) goldFlash();
+        else goldFlash();
         const rect=el.getBoundingClientRect();
         burst(rect.left+rect.width/2, rect.top+rect.height/2, ['#ff2d55','#ffd700','#41d9ff','#7c3aed','#22c55e','#ff6ec7','#fff'], 220, 13);
         shake();
       }, 250);
     }else if(rr==='SSR'||rr==='UR'||rr==='UTR'){
       setTimeout(()=>{
-        SFX.rarity(rr);
         if(cards[i]._halluc) goldFlash(); // 幻觉: 屏幕闪金光
         const rect=el.getBoundingClientRect();
         burst(rect.left+rect.width/2, rect.top+rect.height/2,
@@ -343,7 +359,11 @@ function showGacha(cards, pool){
         if(rr==='UR'||rr==='UTR') shake();
       }, 250);
     }
-    if(flippedCount>=cards.length) finish();
+    if(flippedCount>=cards.length){
+      // 全部翻完后仅播放一次最佳音效
+      setTimeout(playBestSfx, 260);
+      finish();
+    }
   }
   // 自动跳过：勾选后直接翻完（同步双复选框与存档）
   const autoChk=$('chk-auto-skip');
