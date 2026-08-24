@@ -99,7 +99,7 @@ const PROBS = {
   DSV73: 0.015,
   FIHAG: 0.0001,
   HALLUC: 0.002,
-  ANTH_BAN: 0.006,
+  ANTH_BAN: 0.004,
   SKIN_DROP: 0.015,
 };
 const TUNING = {

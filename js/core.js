@@ -6,7 +6,7 @@
 
 const DSV73_DROP = (typeof PROBS!=='undefined'?PROBS.DSV73:0.015);
 const FIHAG_DROP = (typeof PROBS!=='undefined'?PROBS.FIHAG:0.0001);
-const ANTH_BAN_CHANCE = (typeof PROBS!=='undefined'?PROBS.ANTH_BAN:0.006);
+const ANTH_BAN_CHANCE = (typeof PROBS!=='undefined'?PROBS.ANTH_BAN:0.004);
 const HALLUC_RATE = (typeof PROBS!=='undefined'?PROBS.HALLUC:0.002);
 
 /* ---------- 抽卡核心 ---------- */
