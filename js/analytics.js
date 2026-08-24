@@ -85,21 +85,32 @@ function drawBarChart(){
   g.textAlign='left'; g.fillStyle='#98a2c8'; g.fillText('各稀有度累计出货', pad, 14);
 }
 
+let _linePts=[], _lineInfos=[], _lineMin=0, _lineMax=0, _linePad=40;
 function drawLineChart(){
   const c=chartCanvas('line'); if(!c) return;
   const {g,w,h}=c;
   // 按收支明细累计余额曲线（与结算一致：余额不跌穿 0，剔除重复尾点，截断历史时补充 S.money）
-  const pts=[];
+  const pts=[], infos=[];
   const led=[...S.ledger].reverse();
   if(!led.length){
     pts.push(S.money);
+    infos.push({ts:'-', label:'初始资金', amt: S.money-START_MONEY, bal:S.money, idx:0});
   }else{
     let bal=START_MONEY;
-    for(const l of led){ bal=Math.max(0,bal+l.amt); pts.push(bal); }
-    if(pts[pts.length-1]!==S.money) pts.push(S.money);
+    for(let i=0;i<led.length;i++){
+      const l=led[i];
+      bal=Math.max(0,bal+l.amt);
+      pts.push(bal);
+      infos.push({ts:l.ts, label:l.label, amt:l.amt, bal, idx:i});
+    }
+    if(pts[pts.length-1]!==S.money){
+      pts.push(S.money);
+      infos.push({ts:'当前', label:'当前余额', amt:0, bal:S.money, idx:led.length});
+    }
   }
-  const min=Math.min(...pts), max=Math.max(...pts), span=Math.max(1,max-min);
-  const pad=40;
+  _linePts=pts; _lineInfos=infos; _lineMin=Math.min(...pts); _lineMax=Math.max(...pts); _linePad=40;
+  const min=_lineMin, max=_lineMax, span=Math.max(1,max-min);
+  const pad=_linePad;
   g.font='11px system-ui';
   g.strokeStyle='#e3e8f2'; g.beginPath();
   for(let i=0;i<=4;i++){ const y=pad+(h-2*pad)*i/4; g.moveTo(pad,y); g.lineTo(w-pad,y); }
@@ -122,6 +133,103 @@ function drawLineChart(){
     g.textAlign='right'; g.fillStyle='#9aa4c8'; g.font='10px system-ui';
     g.fillText('仅最近80条', w-pad, pad-4);
   }
+  setupLineTooltip();
+}
+function setupLineTooltip(){
+  const wrap=$('wrap-chart-line'), cv=$('chart-line');
+  if(!wrap || !cv) return;
+  let tip=wrap.querySelector('.chart-tip');
+  let cross=wrap.querySelector('.chart-cross');
+  if(!tip){
+    tip=document.createElement('div'); tip.className='chart-tip'; tip.hidden=true; wrap.appendChild(tip);
+  }
+  if(!cross){
+    cross=document.createElement('div'); cross.className='chart-cross'; cross.hidden=true; wrap.appendChild(cross);
+  }
+  // 避免重复绑定
+  if(cv.dataset.tipBound) return;
+  cv.dataset.tipBound='1';
+  cv.style.cursor='crosshair';
+  cv.style.touchAction='none';
+  const showAt=(clientX, clientY, isTouch)=>{
+    const rect=cv.getBoundingClientRect();
+    const cssW=rect.width, cssH=rect.height;
+    // pad 与 canvas CSS 尺寸对应（chartCanvas 用 parent.clientWidth）
+    const pad=_linePad;
+    const pts=_linePts, infos=_lineInfos;
+    if(!pts.length) return;
+    // 计算 x 在图表区的归一化位置
+    let x = clientX - rect.left;
+    // clamp 到绘图区
+    x = Math.max(pad, Math.min(cssW - pad, x));
+    const t = (x - pad) / Math.max(1, cssW - 2*pad);
+    const idx = Math.round(t * (pts.length - 1));
+    const clamped=Math.max(0, Math.min(pts.length-1, idx));
+    const bal=pts[clamped], info=infos[clamped];
+    const min=_lineMin, max=_lineMax, span=Math.max(1,max-min);
+    const y = cssH - pad - (bal - min)/span*(cssH - 2*pad);
+    // 定位 cross
+    const xCss = pad + (clamped/Math.max(1,pts.length-1))*(cssW - 2*pad);
+    cross.style.left = xCss + 'px';
+    cross.style.top = pad + 'px';
+    cross.style.height = (cssH - 2*pad) + 'px';
+    cross.hidden=false;
+    // tooltip 内容：显示时间/收支/余额，并提示范围（前后1点）
+    const prev = clamped>0 ? pts[clamped-1] : null;
+    const next = clamped<pts.length-1 ? pts[clamped+1] : null;
+    const range = (prev!=null||next!=null) ? `<span style="color:#a8b0d0">范围 ¥${Math.min(bal, prev??bal, next??bal).toLocaleString('zh-CN')} ~ ¥${Math.max(bal, prev??bal, next??bal).toLocaleString('zh-CN')}</span>` : '';
+    const amtStr = info.amt ? (info.amt>0?`+${fmt(info.amt)}`:fmt(info.amt)) : '';
+    const label = info.label ? info.label.replace(/</g,'&lt;') : '';
+    tip.innerHTML = `<b>${fmt(bal)}</b> <span style="color:#a8b0d0">#${clamped+1}/${pts.length}</span><br><span style="color:#c9d1ec">${info.ts||''} ${label}</span>${amtStr?` <b style="color:${info.amt>=0?'#7ee787':'#ffb4b4'}">${amtStr}</b>`:''}<br>${range}`;
+    tip.hidden=false;
+    // 定位 tip，避免溢出
+    // 先临时显示测宽高
+    tip.style.left = xCss + 'px';
+    tip.style.top = (y - 8) + 'px';
+    // 边界修正
+    requestAnimationFrame(()=>{
+      const r=tip.getBoundingClientRect(), wr=wrap.getBoundingClientRect();
+      let nx=xCss, ny=y - 8;
+      // 左右溢出
+      if(r.right > wr.right - 4) nx = wr.right - r.width/2 - 4 - wr.left;
+      if(r.left < wr.left + 4) nx = r.width/2 + 4;
+      // 顶部溢出
+      if(r.top < wr.top + 4) ny = y + 18;
+      tip.style.left = nx + 'px';
+      tip.style.top = ny + 'px';
+    });
+  };
+  const hide=()=>{
+    tip.hidden=true; cross.hidden=true;
+  };
+  const onMove=(e)=>{
+    const isTouch = e.touches && e.touches[0];
+    const cx = isTouch ? e.touches[0].clientX : e.clientX;
+    const cy = isTouch ? e.touches[0].clientY : e.clientY;
+    showAt(cx, cy, !!isTouch);
+  };
+  cv.addEventListener('mousemove', onMove);
+  cv.addEventListener('mouseleave', hide);
+  cv.addEventListener('mouseenter', onMove);
+  // 触摸：长按即显示，移动跟随，抬起后 1.5s 隐藏
+  let touchTimer=null, touching=false;
+  cv.addEventListener('touchstart', e=>{
+    touching=true;
+    if(e.cancelable) e.preventDefault();
+    onMove(e);
+    clearTimeout(touchTimer);
+  }, {passive:false});
+  cv.addEventListener('touchmove', e=>{
+    if(!touching) return;
+    if(e.cancelable) e.preventDefault();
+    onMove(e);
+  }, {passive:false});
+  cv.addEventListener('touchend', ()=>{
+    touching=false;
+    clearTimeout(touchTimer);
+    touchTimer=setTimeout(hide, 1500);
+  });
+  cv.addEventListener('touchcancel', hide);
 }
 
 function drawDonutChart(){

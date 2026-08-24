@@ -430,6 +430,11 @@ footer{text-align:center;color:var(--faint);font-size:11px;padding:22px;line-hei
 .data-grid .panel-pad canvas{width:100%;display:block}
 #wrap-chart-bar,#wrap-chart-line,#wrap-chart-donut,#wrap-chart-dex,#wrap-chart-vendor{position:relative}
 #wrap-chart-bar canvas,#wrap-chart-line canvas,#wrap-chart-donut canvas,#wrap-chart-dex canvas,#wrap-chart-vendor canvas{width:100%}
+.chart-tip{position:absolute;left:0;top:0;background:rgba(28,35,64,.96);color:#fff;border-radius:10px;padding:7px 10px;font-size:11px;line-height:1.5;pointer-events:none;z-index:5;box-shadow:0 4px 16px rgba(0,0,0,.2);transform:translate(-50%,-100%);max-width:220px;white-space:nowrap}
+.chart-tip[hidden]{display:none !important}
+.chart-tip b{color:#ffd76a}
+.chart-cross{position:absolute;width:1px;background:rgba(47,107,255,.35);pointer-events:none;z-index:4}
+.chart-cross[hidden]{display:none !important}
 /* ---------- 合成/黑市 ---------- */
 .craft-panel{margin-top:14px}
 .craft-recipes{display:flex;flex-direction:column;gap:8px}
