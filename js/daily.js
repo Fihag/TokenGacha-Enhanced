@@ -117,4 +117,18 @@ function renderActivity(){
   // 皮肤券显示
   $('skin-tickets').textContent = S.skinTickets||0;
   taskBox.querySelectorAll('[data-task]').forEach(b=>b.onclick=()=>{ SFX.click(); claimDailyTask(b.dataset.task); });
+  const quickBtn=$('btn-quick-convert');
+  if(quickBtn && !quickBtn.dataset.bound){
+    quickBtn.dataset.bound='1';
+    quickBtn.onclick=()=>{
+      SFX.click();
+      if((S.skinTickets||0)<1){ toast('皮肤券不足，去签到/做任务吧'); SFX.bad(); return; }
+      if(typeof convertSkinTickets==='function'){
+        convertSkinTickets(1);
+        $('skin-tickets').textContent = S.skinTickets||0;
+      }else if(typeof skinPickerHTML==='function'){
+        skinPickerHTML();
+      }
+    };
+  }
 }
