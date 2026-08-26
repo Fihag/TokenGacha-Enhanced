@@ -126,7 +126,58 @@ module.exports = {
     renderBuy: "readonly",
     renderWork: "readonly",
     renderBalance: "readonly",
-    renderHeader: "readonly"
+    renderHeader: "readonly",
+    // ui cross-file (拆分后互引，原单文件内可见，现需显式声明)
+    PAGES: "readonly",
+    go: "readonly",
+    pulling: "writable",
+    lastPullAt: "writable",
+    rapidCount: "writable",
+    cooling: "writable",
+    lastRefund: "writable",
+    gachaCards: "writable",
+    gachaEls: "writable",
+    pendingHalluc: "writable",
+    tryPull: "readonly",
+    simOne: "readonly",
+    doSim: "readonly",
+    showGacha: "readonly",
+    updateGachaSummary: "readonly",
+    showHalluc: "readonly",
+    rebindFace: "readonly",
+    gpuCoolDown: "readonly",
+    goldFlash: "readonly",
+    danmaku: "readonly",
+    working: "writable",
+    skipFlag: "writable",
+    termPrint: "readonly",
+    settleItems: "readonly",
+    runLines: "readonly",
+    composeLines: "readonly",
+    finishWork: "readonly",
+    skipWork: "readonly",
+    doWork: "readonly",
+    doAuto: "readonly",
+    shareCtx: "writable",
+    shareText: "readonly",
+    openShare: "readonly",
+    copyText: "readonly",
+    topupHTML: "readonly",
+    doTopup: "readonly",
+    toggleMuteUI: "readonly",
+    minPoolPrice: "readonly",
+    destroyCard: "readonly",
+    confirmDestroy: "readonly",
+    toggleLock: "readonly",
+    shownMoney: "writable",
+    tweenMoney: "readonly",
+    ratesHTML: "readonly",
+    dexHTML: "readonly",
+    helpHTML: "readonly",
+    welcomeHTML: "readonly",
+    milestoneHTML: "readonly",
+    bankruptHTML: "readonly",
+    addWorkLog: "readonly"
   },
   rules: {
     "no-unused-vars": ["warn", { "args": "none", "varsIgnorePattern": "^_" }],
@@ -139,12 +190,6 @@ module.exports = {
       files: ["js/**/*.js"],
       rules: {
         "no-unused-vars": "off"
-      }
-    },
-    {
-      files: ["js/ui/**/*.js"],
-      rules: {
-        "no-undef": "off"
       }
     },
     {

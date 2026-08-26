@@ -8,14 +8,6 @@ const stateText = fs.readFileSync(path.resolve("js/state.js"), "utf8");
 const economyText = fs.readFileSync(path.resolve("js/economy.js"), "utf8");
 const validateText = fs.readFileSync(path.resolve("js/validate.js"), "utf8");
 
-// 从 config 提取 MODELS 原始文本，尝试用 zod 校验
-function extractModels() {
-  const m = configText.match(/const MODELS = \[([\s\S]*?)\];/);
-  if (!m) throw new Error("MODELS not found");
-  // 不直接 eval，改用轻量解析：统计 id 唯一等已由 validate.js 覆盖，此处用 zod 校验结构示例
-  return m[1];
-}
-
 describe("zod 校验", () => {
   it("Model zod schema 能校验示例模型", () => {
     const Model = z.object({
@@ -62,8 +54,6 @@ describe("zod 校验", () => {
   });
 
   it("MODELS 63 条且经 validateConfig 自检", () => {
-    // 直接调用 validateConfig 的逻辑（复刻）
-    const ids = [...configText.matchAll(/id:\s*'([^']+)'/g)].map(x => x[1]);
     // 去重前统计 MODELS 内的 id
     const modelBlock = configText.match(/const MODELS = \[([\s\S]*?)\];/)[1];
     const modelIds = [...modelBlock.matchAll(/id:\s*'([^']+)'/g)].map(x => x[1]);

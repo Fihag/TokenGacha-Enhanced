@@ -6,7 +6,6 @@ import path from "path";
 // 若未来改动 config/state/core 的数值，测试会立刻失败，提示同步更新期望
 
 const configText = fs.readFileSync(path.resolve("js/config.js"), "utf8");
-const stateText = fs.readFileSync(path.resolve("js/state.js"), "utf8");
 const economyText = fs.readFileSync(path.resolve("js/economy.js"), "utf8");
 const coreText = fs.readFileSync(path.resolve("js/core.js"), "utf8");
 
