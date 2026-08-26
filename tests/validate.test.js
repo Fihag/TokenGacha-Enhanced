@@ -85,7 +85,15 @@ describe("覆盖率补齐：banner/skins/analytics/ui", () => {
   });
   it("ui 7 模块均存在且 boot 最后加载", () => {
     const html = fs.readFileSync(path.resolve("index.html"), "utf8");
-    const order = ["ui/router.js", "ui/render.js", "ui/gacha.js", "ui/work.js", "ui/modals.js", "ui/share.js", "ui/boot.js"];
+    const order = [
+      "ui/router.js",
+      "ui/render.js",
+      "ui/gacha.js",
+      "ui/work.js",
+      "ui/modals.js",
+      "ui/share.js",
+      "ui/boot.js",
+    ];
     for (const f of order) expect(html).toContain(f);
     // boot 需在 banner 之前
     expect(html.indexOf("ui/boot.js")).toBeLessThan(html.indexOf("banner.js"));

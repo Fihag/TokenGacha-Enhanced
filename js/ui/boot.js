@@ -80,13 +80,16 @@ document.addEventListener('click', e=>{
     toast(`🗑️ 已清理 ${removed} 张 N 卡`);
   }
   if(e.target.id==='btn-confirm-batch-destroy'){
-    const uids=[...(window._batchSet||[])];
+    const set = (typeof BatchState!=='undefined' ? BatchState.set : window._batchSet) || new Set();
+    const uids=[...set];
     if(!uids.length){ closeModal(); return; }
     const before=S.inv.length;
     S.inv=S.inv.filter(c=>!uids.includes(c.uid));
     const removed=before-S.inv.length;
-    window._batchSet.clear();
-    if(window._updateBatchBar) window._updateBatchBar();
+    if(typeof BatchState!=='undefined' && BatchState.set) BatchState.set.clear();
+    else if(window._batchSet) window._batchSet.clear();
+    const upd = (typeof BatchState!=='undefined' ? BatchState.updateBar : window._updateBatchBar);
+    if(upd) upd();
     save(); closeModal(); renderAll();
     SFX.bad();
     toast(`🗑️ 已销毁 ${removed} 张`);

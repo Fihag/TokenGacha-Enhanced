@@ -2,6 +2,8 @@
 /* ================================================================
    TokenGacha · 渲染 (拆自 ui.js)
    ================================================================ */
+// 批量操作封装：避免散落的 window._batch* 全局
+const BatchState = { mode:false, set:new Set(), updateBar:null };
 /* ---------- 渲染: 购买Token ---------- */
 function renderBuy(){
   const box=$('pool-cards'); box.innerHTML='';
@@ -209,32 +211,35 @@ const hasNB=(S.dex.fihagv1||0)>0;
       showModal(`<h3>🗑️ 一键清理 N 卡<button class="x" onclick="closeModal()">×</button></h3><p>将销毁 <b>${nCards.length} 张 N 卡</b>（含 ${fmtK(nCards.reduce((s,c)=>s+c.tokens,0))} tokens），不可找回。</p><button class="big-btn danger" id="btn-confirm-clear-n">确认清理</button><button class="big-btn ghost" onclick="closeModal()">取消</button>`);
     };
   }
-  // 批量操作绑定（仅一次）
+  // 批量操作绑定（仅一次）— 封装于 BatchState，避免 window 散落
   const btnBatchToggle=$('btn-batch-toggle');
   if(btnBatchToggle && !btnBatchToggle.dataset.bound){
     btnBatchToggle.dataset.bound='1';
-    if(window._batchMode==null) window._batchMode=false;
-    if(!window._batchSet) window._batchSet=new Set();
+    BatchState.mode = BatchState.mode || false;
+    BatchState.set = BatchState.set || new Set();
     const bar=$('inv-batch-bar'), cntEl=$('inv-batch-cnt');
     const updateBatchBar=()=>{
-      const n=window._batchSet.size;
-      if(cntEl) cntEl.textContent=`已选 ${n} 张`+(n?` · ${fmtK([...window._batchSet].reduce((s,uid)=>{const c=S.inv.find(x=>x.uid===uid); return s+(c?c.tokens:0);},0))} tok`:'');
+      const n=BatchState.set.size;
+      if(cntEl) cntEl.textContent=`已选 ${n} 张`+(n?` · ${fmtK([...BatchState.set].reduce((s,uid)=>{const c=S.inv.find(x=>x.uid===uid); return s+(c?c.tokens:0);},0))} tok`:'');
       const lockBtn=$('btn-batch-lock'), unlockBtn=$('btn-batch-unlock'), destroyBtn=$('btn-batch-destroy');
       const hasSel=n>0;
       if(lockBtn) lockBtn.disabled=!hasSel;
       if(unlockBtn) unlockBtn.disabled=!hasSel;
       if(destroyBtn) destroyBtn.disabled=!hasSel;
     };
-    window._updateBatchBar=updateBatchBar;
+    BatchState.updateBar=updateBatchBar;
+    // 兼容旧 window 引用（boot.js 过渡期）
+    window._batchMode = BatchState.mode; window._batchSet = BatchState.set; window._updateBatchBar = updateBatchBar;
     btnBatchToggle.onclick=()=>{
-      window._batchMode=!window._batchMode;
-      if(!window._batchMode) window._batchSet.clear();
-      btnBatchToggle.textContent = window._batchMode ? '✖️ 退出批量' : '☑️ 批量';
-      btnBatchToggle.classList.toggle('on', window._batchMode);
-      if(bar) bar.hidden=!window._batchMode;
+      BatchState.mode=!BatchState.mode;
+      window._batchMode = BatchState.mode;
+      if(!BatchState.mode) BatchState.set.clear();
+      btnBatchToggle.textContent = BatchState.mode ? '✖️ 退出批量' : '☑️ 批量';
+      btnBatchToggle.classList.toggle('on', BatchState.mode);
+      if(bar) bar.hidden=!BatchState.mode;
       updateBatchBar();
       renderBalance();
-      if(window._batchMode) toast('☑️ 已进入批量模式，点击卡牌选择');
+      if(BatchState.mode) toast('☑️ 已进入批量模式，点击卡牌选择');
     };
     const bindBatchBtn=(id, fn)=>{
       const b=$(id);
@@ -247,51 +252,51 @@ const hasNB=(S.dex.fihagv1||0)>0;
       else if(f==='half') list=list.filter(c=>c.half);
       else if(f==='residue') list=list.filter(c=>c.tokens>0 && c.tokens < TASK_TOKENS*2);
       else if(f!=='all') list=list.filter(c=>MMAP[c.m].r===f);
-      if(window._batchSet.size===list.length) window._batchSet.clear();
-      else list.forEach(c=>window._batchSet.add(c.uid));
+      if(BatchState.set.size===list.length) BatchState.set.clear();
+      else list.forEach(c=>BatchState.set.add(c.uid));
       updateBatchBar(); renderBalance();
     });
     bindBatchBtn('btn-batch-lock', ()=>{
-      let n=0; for(const uid of [...window._batchSet]){ const c=S.inv.find(x=>x.uid===uid); if(c && !c.locked){ c.locked=true; n++; } }
+      let n=0; for(const uid of [...BatchState.set]){ const c=S.inv.find(x=>x.uid===uid); if(c && !c.locked){ c.locked=true; n++; } }
       if(!n){ toast('选中的卡已是锁定状态'); SFX.bad(); return; }
-      save(); window._batchSet.clear(); updateBatchBar(); renderAll();
+      save(); BatchState.set.clear(); updateBatchBar(); renderAll();
       toast(`🔒 已锁定 ${n} 张`);
     });
     bindBatchBtn('btn-batch-unlock', ()=>{
-      let n=0; for(const uid of [...window._batchSet]){ const c=S.inv.find(x=>x.uid===uid); if(c && c.locked){ c.locked=false; n++; } }
+      let n=0; for(const uid of [...BatchState.set]){ const c=S.inv.find(x=>x.uid===uid); if(c && c.locked){ c.locked=false; n++; } }
       if(!n){ toast('选中的卡已是未锁定'); SFX.bad(); return; }
-      save(); window._batchSet.clear(); updateBatchBar(); renderAll();
+      save(); BatchState.set.clear(); updateBatchBar(); renderAll();
       toast(`🔓 已解锁 ${n} 张`);
     });
     bindBatchBtn('btn-batch-destroy', ()=>{
-      const uids=[...window._batchSet];
+      const uids=[...BatchState.set];
       if(!uids.length) return;
       const toks=uids.reduce((s,uid)=>{const c=S.inv.find(x=>x.uid===uid); return s+(c?c.tokens:0);},0);
       showModal(`<h3>🗑️ 批量销毁<button class="x" onclick="closeModal()">×</button></h3><p>将销毁 <b>${uids.length} 张</b>（含 ${fmtK(toks)} tokens），不可找回。</p><button class="big-btn danger" id="btn-confirm-batch-destroy">确认销毁</button><button class="big-btn ghost" onclick="closeModal()">取消</button>`);
     });
     bindBatchBtn('btn-batch-cancel', ()=>{
-      window._batchSet.clear(); updateBatchBar(); renderBalance();
+      BatchState.set.clear(); updateBatchBar(); renderBalance();
     });
   }
   // 卡牌批量选中样式与点击代理
-  if(window._batchMode && window._batchSet){
+  if(BatchState.mode && BatchState.set){
     g.querySelectorAll('.inv-card').forEach(el=>{
       const uid=Number(el.dataset.uid);
-      if(window._batchSet.has(uid)) el.classList.add('batched');
+      if(BatchState.set.has(uid)) el.classList.add('batched');
     });
     if(!g.dataset.batchBound){
       g.dataset.batchBound='1';
       g.addEventListener('click', e=>{
-        if(!window._batchMode) return;
+        if(!BatchState.mode) return;
         const card=e.target.closest('.inv-card');
         if(!card) return;
         // 批量模式下，点击锁定/销毁按钮仍走原逻辑，不触发选中
         if(e.target.closest('.inv-lock') || e.target.closest('.inv-del')) return;
         const uid=Number(card.dataset.uid);
-        if(window._batchSet.has(uid)) window._batchSet.delete(uid);
-        else window._batchSet.add(uid);
-        if(window._updateBatchBar) window._updateBatchBar();
-        card.classList.toggle('batched', window._batchSet.has(uid));
+        if(BatchState.set.has(uid)) BatchState.set.delete(uid);
+        else BatchState.set.add(uid);
+        if(BatchState.updateBar) BatchState.updateBar();
+        card.classList.toggle('batched', BatchState.set.has(uid));
       });
     }
   }
