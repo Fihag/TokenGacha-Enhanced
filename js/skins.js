@@ -8,6 +8,9 @@ function applySkin(id){
   const skin = SKINS.find(s=>s.id===id);
   if(!skin) return;
   const root=document.documentElement.style;
+  // 清理所有皮肤可能设置的变量，避免 classic(空 vars) 残留上一皮肤
+  const allVars = new Set(SKINS.flatMap(s=>Object.keys(s.vars)));
+  for(const k of allVars) root.removeProperty(k);
   for(const [k,v] of Object.entries(skin.vars)) root.setProperty(k,v);
   S.skin=id;
   save();
