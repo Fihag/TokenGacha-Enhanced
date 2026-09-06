@@ -82,12 +82,15 @@ js/analytics.js       数据图表（含悬浮/长按数值）
 js/track.js           埋点（console + 可选 Cloudflare Web Analytics）
 js/main.js            ES Module 统一入口（启动序列与定时器集中于此）
 tools/sync-sw.mjs     sw.js 资产清单生成器（npm run sync:sw）
+standalone.html       单文件离线版产物（双击即玩,由 tools/build-standalone.mjs 生成）
 tests/                单测（vitest, 115 用例含真函数级行为测试）
 ```
 
 ## 本地运行
 
-项目为 ES Module 架构,需通过 HTTP 访问（`file://` 直开受浏览器 CORS 限制）,存档存于 localStorage:
+**双击即玩**:直接打开根目录的 `standalone.html`（单文件离线版,全部模块与样式已内联,存档存于 localStorage,与在线版通用）。
+
+开发/部署用 `index.html`（ES Module 版,需 HTTP 访问,`file://` 直开会显示引导提示）:
 
 ```bash
 npm run dev
@@ -110,6 +113,7 @@ npm run lint      # eslint
 npm test          # vitest 115 用例
 npm run format    # prettier
 npm run sync:sw   # 发版前同步 sw.js 资产清单与缓存版本
+npm run build:standalone  # 改完 js 后重新生成 standalone.html 离线版
 ```
 
 ## 许可证

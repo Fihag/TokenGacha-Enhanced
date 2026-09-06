@@ -450,6 +450,17 @@
 
     <script type="module" src="js/main.js"></script>
     <script>
+      // file:// 直开时 ES Module 受 CORS 限制无法运行, 引导到单文件离线版
+      if (location.protocol === "file:") {
+        document.addEventListener("DOMContentLoaded", () => {
+          document.body.insertAdjacentHTML(
+            "beforeend",
+            '<div style="position:fixed;inset:0;z-index:999;background:var(--bg,#0d1121);color:var(--txt,#e8ecff);display:flex;align-items:center;justify-content:center;padding:24px"><div style="max-width:420px;background:var(--panel,#171c33);border:1px solid var(--line,#2a3158);border-radius:16px;padding:22px;line-height:1.7"><h3 style="margin:0 0 8px">🚫 这里打不开 ES Module 版</h3><p style="font-size:13px;color:var(--dim,#9aa3cf);margin:0 0 14px">浏览器禁止 file:// 页面加载 ES Module。两个办法：</p><p style="font-size:13px;margin:0 0 6px">1️⃣ 双击同目录的 <b>standalone.html</b>（单文件离线版, 直接能玩）</p><p style="font-size:13px;margin:0">2️⃣ 或在项目目录运行 <code>npx serve .</code> 后访问 localhost</p></div></div>'
+          );
+        });
+      }
+    </script>
+    <script>
       // PWA
       if ("serviceWorker" in navigator) {
         window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js").catch(() => {}));

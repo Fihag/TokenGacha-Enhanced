@@ -13,7 +13,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "sync:sw": "node tools/sync-sw.mjs"
+    "sync:sw": "node tools/sync-sw.mjs",
+    "build:standalone": "node tools/build-standalone.mjs"
   },
   "devDependencies": {
     "eslint": "^8.57.0",
