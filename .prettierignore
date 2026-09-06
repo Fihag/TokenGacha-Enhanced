@@ -4,3 +4,4 @@ js/
 # 若需格式化旧代码：npx prettier --write "js/**/*.js"
 sw.js
 package-lock.json
+standalone.html
