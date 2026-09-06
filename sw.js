@@ -1,7 +1,7 @@
 "use strict";
 /* TokenGacha · Service Worker (PWA) — 离线缓存静态资源
    ⚠️ 本文件由 tools/sync-sw.mjs 生成资产清单, 发版前运行 npm run sync:sw */
-const CACHE = "tokengacha-v411";
+const CACHE = "tokengacha-v420";
 const ASSETS = [
   "./",
   "./index.html",

@@ -19,6 +19,10 @@
 - **UTR 超神话档位**(智能指数 ≥64):高于 UR 的新稀有度,专属红金配色与音效
 - **限定活动卡池「限定池」**:每赛季 1 天自动轮换,到期自动换下一批限定模型(DeepSeek 赛季单抽已涨价至 ¥950,十连 ¥9025,卡面会显示划掉的原价)。赛季按 **DeepSeek V5 系列 → 神话回响 Claude Opus 6 / Gemini 4 Pro → 开源之光 GLM-6 / Qwen5 Max** 循环;100 抽大保底必出当期限定 UTR
 - **限定卡加成**:使用限定模型接单,该单收入 **×2**（永久限定集，跨季不失效，删库赔偿不翻倍）
+- **黑市双边做市**:除「求购」收卡（估值 ×1.10~~1.50 溢价）外,新增「挂单」买入侧——庄家每小时挂 3 单出货,定价随行就市（估值 ×0.9~~1.4）,余额可直接买卡,买卖均计入黑市成交任务
+- **SSR→UR 跨厂商特批**:任意厂商 SSR×5 可合 1 张随机厂商 UR（UR+ 不再只能靠抽,高门槛合成路线）
+- **工匠成就**:成就墙在 10 档余额里程碑之外新增谓词型成就——🔧 工匠入门（累计合成 10 次）与 ⭐ 铸星者（累计升星 5 次）
+- **赛季统计**:限定池卡面实时显示本赛季已抽数/大保底剩余/限定已出张数;数据页新增「交易工坊统计」卡（累计合成/升星/最近产出/黑市买卖笔数）
 - **每日签到**:21 天循环奖励 ¥200 → ¥5000,断签重置，曲线更平滑
   - **日常任务**:抽卡 100 次 / 工作 300 单 / 日入 ¥18000 / 合成 2 次 / 黑市成交 2 单，每日 0 点（+08）刷新
   - **皮肤系统**:6 套主题(经典蓝/暗夜紫/赛博霓虹/金色传说/粉甜梦境/**薄荷白茶**),抽卡 1.5% 概率掉落,皮肤券可兑换
@@ -32,9 +36,9 @@
 
 ### 工程重构
 
-- 单文件 1425 行拆分为 **19 个模块化 JS 文件**（`config`+`validate`+`fx`+`state`+`economy`+`core`+`craft`+`market`+`ui/{router,render,gacha,work,modals,share,boot}`+`banner`+`daily`+`skins`+`analytics`）+ `css/style.css` 外置样式，`ui.js` 1233 行巨石已拆为 7 子模块，`state` 经济计算已抽至 `economy.js`
-- 存档升级至 v4，旧存档自动迁移；`config` 新增 JSDoc + `validate.js` 运行时校验（`zod` 仅单测），`state`/`core` 通过全局 `S` 解耦（`economy` 纯函数化）
-- 新增本地化单测与 lint 基建（`npm test` 82 用例覆盖 `config/economy/gameplay/validate` + `npm run lint`），`banner/skins/analytics/ui` 已补 8+ 用例，`ui` 拆分后 `renderBalance` 单函数 <180 行
+- 单文件 1425 行拆分为 **21 个 ES Module**（`config`+`validate`+`fx`+`state`+`economy`+`core`+`craft`+`market`+`banner`+`daily`+`skins`+`analytics`+`track`+`ui/{router,render,gacha,work,modals,share,boot}`）,由 `js/main.js` 统一入口按序初始化;`ui.js` 1233 行巨石已拆为 7 子模块,逻辑层剥离 UI 副作用（合成/黑市/签到返回结果,音效渲染归调用方）
+- 存档升级至 v4，旧存档自动迁移；`config` 新增 JSDoc + `validate.js` 运行时校验（结果展示于数据页页脚）;工作事件概率/倍率收敛到 `economy.payoutParams` 单一数据源（`core.taskPayout` 抽样与 `expectedTaskPay` 期望同源）
+- 本地化测试与 lint 基建:`npm test` **115 用例**,其中保底/消耗/合成/黑市/存档迁移链为直接 import 的真函数级测试;`sw.js` 资产清单由 `npm run sync:sw` 从模块图自动生成（缓存版本号跟随 package.json）;埋点统一走 `js/track.js`（配置 `TG_CF_TOKEN` 后转发 Cloudflare Web Analytics,留空零网络请求）
 
 ## 玩法速览
 
@@ -63,7 +67,7 @@ js/state.js           存档(v4) + 通用工具（S 全局，迁移集中）
 js/economy.js         经济层:期望计算/估值/回本率（纯函数）
 js/core.js            抽卡/工作核心逻辑
 js/craft.js           合成台（同厂商 3 合 1 + 5 升星）
-js/market.js          黑市做市（6 槽/1h 刷新/1.10-1.50×溢价）
+js/market.js          黑市双边做市（求购 6 槽+挂单 3 槽/1h 刷新）
 js/ui/router.js       路由
 js/ui/render.js       购买/工作/余额/成就/头部渲染
 js/ui/gacha.js        抽卡流程 + 模拟抽卡器
@@ -74,13 +78,23 @@ js/ui/boot.js         事件绑定 + 启动
 js/banner.js          限定活动池
 js/daily.js           签到/日常任务
 js/skins.js           皮肤系统
-js/analytics.js       数据图表 + 启动（含悬浮/长按数值）
-tests/                单测（vitest, 82 用例覆盖 config/economy/gameplay/validate 等）
+js/analytics.js       数据图表（含悬浮/长按数值）
+js/track.js           埋点（console + 可选 Cloudflare Web Analytics）
+js/main.js            ES Module 统一入口（启动序列与定时器集中于此）
+tools/sync-sw.mjs     sw.js 资产清单生成器（npm run sync:sw）
+tests/                单测（vitest, 115 用例含真函数级行为测试）
 ```
 
 ## 本地运行
 
-直接双击打开 `index.html` 即可(存档存于 localStorage)。或用任意静态服务器:
+项目为 ES Module 架构,需通过 HTTP 访问（`file://` 直开受浏览器 CORS 限制）,存档存于 localStorage:
+
+```bash
+npm run dev
+# 或任意静态服务器
+npx serve .
+python -m http.server 8123
+```
 
 ```bash
 npx serve .
@@ -93,8 +107,9 @@ python -m http.server 8123
 ```bash
 npm install
 npm run lint      # eslint
-npm test          # vitest 82 用例
+npm test          # vitest 115 用例
 npm run format    # prettier
+npm run sync:sw   # 发版前同步 sw.js 资产清单与缓存版本
 ```
 
 ## 许可证
