@@ -4,7 +4,7 @@
 import { POOLS, RARITY, RORDER, PITY_MAX, TASK_TOKENS, BATCH_TASKS, VICTORY_AT, MODELS, MMAP, MILESTONES } from "../config.js";
 import { S, $, fmt, fmtK, totalTokens, totalTasks, usableTokens, usableTasks, lockedTokens, save } from "../state.js";
 import { poolRTP, poolExpectedValue, estValue, usableEstValue, expectedTaskPay } from "../economy.js";
-import { bannerCountdownText, isBannerActive } from "../banner.js";
+import { bannerCountdownText } from "../banner.js";
 import { SFX, toast, iconImg } from "../fx.js";
 import { tryPull } from "./gacha.js";
 import { working } from "./work.js";
@@ -20,7 +20,6 @@ export const BatchState = { mode:false, set:new Set(), updateBar:null };
 export function renderBuy(){
   const box=$('pool-cards'); box.innerHTML='';
   for(const [k,p] of Object.entries(POOLS)){
-    if(p.banner && !isBannerActive()) continue; // 活动结束下架
     const card=document.createElement('div');
     card.className='pool-card'+(p.rec?' rec':'');
     card.style.setProperty('--pc', p.color);
@@ -67,7 +66,7 @@ export function renderBuy(){
   }
   // 保底旁加期望值提示
   box.querySelectorAll('.pity-row').forEach((row,i)=>{
-    const k=Object.keys(POOLS).filter(k=>!(POOLS[k].banner&&!isBannerActive()))[i];
+    const k=Object.keys(POOLS)[i];
     if(k) row.insertAdjacentHTML('beforeend', `<span class="pity-ev">期望 ¥${Math.round(poolExpectedValue(k))}</span>`);
   });
 }

@@ -46,9 +46,6 @@ export function syncBanner(){
   return switched;
 }
 
-// 轮换池常年在线, 不再下架
-export function isBannerActive(){ return !!(POOLS.banner && POOLS.banner.banner); }
-
 export function bannerCountdownText(){
   const p = POOLS.banner;
   if(!p || !p._end) return '';

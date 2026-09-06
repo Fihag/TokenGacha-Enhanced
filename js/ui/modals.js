@@ -4,7 +4,6 @@
 import { POOLS, MMAP, RARITY, MILESTONES, DAILY_TASKS } from "../config.js";
 import { S, $, save, fmt, fmtK, totalTasks } from "../state.js";
 import { SFX, burst, toast } from "../fx.js";
-import { isBannerActive } from "../banner.js";
 import { pulling, setCooling } from "./gacha.js";
 import { working } from "./work.js";
 import { renderAll } from "./render.js";
@@ -12,9 +11,9 @@ import { dailyResetIfNeeded, dailyTaskProgress } from "../daily.js";
 import { bankruptHTML, milestoneHTML } from "./share.js";
 
 /* ---------- 结局检测 ---------- */
-// 全场最低单抽价（限定池下架时不计入）
+// 全场最低单抽价
 export function minPoolPrice(){
-  return Math.min(...Object.values(POOLS).filter(p=>!p.banner||isBannerActive()).map(p=>p.price));
+  return Math.min(...Object.values(POOLS).map(p=>p.price));
 }
 export function checkEnd(){
   if(!S.flags.cheated) for(const ms of MILESTONES){

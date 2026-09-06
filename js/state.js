@@ -14,7 +14,7 @@ export function defaultState(){
     daily:{lastSign:null,streak:0,day:null,earnToday:0,pulls:0,tasks:0,crafts:0,markets:0,claimed:{}},
     skin:'classic', skinsOwned:['classic'], skinTickets:0,
     bannerPulls:0, bannerLimited:0, bannerSeason:null, hist:[],
-    crafts:{count:0,stars:0,last:null}, market:{orders:[],next:0} };
+    crafts:{count:0,stars:0,last:null}, market:{orders:[],listings:[],next:0} };
 }
 // 换档唯一入口 (东山再起/重置)：保证 S 的 live binding 同步到所有 import 方
 export function setState(next){ S = next; }
@@ -80,8 +80,9 @@ export function load(){
       if(!s.crafts || typeof s.crafts!=='object') s.crafts={count:0,stars:0,last:null};
       if(s.crafts.count==null) s.crafts.count=0;
       if(s.crafts.stars==null) s.crafts.stars=0;
-      if(!s.market || typeof s.market!=='object') s.market={orders:[],next:0};
+      if(!s.market || typeof s.market!=='object') s.market={orders:[],listings:[],next:0};
       if(!Array.isArray(s.market.orders)) s.market.orders=[];
+      if(!Array.isArray(s.market.listings)) s.market.listings=[];
       if(s.market.next==null) s.market.next=0;
       // 清理远征残留字段
       if(s.expedition) delete s.expedition;

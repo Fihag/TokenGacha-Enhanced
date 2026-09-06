@@ -13,6 +13,7 @@ import { showModal, closeModal } from "./ui/modals.js";
 import { renderAll } from "./ui/render.js";
 
 export function craftVendorsFor(recipe){
+  if(recipe.cross) return []; // 跨厂商配方走 craftCrossCount
   const need = recipe.need, from = recipe.from;
   const counts = {};
   for(const c of S.inv){
@@ -23,8 +24,13 @@ export function craftVendorsFor(recipe){
   }
   return Object.entries(counts).filter(([v,n])=>n>=need && craftOutputCands(recipe, v).length>0).map(([v])=>v);
 }
+// 跨厂商配方（cross:true）：只看总张数，产出随机厂商
+export function craftCrossCount(recipe){
+  return S.inv.filter(c=> !c.locked && MMAP[c.m].r===recipe.from).length;
+}
 export function craftOutputCands(recipe, vendor){
   // 限定卡（bannerOnly）不可被合成产出，避免绕过抽卡获取
+  if(recipe.cross) return MODELS.filter(m=> m.r===recipe.to && !m.bannerOnly);
   return MODELS.filter(m=> m.r===recipe.to && m.vendor===vendor && !m.bannerOnly);
 }
 export function doCraft(recipeId, uids){
@@ -34,13 +40,14 @@ export function doCraft(recipeId, uids){
   const cards = uids.map(uid=> S.inv.find(c=>c.uid===uid)).filter(Boolean);
   if(cards.length!==recipe.need) return {ok:false, msg:'卡片不存在或已消耗'};
   if(cards.some(c=>c.locked)) return {ok:false, msg:'锁定卡不可用于合成'};
-  const vendors = cards.map(c=> MMAP[c.m].vendor);
-  const firstV = vendors[0];
-  if(!vendors.every(v=>v===firstV)) return {ok:false, msg:'需同厂商（不允许跨 vendor）'};
   const rs = cards.map(c=> MMAP[c.m].r);
   if(!rs.every(r=>r===recipe.from)) return {ok:false, msg:`需全部为 ${recipe.from} 稀有度`};
+  // 同厂商强制; 跨厂商配方(cross)除外
+  const vendors = cards.map(c=> MMAP[c.m].vendor);
+  const firstV = vendors[0];
+  if(!recipe.cross && !vendors.every(v=>v===firstV)) return {ok:false, msg:'需同厂商（不允许跨 vendor）'};
   const cands = craftOutputCands(recipe, firstV);
-  if(!cands.length) return {ok:false, msg:`${firstV} 暂无 ${recipe.to} 可合成`};
+  if(!cands.length) return {ok:false, msg:`暂无 ${recipe.to} 可合成`};
   // 消耗
   for(const uid of uids){
     const idx=S.inv.findIndex(c=>c.uid===uid);
@@ -55,7 +62,7 @@ export function doCraft(recipeId, uids){
   S.stats.byR[recipe.to]=(S.stats.byR[recipe.to]||0)+1;
   S.dex[m.id]=(S.dex[m.id]||0)+1;
   maybeBest(nc);
-  addLedger(`🔧 合成 ${recipe.label} · ${firstV}`, 0);
+  addLedger(`🔧 合成 ${recipe.label} · ${recipe.cross?'跨厂商':firstV}`, 0);
   if(typeof S.crafts==='object'){
     S.crafts.count=(S.crafts.count||0)+1;
     S.crafts.last=m.id;
@@ -103,6 +110,10 @@ export function doStarUpgrade(uids){
 export function craftAvailable(){
   const list=[];
   for(const r of CRAFT_RECIPES){
+    if(r.cross){
+      if(craftCrossCount(r)>=r.need) list.push({recipe:r, vendors:['跨厂商']});
+      continue;
+    }
     const vendors=craftVendorsFor(r);
     if(vendors.length) list.push({recipe:r, vendors});
   }
@@ -120,6 +131,19 @@ export function renderCraft(){
   if(!S.inv.length){ box.innerHTML='<div style="color:var(--faint);font-size:12.5px;padding:8px 2px">卡库为空，先去抽卡</div>'; return; }
   let has=false;
   for(const r of CRAFT_RECIPES){
+    if(r.cross){
+      const cnt=craftCrossCount(r);
+      if(cnt<r.need) continue;
+      has=true;
+      const cands=craftOutputCands(r, null);
+      const preview=cands.length? cands.slice(0,3).map(m=>m.name).join(' / '):'暂无目标';
+      const row=document.createElement('div');
+      row.className='craft-recipe';
+      row.style.borderColor='#ec4899';
+      row.innerHTML=`<div class="cr-main"><div class="cr-title">🔧 ${r.label} · 跨厂商特批</div><div class="cr-desc">${r.desc}</div><div class="cr-need">可产出：${preview} · 持有 ${cnt}/${r.need}</div></div><button class="mini-btn" data-craft="${r.id}">合成</button>`;
+      box.appendChild(row);
+      continue;
+    }
     const vendors=craftVendorsFor(r);
     for(const v of vendors){
       has=true;
@@ -152,13 +176,15 @@ export function renderCraft(){
 }
 let _craftPick={recipe:null, vendor:null, selected:new Set()};
 export function openCraftPicker(recipeId, vendor){
-  const need = recipeId==='star' ? CRAFT_STAR_NEED : (CRAFT_RECIPES.find(r=>r.id===recipeId)?.need||3);
+  const r0=CRAFT_RECIPES.find(x=>x.id===recipeId);
+  const need = recipeId==='star' ? CRAFT_STAR_NEED : (r0?.need||3);
   let pool=[];
   if(recipeId==='star'){
     pool=S.inv.filter(c=>c.m===vendor);
+  }else if(r0?.cross){
+    pool=S.inv.filter(c=> MMAP[c.m].r===r0.from); // 跨厂商: 只看稀有度
   }else{
-    const r=CRAFT_RECIPES.find(x=>x.id===recipeId);
-    pool=S.inv.filter(c=> MMAP[c.m].r===r.from && MMAP[c.m].vendor===vendor);
+    pool=S.inv.filter(c=> MMAP[c.m].r===r0.from && MMAP[c.m].vendor===vendor);
   }
   pool.sort((a,b)=> (a.locked?1:0)-(b.locked?1:0) || (a.stars||0)-(b.stars||0) || a.tokens-b.tokens);
   _craftPick={recipe:recipeId, vendor, selected:new Set()};
@@ -169,7 +195,8 @@ export function openCraftPicker(recipeId, vendor){
     const dis=c.locked?'opacity:.45;pointer-events:none':'' ;
     return `<div class="exped-card" data-uid="${c.uid}" style="width:92px;${dis};position:relative">${locked}<div class="nm">${m.name}${stars}</div><div class="tk">${fmtK(c.tokens)} tok</div><div style="font-size:10px;color:var(--faint)">${m.r} · ${m.vendor}${c.locked?' · 已锁定':''}</div></div>`;
   }).join('');
-  const html=`<h3>${recipeId==='star'?'⭐ 选5张同模型升星':'🔧 选'+need+'张同厂商合成'}<button class="x" onclick="closeModal()">×</button></h3>
+  const pickTitle = recipeId==='star' ? '⭐ 选5张同模型升星' : (r0?.cross ? `🔧 选${need}张${r0.from}合成（厂商可混）` : `🔧 选${need}张同厂商合成`);
+  const html=`<h3>${pickTitle}<button class="x" onclick="closeModal()">×</button></h3>
   <div style="display:flex;gap:8px;flex-wrap:wrap;max-height:46vh;overflow-y:auto;padding:6px 2px" id="craft-pick-grid">${grid||'<div style="color:var(--faint)">无可用卡</div>'}</div>
   <div style="display:flex;gap:8px;margin-top:12px;align-items:center"><span id="craft-pick-cnt" style="font-size:12px;color:var(--dim)">已选 0/${need}</span><button class="big-btn" style="flex:1;margin-top:0" id="btn-craft-confirm" disabled>确认合成</button></div>`;
   showModal(html, true);

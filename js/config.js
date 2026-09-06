@@ -187,11 +187,18 @@ export const CRAFT_RECIPES = [
   {id:'n3r',    need:3, from:'N',  to:'R',   label:'N→R',   desc:'3 张同厂商 N 合 1 张同厂商 R'},
   {id:'r3sr',   need:3, from:'R',  to:'SR',  label:'R→SR',  desc:'3 张同厂商 R 合 1 张同厂商 SR'},
   {id:'sr3ssr', need:3, from:'SR', to:'SSR', label:'SR→SSR',desc:'3 张同厂商 SR 合 1 张同厂商 SSR'},
+  {id:'ssr2ur', need:5, from:'SSR',to:'UR',  label:'SSR→UR',cross:true, desc:'任意厂商 SSR×5 合 1 张随机厂商 UR（庄家跨厂商特批, 高门槛）'},
 ];
 export const CRAFT_STAR_NEED = 5; // 同模型×5 升 1 星，上限 3 星，+5% /星
 
 /* ---------- 黑市做市 ---------- */
-export const MARKET_CFG = { slots:6, ttl:3600000, premiumMin:1.10, premiumMax:1.50, refreshMs:3600000 };
+export const MARKET_CFG = {
+  slots: 6,                              // 求购单数量（黑市收卡）
+  ttl: 3600000,                          // 求购+挂单统一刷新周期
+  premiumMin: 1.10, premiumMax: 1.50,    // 求购溢价区间（在卡面估值之上）
+  listSlots: 3,                          // 挂单数量（庄家出货）
+  buyMin: 0.9, buyMax: 1.4,              // 挂单价 = 单卡估值 × [buyMin, buyMax]
+};
 
 /* ---------- 限定加成 ---------- */
 export const LIMITED_IDS = new Set(['dsv5pro','dsv5fl']);

@@ -51,7 +51,7 @@ describe("存档迁移链", () => {
     expect(s.pity.banner).toBe(0);
     expect(s.bannerPulls).toBe(0);
     expect(s.crafts).toEqual({ count: 0, stars: 0, last: null });
-    expect(s.market).toEqual({ orders: [], next: 0 });
+    expect(s.market).toEqual({ orders: [], listings: [], next: 0 });
   });
   it("残卡(不足一单)在迁移中被清除", () => {
     localStorage.setItem(

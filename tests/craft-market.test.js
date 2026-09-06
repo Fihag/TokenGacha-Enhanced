@@ -11,6 +11,7 @@ import {
   MARKET_CFG,
 } from "../js/config.js";
 import { S, defaultState, setState } from "../js/state.js";
+import { expectedTaskPay } from "../js/economy.js";
 import {
   craftVendorsFor,
   craftOutputCands,
@@ -21,11 +22,14 @@ import {
 } from "../js/craft.js";
 import {
   genMarketOrder,
+  genMarketListing,
+  listingPrice,
   ensureMarket,
   marketCanFulfill,
   marketMatchingCards,
   marketEstForCards,
   doMarketSell,
+  doMarketBuy,
 } from "../js/market.js";
 
 function card(mid, opts = {}) {
@@ -35,12 +39,17 @@ function card(mid, opts = {}) {
 }
 
 describe("合成规则", () => {
-  it("配方表 N→R/R→SR/SR→SSR 齐全且产出过滤 bannerOnly", () => {
-    expect(CRAFT_RECIPES.map(r => r.id)).toEqual(["n3r", "r3sr", "sr3ssr"]);
+  it("配方表 N→R/R→SR/SR→SSR/SSR→UR 齐全且产出过滤 bannerOnly", () => {
+    expect(CRAFT_RECIPES.map(r => r.id)).toEqual(["n3r", "r3sr", "sr3ssr", "ssr2ur"]);
+    const ssr2ur = CRAFT_RECIPES.find(r => r.id === "ssr2ur");
+    expect(ssr2ur.from).toBe("SSR");
+    expect(ssr2ur.to).toBe("UR");
+    expect(ssr2ur.need).toBe(5);
+    expect(ssr2ur.cross).toBe(true);
     for (const r of CRAFT_RECIPES) {
       // 每个配方的可产出候选里不允许 bannerOnly
       for (const m of MODELS.filter(x => x.r === r.to && x.bannerOnly)) {
-        for (const vendor of [...new Set(MODELS.filter(x => x.r === r.to).map(x => x.vendor))]) {
+        for (const vendor of [null, ...new Set(MODELS.filter(x => x.r === r.to).map(x => x.vendor))]) {
           expect(craftOutputCands(r, vendor).some(x => x.id === m.id)).toBe(false);
         }
       }
@@ -139,6 +148,52 @@ describe("合成规则", () => {
     const list = craftAvailable();
     expect(list.some(x => x.recipe.id === "star")).toBe(true);
   });
+  it("SSR→UR 跨厂商特批: 任意厂商 SSR×5 合随机 UR, 同厂商校验豁免", () => {
+    setState(defaultState());
+    const ssrIds = MODELS.filter(m => m.r === "SSR" && !m.bannerOnly).map(m => m.id);
+    expect(ssrIds.length).toBeGreaterThanOrEqual(5);
+    const ids = [];
+    // 故意混合厂商（每厂最多取 2 张, 确保跨厂商）
+    const byVendor = {};
+    for (const mid of ssrIds) {
+      const v = MMAP[mid].vendor;
+      byVendor[v] = (byVendor[v] || 0) + 1;
+      if (byVendor[v] > 2) continue;
+      const c = card(mid);
+      S.inv.push(c);
+      ids.push(c.uid);
+      if (ids.length === 5) break;
+    }
+    expect(new Set(ids.map(uid => MMAP[S.inv.find(c => c.uid === uid).m].vendor)).size).toBeGreaterThan(1);
+    const res = doCraft("ssr2ur", ids);
+    expect(res.ok).toBe(true);
+    expect(MMAP[res.card.m].r).toBe("UR");
+    expect(res.card.tokens % TASK_TOKENS).toBe(0);
+    expect(S.crafts.count).toBe(1);
+    expect(S.ledger[0].label).toContain("跨厂商");
+    // 厂商不足的普通配方不受影响: cross 配方不进 craftVendorsFor
+    expect(craftVendorsFor(CRAFT_RECIPES.find(r => r.id === "ssr2ur"))).toEqual([]);
+  });
+  it("SSR→UR 混入非 SSR 或锁卡被拒", () => {
+    setState(defaultState());
+    const a = card("mspark11"),
+      b = card("gpt56lun"),
+      c = card("gem36fl"),
+      d = card("qwen3827b"),
+      e = card("gem31pro");
+    S.inv.push(a, b, c, d, e);
+    expect(doCraft("ssr2ur", [a.uid, b.uid, c.uid, d.uid, e.uid]).ok).toBe(true); // 基线可用
+    setState(defaultState());
+    const bad = card("opus5"); // UR 冒充 SSR
+    const ids2 = [card("mspark11"), card("gpt56lun"), card("gem36fl"), card("qwen3827b"), bad];
+    S.inv.push(...ids2);
+    expect(
+      doCraft(
+        "ssr2ur",
+        ids2.map(x => x.uid)
+      ).ok
+    ).toBe(false);
+  });
 });
 
 describe("黑市做市", () => {
@@ -194,5 +249,69 @@ describe("黑市做市", () => {
     expect(doMarketSell("m2").ok).toBe(false);
     expect(S.money).toBe(money0);
     expect(S.daily.markets).toBe(0);
+  });
+
+  it("挂单生成: 结构/价格区间/排除 bannerOnly 与 NB", () => {
+    for (let i = 0; i < 100; i++) {
+      const li = genMarketListing(i);
+      const m = MMAP[li.mid];
+      expect(m.r).not.toBe("N");
+      expect(m.r).not.toBe("NB");
+      expect(m.bannerOnly).toBeFalsy();
+      expect(li.price).toBeGreaterThan(0);
+    }
+    // 价格 = 估值 × [buyMin, buyMax] 区间内（固定模型采样, 用真期望函数算界）
+    const m = MMAP.gem31pro; // SSR 固定样本
+    const quota = Math.floor((m.quota || RARITY.SSR.quota) / TASK_TOKENS) * TASK_TOKENS;
+    const est = (quota / TASK_TOKENS) * expectedTaskPay(m);
+    for (let i = 0; i < 50; i++) {
+      const p = listingPrice(m);
+      expect(p).toBeGreaterThanOrEqual(Math.floor(est * MARKET_CFG.buyMin) - 10);
+      expect(p).toBeLessThanOrEqual(Math.ceil((est * MARKET_CFG.buyMax) / 10) * 10);
+    }
+  });
+  it("ensureMarket 同时补求购与挂单, 买空后重新补货", () => {
+    setState(defaultState());
+    ensureMarket();
+    expect(S.market.orders.length).toBe(MARKET_CFG.slots);
+    expect(S.market.listings.length).toBe(MARKET_CFG.listSlots);
+    S.market.listings = [];
+    S.market.next = Date.now() - 1;
+    ensureMarket();
+    expect(S.market.listings.length).toBe(MARKET_CFG.listSlots);
+  });
+  it("升级老档兼容: 求购未过期但缺挂单时单独补齐", () => {
+    setState(defaultState());
+    S.market = { orders: [genMarketOrder(0)], listings: [], next: Date.now() + 3600000 };
+    ensureMarket();
+    expect(S.market.orders.length).toBe(1); // 求购未被重掷
+    expect(S.market.listings.length).toBe(MARKET_CFG.listSlots);
+  });
+  it("doMarketBuy: 扣钱入满额卡, 移除挂单, 记账", () => {
+    setState(defaultState());
+    S.market.next = Date.now() + 3600000;
+    const li = { id: "Ltest", mid: "gem31pro", price: 5000, ts: Date.now() };
+    S.market.listings = [li];
+    S.money = 10000;
+    const res = doMarketBuy("Ltest");
+    expect(res.ok).toBe(true);
+    expect(S.money).toBe(5000);
+    expect(S.stats.spent).toBe(5000);
+    const got = S.inv.find(c => c.uid === res.card.uid);
+    expect(got.m).toBe("gem31pro");
+    expect(got.tokens).toBe(MMAP.gem31pro.quota || RARITY.SSR.quota);
+    expect(S.market.listings.length).toBe(0);
+    expect(S.daily.markets).toBe(1); // 买卖双方都算成交
+    expect(S.ledger[0].label).toContain("黑市购入");
+    expect(S.ledger[0].amt).toBe(-5000);
+  });
+  it("doMarketBuy 失败: 余额不足/挂单过期", () => {
+    setState(defaultState());
+    S.market.next = Date.now() + 3600000;
+    const li = { id: "Lp", mid: "opus5", price: 999999, ts: Date.now() };
+    S.market.listings = [li];
+    expect(doMarketBuy("Lp").ok).toBe(false);
+    expect(S.money).toBe(800); // 未扣
+    expect(doMarketBuy("nope").ok).toBe(false);
   });
 });

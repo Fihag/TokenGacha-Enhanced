@@ -35,8 +35,10 @@ describe("活动与轮换", () => {
     expect(dailyText).toContain("dailyResetIfNeeded");
   });
 
-  it("活动页不因限定池下架而隐藏（常驻）", () => {
-    expect(bannerText).toContain("isBannerActive");
+  it("限定池常驻：渲染层已无下架分支", () => {
+    const render = fs.readFileSync(path.resolve("js/ui/render.js"), "utf8");
+    expect(render).not.toContain("isBannerActive");
+    expect(bannerText).not.toContain("isBannerActive");
   });
 
   it("ui.js 路由 5 页且抽卡/工作/余额/活动/数据齐全", () => {

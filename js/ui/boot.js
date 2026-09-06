@@ -5,7 +5,7 @@
 import { NOTICES, RARITY, MILESTONES, SITE_URL, MMAP } from "../config.js";
 import { S, $, save, pick, defaultState, setState } from "../state.js";
 import { SFX, toast, isMuted, toggleMute } from "../fx.js";
-import { bannerSlot, bannerCountdownText, isBannerActive } from "../banner.js";
+import { bannerSlot, bannerCountdownText } from "../banner.js";
 import { go } from "./router.js";
 import { renderAll, syncShownMoney, BatchState } from "./render.js";
 import { doWork, doAuto, skipWork } from "./work.js";
@@ -141,6 +141,5 @@ export function boot(){
 export function bannerCountdownTick(){
   const el=$('banner-countdown');
   if(!el) return;
-  if(isBannerActive()) el.textContent='⏳ '+bannerCountdownText();
-  else renderAll();
+  el.textContent='⏳ '+bannerCountdownText();
 }

@@ -5,7 +5,6 @@ import { SITE_URL, VICTORY_AT, BATCH_TASKS, START_MONEY, PITY_MAX, POOLS, RARITY
 import { S, $, save, fmt, addLedger } from "../state.js";
 import { toast, SFX, iconImg, bigMoneyPop, coinShower } from "../fx.js";
 import { poolRTP } from "../economy.js";
-import { isBannerActive } from "../banner.js";
 import { showModal, closeModal, checkEnd } from "./modals.js";
 import { renderAll } from "./render.js";
 
@@ -105,7 +104,6 @@ function rtCell(r){ return `<span class="rt-${r}">${RARITY[r].name}</span>`; }
 export function ratesHTML(){
   let rows='';
   for(const [k,p] of Object.entries(POOLS)){
-    if(p.banner && !isBannerActive()) continue;
     rows+=`<tr><td><b style="color:${p.color}">${p.name}</b><br><small>¥${p.price}/抽 · ¥${p.tenPrice}/十连</small></td>
       ${['N','R','SR','SSR','UR','UTR'].map(r=>`<td>${p.rates[r]?rtCell(r)+'<br>'+((p.rates[r]||0)*100).toFixed(1)+'%':'—'}</td>`).join('')}
       <td>${(poolRTP(k)*100).toFixed(0)}%</td></tr>`;
