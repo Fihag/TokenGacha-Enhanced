@@ -1,44 +1,51 @@
 "use strict";
 /* TokenGacha · Service Worker (PWA) — 离线缓存静态资源，零构建 */
-const CACHE = "tokengacha-v3";
+const CACHE = "tokengacha-v4";
 const ASSETS = [
   "./",
   "./index.html",
   "./manifest.json",
   "./css/style.css?v=2",
-  "./js/config.js?v=2",
-  "./js/validate.js?v=2",
-  "./js/fx.js?v=2",
-  "./js/state.js?v=2",
-  "./js/economy.js?v=2",
-  "./js/core.js?v=2",
-  "./js/craft.js?v=2",
-  "./js/market.js?v=2",
-  "./js/ui/router.js?v=2",
-  "./js/ui/render.js?v=2",
-  "./js/ui/gacha.js?v=2",
-  "./js/ui/work.js?v=2",
-  "./js/ui/modals.js?v=2",
-  "./js/ui/share.js?v=2",
-  "./js/ui/boot.js?v=2",
-  "./js/banner.js?v=2",
-  "./js/daily.js?v=2",
-  "./js/skins.js?v=2",
-  "./js/analytics.js?v=2",
+  "./js/main.js",
+  "./js/config.js",
+  "./js/validate.js",
+  "./js/fx.js",
+  "./js/state.js",
+  "./js/economy.js",
+  "./js/core.js",
+  "./js/craft.js",
+  "./js/market.js",
+  "./js/banner.js",
+  "./js/daily.js",
+  "./js/skins.js",
+  "./js/analytics.js",
+  "./js/ui/router.js",
+  "./js/ui/render.js",
+  "./js/ui/gacha.js",
+  "./js/ui/work.js",
+  "./js/ui/modals.js",
+  "./js/ui/share.js",
+  "./js/ui/boot.js",
   "./icons/icon-192.png",
   "./icons/icon-512.png",
-  "./og.png"
+  "./og.png",
 ];
 
 self.addEventListener("install", e => {
   e.waitUntil(
-    caches.open(CACHE).then(c => c.addAll(ASSETS)).then(() => self.skipWaiting())
+    caches
+      .open(CACHE)
+      .then(c => c.addAll(ASSETS))
+      .then(() => self.skipWaiting())
   );
 });
 
 self.addEventListener("activate", e => {
   e.waitUntil(
-    caches.keys().then(keys => Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))).then(() => self.clients.claim())
+    caches
+      .keys()
+      .then(keys => Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k))))
+      .then(() => self.clients.claim())
   );
 });
 

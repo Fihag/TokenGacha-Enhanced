@@ -1,4 +1,3 @@
-"use strict";
 /* ================================================================
    TokenGacha · 数据层 (config.js)
    稀有度依据 Artificial Analysis Intelligence Index v4.1.1 分档
@@ -25,7 +24,7 @@
 
 /* ---------- 模型数据 (指数参考 artificialanalysis.ai 排行榜) ---------- */
 /** @type {Model[]} */
-const MODELS = [
+export const MODELS = [
   // UTR —— 智能指数 ≥64, 限定超神话
   {id:'dsv5pro', name:'DeepSeek V5 Pro',     vendor:'DeepSeek',   icon:'deepseek-color', idx:72, r:'UTR', quota:6000000, bannerOnly:true, cost:'$0.09/任务', spd:120, quote:'限定·超神话！72 分新王登基，接单收入翻倍，价格也翻倍'},
   {id:'opus6',   name:'Claude Opus 6',      vendor:'Anthropic',  icon:'claude-color',   idx:79, r:'UTR', quota:6000000, bannerOnly:true, cost:'$2.90/任务', spd:48,  quote:'神秘的克劳德先生，天才程序员就此诞生'},
@@ -98,10 +97,10 @@ const MODELS = [
   {id:'doubao',   name:'豆包 1.5 Pro',       vendor:'字节跳动',   icon:'doubao-color',   idx:14, r:'N',   cost:'$0.02/任务', spd:72,  quote:'字节轻量王，72 tok/s 够快，可惜队友总喊“再便宜点”——便宜没好货的反面教材'},
   {id:'gemma4',   name:'Gemma 4 E4B',        vendor:'Google',     icon:'gemma-color',    idx:12, r:'N',   cost:'$0.01/任务', spd:95,  quote:'4B 小模型，手机带得动，活干不动'},
 ];
-const MMAP = Object.fromEntries(MODELS.map(m=>[m.id,m]));
+export const MMAP = Object.fromEntries(MODELS.map(m=>[m.id,m]));
 
 /* ---------- 稀有度 & 经济参数 (与蒙特卡洛模拟一致) ---------- */
-const RARITY = {
+export const RARITY = {
   N:  {name:'N',  label:'垃圾', hex:'#94a3b8', min:10,max:27, tasks:4,  basePay:3.2, quota:800000},
   R:  {name:'R',  label:'普通', hex:'#3b82f6', min:28,max:39, tasks:8,  basePay:7.2, quota:1600000},
   SR: {name:'SR', label:'精锐', hex:'#9333ea', min:40,max:46, tasks:12, basePay:15.5,quota:2400000},
@@ -110,18 +109,18 @@ const RARITY = {
   UTR:{name:'UTR',label:'超神话',hex:'#ff2d55',min:64,max:99, tasks:24, basePay:420, quota:6000000},
   NB: {name:'NB', label:'神迹', hex:'#ff6ec7', min:64,max:100, tasks:30, basePay:640,  quota:100000000, secret:true},
 };
-const RORDER = ['N','R','SR','SSR','UR','UTR','NB'];
-const RORDER_DESC = ['NB','UTR','UR','SSR','SR','R','N']; // 抽卡概率累加用(高→低)
+export const RORDER = ['N','R','SR','SSR','UR','UTR','NB'];
+export const RORDER_DESC = ['NB','UTR','UR','SSR','SR','R','N']; // 抽卡概率累加用(高→低)
 
 /* ---------- 集中常量 (概率/数值/动效) ---------- */
-const PROBS = {
+export const PROBS = {
   DSV73: 0.015,
   FIHAG: 0.0001,
   HALLUC: 0.002,
   ANTH_BAN: 0.004,
   SKIN_DROP: 0.015,
 };
-const TUNING = {
+export const TUNING = {
   ACCEL_START: 260,
   ACCEL_BLOCK: 32,
   ACCEL_DECAY: 0.68,
@@ -132,7 +131,7 @@ const TUNING = {
 };
 
 /* ---------- 限定池轮换 (每赛季 1 天, 到期自动轮换) ---------- */
-const BANNER_SEASONS = [
+export const BANNER_SEASONS = [
   { id:'v5',  name:'流光限定池', sub:'限定 UP · DeepSeek V5 系列 · 牢梁又涨价了 · 仅此期间', color:'#ff2d55', price:950, tenPrice:9025, oldPrice:900, oldTenPrice:8600, rec:true,
     rates:{N:0,R:0,SR:.62,SSR:.295,UR:.075,UTR:.01}, half:false, pityMax:100, banner:true,
     note:'⏳ 限定卡池！UTR 超神话 DeepSeek V5 Pro 专属。100 抽大保底必出限定 UTR，赛季结束自动轮换。',
@@ -146,9 +145,9 @@ const BANNER_SEASONS = [
     note:'⏳ 限定卡池！智谱 GLM-6 与阿里 Qwen5 Max 双开源神话同台，国产之光×2。100 抽大保底必出限定 UTR，赛季结束自动轮换。',
     featured:['glm6','qwen5max','glm53','qwen38'], limited:['glm6','qwen5max'] },
 ];
-const BANNER_DUR = 86400000;
-const BANNER_EPOCH = Date.parse('2026-08-18T00:00:00+08:00');
-const POOLS = {
+export const BANNER_DUR = 86400000;
+export const BANNER_EPOCH = Date.parse('2026-08-18T00:00:00+08:00');
+export const POOLS = {
   newbie:{ name:'青铜盲盒', sub:'新手体验池 · token 额度 ×50%', color:'#8ba3c7', price:30,  tenPrice:285, pityMax:50,
     rates:{N:.675,R:.275,SR:.045,SSR:.005,UR:0,UTR:0}, half:true,
     note:'体验卡额度减半。适合第一桶金，别指望出奇迹。',
@@ -163,14 +162,14 @@ const POOLS = {
     featured:['opus5','fable5','grok46','mspark12','kimik3','grok45'] },
   banner:Object.assign({}, BANNER_SEASONS[0]),
 };
-const PITY_MAX = 60;
-const TASK_TOKENS = 200000;
-const PAY_BOOST = 1.3;
-const BATCH_TASKS = 10;
-const VICTORY_AT = 50000;
-const START_MONEY = 800;
-const SITE_URL = 'https://tokengacha.pages.dev';
-const MILESTONES = [
+export const PITY_MAX = 60;
+export const TASK_TOKENS = 200000;
+export const PAY_BOOST = 1.3;
+export const BATCH_TASKS = 10;
+export const VICTORY_AT = 50000;
+export const START_MONEY = 800;
+export const SITE_URL = 'https://tokengacha.pages.dev';
+export const MILESTONES = [
   {id:'m5k',   at:5000,   title:'🌱 初入江湖', tag:'余额突破 ¥5,000',   hype:'第一桶金到手，中转站开始注意你了。'},
   {id:'m10k',  at:10000,  title:'🎉 小有所成', tag:'余额突破 ¥10,000',  hype:'从电子垃圾堆里爬了出来，开始人模狗样。'},
   {id:'m20k',  at:20000,  title:'📈 小有盈余', tag:'余额突破 ¥20,000',  hype:'白银池的期望开始显灵，你比一半玩家更懂庄家。'},
@@ -184,32 +183,32 @@ const MILESTONES = [
 ];
 
 /* ---------- 合成台 (同厂商强制) ---------- */
-const CRAFT_RECIPES = [
+export const CRAFT_RECIPES = [
   {id:'n3r',    need:3, from:'N',  to:'R',   label:'N→R',   desc:'3 张同厂商 N 合 1 张同厂商 R'},
   {id:'r3sr',   need:3, from:'R',  to:'SR',  label:'R→SR',  desc:'3 张同厂商 R 合 1 张同厂商 SR'},
   {id:'sr3ssr', need:3, from:'SR', to:'SSR', label:'SR→SSR',desc:'3 张同厂商 SR 合 1 张同厂商 SSR'},
 ];
-const CRAFT_STAR_NEED = 5; // 同模型×5 升 1 星，上限 3 星，+5% /星
+export const CRAFT_STAR_NEED = 5; // 同模型×5 升 1 星，上限 3 星，+5% /星
 
 /* ---------- 黑市做市 ---------- */
-const MARKET_CFG = { slots:6, ttl:3600000, premiumMin:1.10, premiumMax:1.50, refreshMs:3600000 };
+export const MARKET_CFG = { slots:6, ttl:3600000, premiumMin:1.10, premiumMax:1.50, refreshMs:3600000 };
 
 /* ---------- 限定加成 ---------- */
-const LIMITED_IDS = new Set(['dsv5pro','dsv5fl']);
-const LIMITED_ALL = new Set(BANNER_SEASONS.flatMap(s=>s.limited));
+export const LIMITED_IDS = new Set(['dsv5pro','dsv5fl']);
+export const LIMITED_ALL = new Set(BANNER_SEASONS.flatMap(s=>s.limited));
 
 /* ---------- 每日签到 & 任务定义 ---------- */
-const SIGN_REWARDS = [200, 240, 280, 330, 380, 440, 510, 590, 680, 780, 900, 1050, 1220, 1420, 1650, 1920, 2240, 2620, 3060, 3600, 5000];
-const DAILY_TASKS = [
-  {id:'pull100',  name:'抽卡 100 次',     desc:'今天抽满 100 抽（不限池）',  target:100,  rewardMoney:2000,  rewardTicket:1, rewardFreeTen:0, check:s=>S.daily.pulls},
-  {id:'work300',  name:'工作 300 单',     desc:'用 token 接 300 单私活',     target:300,  rewardMoney:2800,  rewardTicket:1, rewardFreeTen:1, check:s=>S.daily.tasks},
-  {id:'earn18000',name:'日入 ¥18000',     desc:'今日累计收入 ≥ ¥18000',     target:18000, rewardMoney:3200, rewardTicket:1, rewardFreeTen:0, check:s=>S.daily.earnToday},
-  {id:'craft2',   name:'合成 2 次',       desc:'在交易工坊合成/升星 2 次',  target:2,     rewardMoney:1200,  rewardTicket:1, rewardFreeTen:0, check:s=>S.daily.crafts||0},
-  {id:'market2',  name:'黑市成交 2 单',   desc:'在黑市卖卡成交 2 单',        target:2,     rewardMoney:1500,  rewardTicket:1, rewardFreeTen:0, check:s=>S.daily.markets||0},
+export const SIGN_REWARDS = [200, 240, 280, 330, 380, 440, 510, 590, 680, 780, 900, 1050, 1220, 1420, 1650, 1920, 2240, 2620, 3060, 3600, 5000];
+export const DAILY_TASKS = [
+  {id:'pull100',  name:'抽卡 100 次',     desc:'今天抽满 100 抽（不限池）',  target:100,  rewardMoney:2000,  rewardTicket:1, rewardFreeTen:0, check:s=>s.daily.pulls},
+  {id:'work300',  name:'工作 300 单',     desc:'用 token 接 300 单私活',     target:300,  rewardMoney:2800,  rewardTicket:1, rewardFreeTen:1, check:s=>s.daily.tasks},
+  {id:'earn18000',name:'日入 ¥18000',     desc:'今日累计收入 ≥ ¥18000',     target:18000, rewardMoney:3200, rewardTicket:1, rewardFreeTen:0, check:s=>s.daily.earnToday},
+  {id:'craft2',   name:'合成 2 次',       desc:'在交易工坊合成/升星 2 次',  target:2,     rewardMoney:1200,  rewardTicket:1, rewardFreeTen:0, check:s=>s.daily.crafts||0},
+  {id:'market2',  name:'黑市成交 2 单',   desc:'在黑市卖卡成交 2 单',        target:2,     rewardMoney:1500,  rewardTicket:1, rewardFreeTen:0, check:s=>s.daily.markets||0},
 ];
 
 /* ---------- 皮肤系统 ---------- */
-const SKINS = [
+export const SKINS = [
   {id:'classic', name:'经典蓝', icon:'🎐', vars:{}, default:true,
     desc:'出厂默认主题，庄家最爱。'},
   {id:'night',   name:'暗夜紫', icon:'🌌',
@@ -233,11 +232,11 @@ const SKINS = [
       '--txt':'#1a3d2e','--dim':'#5a8a74','--faint':'#8ab5a0','--blue':'#10b981','--blue-d':'#059669'},
     desc:'薄荷一夏，清凉不破产——安静抽卡，稳如老狗。'},
 ];
-const SKIN_DROP_RATE = 0.015;
-if(typeof PROBS!=='undefined') PROBS.SKIN_DROP = SKIN_DROP_RATE;
+export const SKIN_DROP_RATE = 0.015;
+PROBS.SKIN_DROP = SKIN_DROP_RATE;
 
 /* ---------- 终端文本库 ---------- */
-const CLIENT_REQS = [
+export const CLIENT_REQS = [
 '「帮我做个奶茶店小程序，要赛博朋克风」','「仿个淘宝，先做首页就行，预算 500」','「我要元宇宙官网，明天给投资人看」',
 '「把 20 年前的老系统迁移上云，不能停机」','「做个相亲小程序，要 soul 那种调调」','「帮健身房做个约课系统，顺便能卖课」',
 '「宠物殡葬官网，风格要温暖一点」','「直播带货后台，今晚就要上线」','「给广场舞队做个报名系统，要兼容老人机」',
@@ -267,7 +266,7 @@ const CLIENT_REQS = [
 '「帮驾校教练做科目二模拟打分，压线要报警」',
 '「把电梯广告屏接入 AI 大屏，广告词按楼层人群自动生成」',
 ];
-const MEME_LINES = [
+export const MEME_LINES = [
 '$ rm -rf node_modules && npm i  # 包治百病','console.log("到这了吗 111");','// TODO: 以后优化（2019 年留，勿动）',
 '// 不要问这段为什么存在，问就是历史原因','$ git push --force  # 祈祷中…','// 这个 bug 在我机器上是好的',
 '$ npm audit fix --force  # 勇士行为','⚠ lodash 的依赖的依赖报了 7 个漏洞','$ pip install -r requirements.txt  # 地狱绘图开始',
@@ -305,25 +304,25 @@ const MEME_LINES = [
 '$ df -h  # /dev/sda1 100%','// 分布式事务：最终一致性 = 最终会一致的，大概','✗ 脑裂了，两个主库互相同步失败',
 '⚠ 客户服务器在居民楼，晚上断网因为路由器被关了','// 这段代码在周五 18:55 被 merge，周一见','✗ 上线 5 分钟，老板第一个发现 bug',
 ];
-const MID_REQS = [
+export const MID_REQS = [
 '> 客户中途改需求：「按钮往左移 1px」','> 客户：「深色模式呢？现在 App 都有深色模式」','> 客户发来 60 秒语音方阵 ×12，转文字后需求全变',
 '> 客户：「参考拼多多，但做出苹果官网的感觉」','> 客户：「加个功能，分享朋友圈得优惠券」','> 客户：「首页轮播图换成我家狗的照片」',
 '> 客户：「要不……我们再聊聊第一版？」','> 客户：「我朋友说要做什么 SEO，你加一下」','> 客户：「领导说要有 AI，你随便接个大模型」',
 '> 客户：「界面再高级一点，苹果发布会那种」','> 客户：「加个会员系统吧，明天要」','> 客户：「先上线，合同回头补」',
 ];
-const OK_LINES = [
+export const OK_LINES = [
 '  ✔ Compiled successfully','  ✔ 27 tests passed, 0 failed','  ✔ 部署完成 → https://client-xxx.vercel.app','  ✔ eslint 自动修复 132 处',
 '  ✔ 构建产物 214KB（gzip 后勉强能看）','  ✔ 已推送 main，CI 全绿','  ✔ 热更新成功，用户无感知','  ✔ 数据库迁移完成，0 行丢失（惊喜）',
 '  ✔ 性能优化：LCP 3.2s → 0.8s','  ✔ 已生成 API 文档（虽然没人看）','  ✔ 回滚成功，就当无事发生','  ✔ 客户验收截图已存证',
 '  ✔ 发票已开（普票，专票要加钱）','  ✔ README 写完（Copilot 帮写的）','  ✔ 灰度 5% 无异常，全量发布','  ✔ 代码评审通过：LGTM（没细看）',
 ];
-const EVT_TXT = {
+export const EVT_TXT = {
   great:['🤩 客户惊呼：这是艺术品！追加小费！','🤩 一次通过！客户当场打钱还介绍了新单！','🤩 代码优雅得能进教科书，客户加钱！'],
   ok:['✅ 客户验收通过，尾款到账。','✅ 交付成功。','✅ 需求完成，客户没说啥（就是满意）。'],
   rework:['🔧 客户：logo 再大一点，颜色再鲜艳一点……','🔧 需求改了三版，时薪暴跌。','🔧 测试报了一堆 bug，连夜返工。'],
   disaster:['💥 模型把生产数据库 DROP 了……倒赔！','💥 force push 覆盖了客户 main 分支……赔钱！','💥 幻觉发作调用了不存在的 API，系统崩盘……赔偿！'],
 };
-const NOTICES = [
+export const NOTICES = [
 '📢 公告：本站已上线 Kimi K3 / GPT-5.6 系列渠道；Claude 渠道今日波动，出货率概不补偿。',
 '📢 公告：DeepSeek API 疯狂涨价，价格屠夫的帽子已摘——牢梁连夜改了价目表（2026-08-18 起）。',
 '📢 公告：接到投诉，某玩家抽到豆包后要求退钱。本站声明：垃圾是概率的一部分。',

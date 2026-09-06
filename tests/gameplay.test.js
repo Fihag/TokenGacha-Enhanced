@@ -124,9 +124,12 @@ describe("合成台与黑市", () => {
     expect(marketText).toContain("marketNeedCount");
   });
 
-  it("黑市每小时自动刷新且有倒计时", () => {
-    expect(marketText).toContain("setInterval");
+  it("黑市自动刷新且有倒计时", () => {
+    expect(marketText).toContain("marketTick");
     expect(marketText).toContain("market-countdown");
+    const mainText = fs.readFileSync(path.resolve("js/main.js"), "utf8");
+    expect(mainText).toContain("marketTick");
+    expect(mainText).toContain("setInterval");
   });
 });
 
@@ -167,35 +170,26 @@ describe("工程与体验回归", () => {
     expect(styleCount).toBe(0);
   });
 
-  it("js 按依赖顺序在 index.html 中正确引入", () => {
+  it("js 经 main.js 模块图按依赖引入", () => {
     const html = fs.readFileSync(path.resolve("index.html"), "utf8");
-    const order = [
-      "config.js",
-      "validate.js",
-      "fx.js",
+    const main = fs.readFileSync(path.resolve("js/main.js"), "utf8");
+    // index 只保留一个 module 入口
+    expect(html).toContain('type="module" src="js/main.js"');
+    expect(html.match(/<script[^>]*src="js\//g)).toHaveLength(1);
+    // 模块图覆盖全部逻辑与 UI 模块
+    for (const f of [
       "state.js",
-      "economy.js",
-      "core.js",
-      "craft.js",
-      "market.js",
-      "ui/router.js",
-      "ui/render.js",
-      "ui/gacha.js",
-      "ui/work.js",
-      "ui/modals.js",
-      "ui/share.js",
-      "ui/boot.js",
+      "fx.js",
+      "config.js",
       "banner.js",
-      "daily.js",
+      "market.js",
+      "ui/render.js",
+      "ui/router.js",
+      "ui/boot.js",
       "skins.js",
-      "analytics.js",
-    ];
-    let lastIdx = -1;
-    for (const f of order) {
-      const idx = html.indexOf(f);
-      expect(idx).toBeGreaterThan(lastIdx);
-      lastIdx = idx;
-    }
+      "validate.js",
+    ])
+      expect(main).toContain(f);
   });
 
   it("css/style.css 存在且包含关键变量与动画", () => {

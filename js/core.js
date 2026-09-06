@@ -1,16 +1,21 @@
-"use strict";
 /* ================================================================
    TokenGacha · 核心层 (core.js)
    抽卡核心 (含 UTR / 限定池 / 0731 独立爆率) / 工作核心 (含限定翻倍)
+   纯逻辑层：只改 S 与存档，不触 UI（渲染/音效由调用方处理）
    ================================================================ */
+import { POOLS, PITY_MAX, RORDER, RORDER_DESC, MODELS, MMAP, RARITY, TASK_TOKENS, PAY_BOOST, PROBS, LIMITED_IDS, LIMITED_ALL } from "./config.js";
+import { S, save } from "./state.js";
+import { payFactor } from "./economy.js";
+import { dailyResetIfNeeded } from "./daily.js";
+import { rollSkinDrop } from "./skins.js";
 
-const DSV73_DROP = (typeof PROBS!=='undefined'?PROBS.DSV73:0.015);
-const FIHAG_DROP = (typeof PROBS!=='undefined'?PROBS.FIHAG:0.0001);
-const ANTH_BAN_CHANCE = (typeof PROBS!=='undefined'?PROBS.ANTH_BAN:0.004);
-const HALLUC_RATE = (typeof PROBS!=='undefined'?PROBS.HALLUC:0.002);
+const DSV73_DROP = PROBS.DSV73;
+const FIHAG_DROP = PROBS.FIHAG;
+const ANTH_BAN_CHANCE = PROBS.ANTH_BAN;
+const HALLUC_RATE = PROBS.HALLUC;
 
 /* ---------- 抽卡核心 ---------- */
-function drawRarity(poolKey){
+export function drawRarity(poolKey){
   const pool = POOLS[poolKey];
   const pityMax = pool.pityMax || PITY_MAX;
   if(S.pity[poolKey] >= pityMax-1){
@@ -22,7 +27,7 @@ function drawRarity(poolKey){
   for(const t of RORDER_DESC){ acc+=pool.rates[t]||0; if(r<acc) return t; }
   return 'N';
 }
-function makeCard(poolKey, rarity, force0731){
+export function makeCard(poolKey, rarity, force0731){
   let cands;
   if(force0731){
     cands = MODELS.filter(m=>m.id==='dsv4fl73');
@@ -37,7 +42,7 @@ function makeCard(poolKey, rarity, force0731){
   return { uid:S.uid++, m:m.id, tokens:quota, max:quota, half:POOLS[poolKey].half, stars:0, locked:false };
 }
 // 限定池保底: 必出当期限定 UTR (v5 赛季=dsv5pro, 神话回响=opus6/gem4pro)
-function makeLimited(poolKey){
+export function makeLimited(poolKey){
   let limited = MODELS.filter(m=>LIMITED_IDS.has(m.id) && m.r==='UTR'); // 大保底锁定 UTR
   if(!limited.length) limited = MODELS.filter(m=>LIMITED_IDS.has(m.id)); // 兜底: 赛季无UTR限定则退回全部限定
   if(!limited.length) limited = MODELS.filter(m=>m.r==='UTR' && !m.bannerOnly); // 终极兜底: 任意非限定UTR
@@ -47,14 +52,14 @@ function makeLimited(poolKey){
   quota = Math.floor(quota / TASK_TOKENS) * TASK_TOKENS;
   return { uid:S.uid++, m:m.id, tokens:quota, max:quota, half:POOLS[poolKey].half, stars:0, locked:false };
 }
-function recordHist(cards){
+export function recordHist(cards){
   const t=Date.now();
   const season = S.bannerSeason || null;
   for(const c of cards) S.hist.push({t, pool:c._pool, season: c._pool==='banner'?season:null, m:c.m, r:MMAP[c.m].r});
   if(S.hist.length>100) S.hist.splice(0, S.hist.length-100);
 }
 // 最佳出货: 先比稀有度, 同档比智能指数
-function maybeBest(c){
+export function maybeBest(c){
   const m=MMAP[c.m];
   if(!S.stats.best){ S.stats.best=c.m; return; }
   const b=MMAP[S.stats.best];
@@ -62,11 +67,11 @@ function maybeBest(c){
   if(d>0 || (d===0 && m.idx>b.idx)) S.stats.best=c.m;
 }
 // Fihag V1: 全池 0.01% 隐藏神卡, 固定 1 亿 token, 品质 NB
-function makeFihag(){
+export function makeFihag(){
   return { uid:S.uid++, m:'fihagv1', tokens:100000000, max:100000000, half:false, stars:0, locked:false };
 }
 // 幻觉彩蛋: 非UR/UTR出货时有 0.2% 概率伪装成UR(gold闪+UR特效), 揭晓后强制变回R并垫少量token作精神损失费
-function maybeHallucinate(c, poolKey){
+export function maybeHallucinate(c, poolKey){
   if(c.m==='dsv4fl73') return; // 0731 是独立爆率联名, 不参与
   if(RORDER.indexOf(MMAP[c.m].r) >= RORDER.indexOf('UR')) return; // 真UR/UTR不装幻觉
   if(Math.random() >= HALLUC_RATE) return;
@@ -84,11 +89,11 @@ function maybeHallucinate(c, poolKey){
   c._halluc = fake.id; // 揭晓前显示 UR 伪装
   c._comp = comp;
 }
-function doPulls(poolKey, count){
+export function doPulls(poolKey, count){
   const cards=[];
   const pool = POOLS[poolKey];
   const pityMax = pool.pityMax || PITY_MAX;
-  if(typeof dailyResetIfNeeded==='function') dailyResetIfNeeded(); // 跨天时先重置今日计数
+  dailyResetIfNeeded(); // 跨天时先重置今日计数
   for(let i=0;i<count;i++){
     const atPity = S.pity[poolKey] >= pityMax-1; // 保底触发时必出 SSR+, 不受 0731 独立爆率抢占
     const gotFihag = Math.random() < FIHAG_DROP; // 全池 0.01% 隐藏神卡优先判定
@@ -140,18 +145,17 @@ function doPulls(poolKey, count){
   }
   S.inv.push(...cards);
   recordHist(cards);
-  if(typeof afterPulls==='function') afterPulls(cards); // 皮肤掉落 hook
+  rollSkinDrop(cards); // 皮肤掉落 hook
   save();
   return cards;
 }
 
 /* ---------- 工作核心 ---------- */
-function taskPayout(model, stars){
+export function taskPayout(model, stars){
   stars = stars||0;
   if(model && model.stars!=null && !stars) stars=model.stars;
   let pay = RARITY[model.r].basePay*payFactor(model);
-  const allLimited = (typeof LIMITED_ALL!=='undefined'?LIMITED_ALL:LIMITED_IDS);
-  const boosted = allLimited.has(model.id);
+  const boosted = LIMITED_ALL.has(model.id);
   if(boosted) pay *= 2; // 限定卡加成: 永久限定集合，跨季不失效
   if(stars) pay *= (1 + stars*0.05); // 星级 +5%/星
   const roll = Math.random();
@@ -163,7 +167,7 @@ function taskPayout(model, stars){
   if(roll>1-pGreat) return {amt:pay*2.5*PAY_BOOST, evt:'great', boosted};
   return {amt:pay*(.85+Math.random()*.3)*PAY_BOOST, evt:'ok', boosted};
 }
-function bestCard(){
+export function bestCard(){
   let best=null;
   for(const c of S.inv){
     if(c.tokens<TASK_TOKENS || c.locked) continue;
@@ -172,14 +176,14 @@ function bestCard(){
   }
   return best;
 }
-function banClaudeCards(){
+export function banClaudeCards(){
   for(const c of S.inv){ if(MMAP[c.m].vendor==='Anthropic') c.tokens=0; }
   S.inv=S.inv.filter(c=>c.tokens>0);
   save();
 }
 // 消耗 n 单（按稀有度优先，锁定卡不消耗），返回明细
 // 大单量优化: 一次性排序可用卡 + 指针按序消耗, 避免每单全表扫描与 splice
-function consumeTasks(n){
+export function consumeTasks(n){
   const items=[];
   const usable = S.inv.filter(c=>c.tokens>=TASK_TOKENS && !c.locked)
     .sort((a,b)=>{

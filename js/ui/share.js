@@ -1,10 +1,17 @@
-"use strict";
 /* ================================================================
    TokenGacha · 分享与充值 (拆自 ui.js)
    ================================================================ */
+import { SITE_URL, VICTORY_AT, BATCH_TASKS, START_MONEY, PITY_MAX, POOLS, RARITY, RORDER, MODELS, MMAP } from "../config.js";
+import { S, $, save, fmt, addLedger } from "../state.js";
+import { toast, SFX, iconImg, bigMoneyPop, coinShower } from "../fx.js";
+import { poolRTP } from "../economy.js";
+import { isBannerActive } from "../banner.js";
+import { showModal, closeModal, checkEnd } from "./modals.js";
+import { renderAll } from "./render.js";
+
 /* ---------- 分享 ---------- */
-let shareCtx={cv:null,ms:null};
-function shareText(ms){
+export let shareCtx={cv:null,ms:null};
+export function shareText(ms){
   const best=S.stats.best?MMAP[S.stats.best].name:'无';
   if(ms) return `【${ms.title} ${ms.tag}】我在 TokenGacha 抽卡模拟器达成新成就！抽卡 ${S.stats.pulls} 次、打工 ${S.stats.tasks} 单，现在余额 ${fmt(S.money)}。70% 的玩家最终破产，你能成为持续赚钱的那 30% 吗？👉 ${SITE_URL}`;
   return `我在 TokenGacha 抽卡模拟器鏖战至今：余额 ${fmt(S.money)}，抽卡 ${S.stats.pulls} 次，最佳出货 ${best}，删库 ${S.stats.disasters} 次🤡。70% 的玩家最终破产，你能成为那 30% 吗？👉 ${SITE_URL}`;
@@ -53,21 +60,21 @@ function shareHTML(ms){
     ${(typeof navigator!=='undefined'&&navigator.share)?'<button class="big-btn ghost" style="flex:1;margin-top:0;min-width:130px" id="btn-sys-share">📤 系统分享</button>':''}
   </div>`;
 }
-function openShare(ms){
+export function openShare(ms){
   const cv=drawShareCard(ms);
   shareCtx={cv,ms};
   showModal(shareHTML(ms));
   $('share-img').src=cv.toDataURL('image/png');
 }
-function copyText(t){
+export function copyText(t){
   const done=()=>toast('📋 分享文案已复制，去粘贴给小伙伴吧');
   const legacy=()=>{ const ta=document.createElement('textarea'); ta.value=t; ta.style.cssText='position:fixed;opacity:0'; document.body.appendChild(ta); ta.select(); try{document.execCommand('copy');}catch(e){} ta.remove(); };
   if(typeof navigator!=='undefined'&&navigator.clipboard&&navigator.clipboard.writeText){ navigator.clipboard.writeText(t).then(done).catch(()=>{legacy();done();}); }
   else { legacy(); done(); }
 }
 /* ---------- 充值（作弊模式） ---------- */
-const TOPUP_MAX = 64800;
-function topupHTML(){
+export const TOPUP_MAX = 64800;
+export function topupHTML(){
   const tiers=[6,30,68,128,328,648,6480,64800];
   return `<h3>💳 充值中心（作弊模式）<button class="x" onclick="closeModal()">×</button></h3>
   <div class="notice" style="margin-bottom:12px"><span class="dot"></span><span>⚠️ <b>作弊警告</b>：充值后本局将<b>永久关闭成就系统</b>（🎉 小有所成 / 🏆 财富自由 / 👑 传奇大亨 均无法再解锁）。已解锁的成就保留，余额页将打上「作弊」标记。</span></div>
@@ -77,7 +84,7 @@ function topupHTML(){
   <div class="note">双倍返利？没有。首充礼包？也没有。这里是作弊，不是福利。</div>
   <button class="big-btn danger" id="btn-do-topup">确认充值（并放弃成就）</button>`;
 }
-function doTopup(){
+export function doTopup(){
   const raw=($('topup-amt')&&$('topup-amt').value||'').trim();
   const v=Number(raw);
   if(!raw||!isFinite(v)||v<=0){ toast('请输入有效金额'); SFX.bad(); return; }
@@ -95,7 +102,7 @@ function doTopup(){
   checkEnd();
 }
 function rtCell(r){ return `<span class="rt-${r}">${RARITY[r].name}</span>`; }
-function ratesHTML(){
+export function ratesHTML(){
   let rows='';
   for(const [k,p] of Object.entries(POOLS)){
     if(p.banner && !isBannerActive()) continue;
@@ -117,7 +124,7 @@ function ratesHTML(){
   · 工作收入 = 模型报价 × 事件倍率（大成功×2.5 / 返工×0.4 / 删库赔¥65，垃圾模型事故率高）；限定卡（永久限定集）接单收入 ×2<br>
   · 本中转站期望约 7 成玩家最终破产。庄家永远赢，除非……你抽到那张卡。</div>`;
 }
-function dexHTML(){
+export function dexHTML(){
   const ownNB = (S.dex.fihagv1||0)>0;
   const visible = MODELS.filter(m=> m.id!=='fihagv1' || ownNB);
   const counts={};
@@ -142,7 +149,7 @@ function dexHTML(){
   }).join('');
   sorted.forEach((m,i)=>{ const ic=grid.children[i].querySelector('.ic'); if(m.id==='fihagv1'){ ic.textContent='🌈'; ic.style.cssText='font-size:30px;line-height:1'; } else ic.appendChild(iconImg(m.icon)); });
 }
-function helpHTML(){
+export function helpHTML(){
   return `<h3>❓ 玩法说明<button class="x" onclick="closeModal()">×</button></h3>
   <p>你是一名独立开发者。这家中转站不卖套餐，只卖<b>盲盒</b>：抽到顶级模型还是电子垃圾，全看命。</p>
   <p>🔁 循环：<b>「购买Token」抽卡 → 「工作」用 token 接 vibe coding 私活 → 「余额」看着数字涨跌</b>。系统自动优先消耗最高稀有度的卡——好钢用在刀刃上。模型越强报价越高、翻车越少；垃圾模型还可能把客户数据库删了<b>倒赔钱</b>。</p>
@@ -153,25 +160,25 @@ function helpHTML(){
   <p>⌨️ 快捷键：<span class="kbd">空格</span> 批量接单</p>
   <button class="big-btn ghost" id="btn-reset">🗑️ 清空存档，重新来过</button>`;
 }
-function endStats(){
+export function endStats(){
   const best=S.stats.best?MMAP[S.stats.best]:null;
   const rows=[['总抽数',S.stats.pulls],['工作单数',S.stats.tasks],['累计收入',fmt(S.stats.earn)],['累计氪金',fmt(S.stats.spent)],['大成功',S.stats.greats],['删库事故',S.stats.disasters],['最佳出货',best?best.name:'无']];
   return `<div class="end-stats">${rows.map(([l,v])=>`<div class="cell"><div class="lb">${l}</div><b>${v}</b></div>`).join('')}</div>`;
 }
-function bankruptHTML(){
+export function bankruptHTML(){
   return `<div class="end-title">💀 破产了</div>
   <div class="end-sub">盲盒误我，垃圾模型毁我青春。<br>你与那 70% 的玩家殊途同归。</div>
   ${endStats()}
   <button class="big-btn danger" id="btn-rebirth">🔄 东山再起（重新开局 ${fmt(START_MONEY)} + 免费十连）</button>`;
 }
-function milestoneHTML(ms){
+export function milestoneHTML(ms){
   return `<div class="end-title">${ms.title}</div>
   <div class="end-sub">${ms.tag}！${ms.hype}</div>
   ${endStats()}
   <button class="big-btn" data-share-ms="${ms.id}">📣 分享这一时刻</button>
   <button class="big-btn ghost" onclick="closeModal()">继续压榨中转站 →</button>`;
 }
-function welcomeHTML(){
+export function welcomeHTML(){
   return `<h3>🎰 欢迎来到 TokenGacha</h3>
   <p>这是一家神秘的 <b>LLM API 中转站</b>。它不按量计费，只卖<b>盲盒</b>——</p>
   <p>你可能抽到 <b>Claude Opus 6</b>（限定超神话，智能指数 79，接单收入翻倍），也可能抽到<b>豆包</b>（72 tok/s 够快，可惜队友总喊“再便宜点”）。</p>

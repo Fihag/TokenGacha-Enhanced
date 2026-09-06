@@ -1,20 +1,19 @@
-"use strict";
 /* ================================================================
    TokenGacha · 路由 (拆自 ui.js)
    ================================================================ */
-/* ================================================================
-   TokenGacha · 界面层 (ui.js)
-   路由 / 渲染 / 抽卡流程 / 工作流 / 结局 / 弹窗 / 分享 / 充值 / 事件绑定 / 启动
-   ================================================================ */
+import { $ } from "../state.js";
+import { SFX } from "../fx.js";
+import { renderAll } from "./render.js";
 
 /* ---------- 路由 ---------- */
-const PAGES=['buy','work','balance','activity','data'];
-function go(page){
+export const PAGES=['buy','work','balance','activity','data'];
+export function go(page){
   if(!PAGES.includes(page)) page='buy';
   for(const p of PAGES){
-    $('page-'+p).classList.toggle('active', p===page);
     const el=$('page-'+p);
-    if(el) el.setAttribute('aria-hidden', p===page ? 'false' : 'true');
+    if(!el) continue;
+    el.classList.toggle('active', p===page);
+    el.setAttribute('aria-hidden', p===page ? 'false' : 'true');
   }
   document.querySelectorAll('.top-nav button').forEach(b=>{
     const on=b.dataset.page===page;
@@ -26,5 +25,8 @@ function go(page){
   if(window.tgTrack) window.tgTrack('nav', {page});
   renderAll();
 }
-document.querySelectorAll('.top-nav button').forEach(b=>b.onclick=()=>{ SFX.click(); go(b.dataset.page); });
-addEventListener('hashchange',()=>go(location.hash.slice(1)));
+// 顶部导航点击 / hash 直链（由 main.js 在启动时调用一次）
+export function initRouter(){
+  document.querySelectorAll('.top-nav button').forEach(b=>b.onclick=()=>{ SFX.click(); go(b.dataset.page); });
+  addEventListener('hashchange',()=>go(location.hash.slice(1)));
+}

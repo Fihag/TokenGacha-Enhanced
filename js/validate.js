@@ -1,14 +1,14 @@
-"use strict";
 /* ================================================================
    TokenGacha · 校验层 (validate.js)
-   运行时轻量校验（浏览器）+ 为 Node 单测暴露 zod schema
+   运行时轻量校验（浏览器）+ 导出供 Node 单测直接 import
    ================================================================ */
+import { MODELS, POOLS, MMAP, RARITY, RORDER, MILESTONES, TASK_TOKENS } from "./config.js";
 
 /**
  * 轻量校验 MODELS/RARITY/POOLS，供浏览器启动时自检
  * @returns {{ok:boolean, errors:string[]}}
  */
-function validateConfig() {
+export function validateConfig() {
   const errors = [];
   const ids = new Set();
   for (const m of MODELS) {
@@ -34,16 +34,15 @@ function validateConfig() {
   return { ok: errors.length === 0, errors };
 }
 
-// 浏览器启动自检（失败仅 console.error，不阻断）
-try {
-  const res = validateConfig();
-  if (!res.ok) console.error("[validate] config errors:", res.errors);
-  else console.debug("[validate] config ok", { models: MODELS.length, pools: Object.keys(POOLS).length, milestones: MILESTONES.length });
-} catch (e) {
-  console.error("[validate] exception", e);
-}
-
-// 暴露给 Node 单测（若支持 module.exports）
-if (typeof module !== "undefined" && module.exports) {
-  module.exports = { validateConfig };
-}
+// 浏览器启动自检（失败仅 console.error，不阻断）；结果同时导出供数据页展示
+export const validateResult = (() => {
+  try {
+    const res = validateConfig();
+    if (!res.ok) console.error("[validate] config errors:", res.errors);
+    else console.debug("[validate] config ok", { models: MODELS.length, pools: Object.keys(POOLS).length, milestones: MILESTONES.length });
+    return res;
+  } catch (e) {
+    console.error("[validate] exception", e);
+    return { ok: false, errors: [String(e)] };
+  }
+})();

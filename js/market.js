@@ -1,20 +1,26 @@
-"use strict";
 /* ================================================================
    TokenGacha · 黑市做市 (market.js)
    每小时刷新 6 单求购，溢价 1.10-1.50×，一键卖卡
+   逻辑函数返回结果，音效/渲染由 renderMarket 调用层处理；定时器在 main.js
    ================================================================ */
-function marketPremium(){ return (Math.random()*(MARKET_CFG.premiumMax-MARKET_CFG.premiumMin)+MARKET_CFG.premiumMin); }
-function marketNeedCount(r){
+import { MODELS, MMAP, MARKET_CFG, TASK_TOKENS, LIMITED_ALL } from "./config.js";
+import { S, save, $, fmt, addLedger } from "./state.js";
+import { expectedTaskPay } from "./economy.js";
+import { SFX, burst, toast } from "./fx.js";
+import { renderAll } from "./ui/render.js";
+
+export function marketPremium(){ return (Math.random()*(MARKET_CFG.premiumMax-MARKET_CFG.premiumMin)+MARKET_CFG.premiumMin); }
+export function marketNeedCount(r){
   if(r==='N'||r==='R') return 3;
   if(r==='SR') return 3;
   if(r==='SSR') return 2;
   return 1;
 }
-function marketVendorsForRarity(r){
+export function marketVendorsForRarity(r){
   const set=new Set(MODELS.filter(m=>m.r===r).map(m=>m.vendor));
   return [...set];
 }
-function genMarketOrder(idx){
+export function genMarketOrder(idx){
   const rarities=['N','R','SR','SSR','UR','UTR'];
   // 权重：N/R 多，UTR 极少
   const roll=Math.random();
@@ -32,7 +38,7 @@ function genMarketOrder(idx){
   const premium=Math.round(marketPremium()*100)/100;
   return {id:'m'+Date.now()+'_'+idx+'_'+Math.floor(Math.random()*1e6), r, vendor, need, premium, ts:Date.now()};
 }
-function ensureMarket(){
+export function ensureMarket(){
   const now=Date.now();
   if(!S.market) S.market={orders:[],next:0};
   if(!Array.isArray(S.market.orders)) S.market.orders=[];
@@ -44,7 +50,7 @@ function ensureMarket(){
   S.market.next=now+MARKET_CFG.ttl;
   save();
 }
-function refreshMarket(force){
+export function refreshMarket(force){
   const now=Date.now();
   if(!force && now < (S.market.next||0)) return false;
   ensureMarket(); // will regen if expired
@@ -55,23 +61,23 @@ function refreshMarket(force){
     S.market.next=now+MARKET_CFG.ttl;
     save();
   }
-  if(typeof renderMarket==='function') renderMarket();
-  if(typeof renderAll==='function') renderAll();
+  renderMarket();
+  renderAll();
   return true;
 }
-function marketMatchingCards(order){
+export function marketMatchingCards(order){
   return S.inv.filter(c=> !c.locked && MMAP[c.m].r===order.r && MMAP[c.m].vendor===order.vendor);
 }
-function marketCanFulfill(order){
+export function marketCanFulfill(order){
   return marketMatchingCards(order).length >= order.need;
 }
-function marketEstForCards(cards){
+export function marketEstForCards(cards){
   return cards.reduce((s,c)=> s + (c.tokens/TASK_TOKENS)*expectedTaskPay(MMAP[c.m], c.stars||0), 0);
 }
-function doMarketSell(orderId){
+export function doMarketSell(orderId){
   ensureMarket();
   const order=S.market.orders.find(o=>o.id===orderId);
-  if(!order){ toast('订单已过期'); SFX.bad(); return {ok:false}; }
+  if(!order) return {ok:false, msg:'订单已过期'};
   const pool=marketMatchingCards(order).sort((a,b)=>{
     // 优先卖低星、低 token、低 idx 的
     const sa=a.stars||0, sb=b.stars||0;
@@ -79,7 +85,7 @@ function doMarketSell(orderId){
     if(a.tokens!==b.tokens) return a.tokens-b.tokens;
     return MMAP[a.m].idx - MMAP[b.m].idx;
   });
-  if(pool.length < order.need){ toast('卡不够，无法成交'); SFX.bad(); return {ok:false}; }
+  if(pool.length < order.need) return {ok:false, msg:'卡不够，无法成交'};
   const toSell=pool.slice(0, order.need);
   const est=marketEstForCards(toSell);
   const payout=Math.round(est * order.premium);
@@ -96,14 +102,9 @@ function doMarketSell(orderId){
   S.daily.markets=(S.daily.markets||0)+1;
   addLedger(`🏦 黑市成交 · ${order.vendor} ${order.r}×${order.need} 溢价×${order.premium}`, payout);
   save();
-  if(typeof renderAll==='function') renderAll();
-  if(typeof renderMarket==='function') renderMarket();
-  SFX.coin();
-  burst(innerWidth/2, innerHeight/3, ['#16a34a','#f59e0b','#fff'], 80, 7);
-  toast(`🏦 成交 +${fmt(payout)} (溢价×${order.premium})`, 2600);
-  return {ok:true, payout, cards:toSell};
+  return {ok:true, payout, order, cards:toSell};
 }
-function renderMarket(){
+export function renderMarket(){
   const box=$('market-list');
   const cd=$('market-countdown');
   if(!box) return;
@@ -118,7 +119,7 @@ function renderMarket(){
   for(const o of S.market.orders){
     const have=marketMatchingCards(o).length;
     const can=have>=o.need;
-    const limitedHint = MODELS.some(m=> m.vendor===o.vendor && m.r===o.r && (typeof LIMITED_ALL!=='undefined'?LIMITED_ALL.has(m.id):LIMITED_IDS.has(m.id))) ? ' · 已含限定×2' : '';
+    const limitedHint = MODELS.some(m=> m.vendor===o.vendor && m.r===o.r && LIMITED_ALL.has(m.id)) ? ' · 已含限定×2' : '';
     const est = have? Math.round(marketEstForCards(marketMatchingCards(o).slice(0,o.need))*o.premium) : 0;
     const row=document.createElement('div');
     row.className='market-order';
@@ -130,7 +131,12 @@ function renderMarket(){
   box.querySelectorAll('[data-market]').forEach(b=> b.onclick=()=>{
     SFX.click();
     const res=doMarketSell(b.dataset.market);
-    if(!res.ok) return;
+    if(!res.ok){ toast(res.msg); SFX.bad(); return; }
+    renderAll();
+    renderMarket();
+    SFX.coin();
+    burst(innerWidth/2, innerHeight/3, ['#16a34a','#f59e0b','#fff'], 80, 7);
+    toast(`🏦 成交 +${fmt(res.payout)} (溢价×${res.order.premium})`, 2600);
   });
   const btn=$('btn-market-refresh');
   if(btn && !btn.dataset.bound){
@@ -143,19 +149,17 @@ function renderMarket(){
     };
   }
 }
-// 定时刷新
-setInterval(()=>{
+// 每秒检查刷新与倒计时（由 main.js 的 tick 调用）
+export function marketTick(){
   const now=Date.now();
   if(S && S.market && now >= (S.market.next||0)){
     ensureMarket();
-    if(typeof renderMarket==='function' && document.getElementById('page-balance')?.classList.contains('active')){
-      renderMarket();
-    }
+    const page=document.getElementById('page-balance');
+    if(page && page.classList.contains('active')) renderMarket();
   }
   const cd=$('market-countdown');
-  if(cd && S.market.next){
+  if(cd && S.market && S.market.next){
     const ms=S.market.next-Date.now();
     if(ms>0){ const m=Math.floor(ms/60000), s=Math.floor(ms%60000/1000); cd.textContent=`刷新 ${m}分${s}秒后`; }
   }
-}, 1000);
-ensureMarket();
+}

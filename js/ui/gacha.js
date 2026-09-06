@@ -1,13 +1,21 @@
-"use strict";
 /* ================================================================
    TokenGacha · 抽卡流程 (拆自 ui.js)
    ================================================================ */
+import { POOLS, RARITY, RORDER, RORDER_DESC, MODELS, MMAP, TASK_TOKENS, PITY_MAX, LIMITED_IDS, PROBS } from "../config.js";
+import { S, $, save, fmt, fmtTok, addLedger } from "../state.js";
+import { SFX, toast, burst, shake, iconImg } from "../fx.js";
+import { doPulls } from "../core.js";
+import { expectedTaskPay, poolExpectedValue } from "../economy.js";
+import { showModal, closeModal, goldFlash, hallucHTML, priceWarHTML, gpuCoolDown, checkEnd } from "./modals.js";
+import { renderAll, renderBalance } from "./render.js";
+
 /* ---------- 抽卡流程 ---------- */
-let pulling=false;
+export let pulling=false;
 let lastPullAt=0, rapidCount=0, cooling=false;   // GPU 过热彩蛋: 连点计数/冻结标记
 let lastRefund=0;                                 // 价格屠夫返现: 本次抽卡返现金额
 let gachaCards=[], gachaEls=[], pendingHalluc=[]; // 幻觉彩蛋: 当前揭晓卡组/待修正列表
-function tryPull(poolKey, count){
+export function setCooling(v){ cooling=v; }       // 供 modals 的 gpuCoolDown 写回
+export function tryPull(poolKey, count){
   if(pulling || cooling) return;
   const p=POOLS[poolKey];
   const useFree = poolKey==='standard' && count===10 && S.freeTen>0;
@@ -43,8 +51,8 @@ function simOne(poolKey, pity){
   const pool=POOLS[poolKey];
   const pityMax=pool.pityMax||PITY_MAX;
   const atPity = pity >= pityMax-1;
-  const FIHAG = (typeof PROBS!=='undefined'?PROBS.FIHAG:0.0001);
-  const DSV73 = (typeof PROBS!=='undefined'?PROBS.DSV73:0.015);
+  const FIHAG = PROBS.FIHAG;
+  const DSV73 = PROBS.DSV73;
   const gotFihag = Math.random() < FIHAG;
   const force0731 = !gotFihag && !atPity && Math.random() < DSV73;
   let r;
@@ -81,7 +89,7 @@ function simOne(poolKey, pity){
   const nextPity = reset ? 0 : pity+1;
   return {m, quota, r: realR, nextPity};
 }
-function doSim(){
+export function doSim(){
   const selPool=$('sim-pool'), selCount=$('sim-count'), box=$('sim-result');
   if(!selPool || !selCount || !box) return;
   const poolKey=selPool.value;
@@ -113,7 +121,6 @@ function doSim(){
     draws[draws.length-1]={m, quota, r:'SR', nextPity:0};
     dist.SR++; totTok+=quota; totEst+= (quota/TASK_TOKENS)*expectedTaskPay(m);
   }
-  const cost = count===10 ? p.tenPrice : (count===100 ? p.tenPrice*10 : (count===1000 ? p.tenPrice*100 : p.price*count));
   // 针对 100/1000 抽，按单价*次数估算成本（模拟器不消耗，仅参考）
   const refCost = (()=>{
     if(count===10) return p.tenPrice;
@@ -241,7 +248,7 @@ function showGacha(cards, pool){
   }
   $('close-overlay').onclick=()=>{ ov.classList.remove('show'); pulling=false; checkEnd(); };
 }
-function updateGachaSummary(){
+export function updateGachaSummary(){
   const dispOf = c => c._halluc ? MMAP[c._halluc] : MMAP[c.m];
   const tokOf = c => c._halluc ? (MMAP[c._halluc].quota||RARITY.UR.quota) : c.tokens;
   const totTok = gachaCards.reduce((s,c)=>s+tokOf(c),0);
@@ -249,12 +256,12 @@ function updateGachaSummary(){
   const bm=dispOf(best);
   $('gacha-summary').innerHTML=`共获得 <b>${fmtTok(totTok)} tokens</b> · 最佳: <b style="color:${RARITY[bm.r].hex}">${bm.name}</b>（${RARITY[bm.r].name}）`;
 }
-function showHalluc(){
+export function showHalluc(){
   pendingHalluc = gachaCards.map((c,i)=> c._halluc ? {c, el:gachaEls[i]} : null).filter(Boolean);
   if(pendingHalluc.length){ showModal(hallucHTML(MMAP[pendingHalluc[0].c._halluc].name), true); return; }
   if(lastRefund>0){ const amt=lastRefund; lastRefund=0; showModal(priceWarHTML(amt)); }
 }
-function acceptHalluc(){
+export function acceptHalluc(){
   for(const {c, el} of pendingHalluc) rebindFace(el, c);
   pendingHalluc=[];
   updateGachaSummary();
@@ -263,7 +270,6 @@ function acceptHalluc(){
   // 高亮对应卡库卡牌
   setTimeout(()=>{
     renderBalance();
-    for(const c of S.inv){ if(c._halluc) continue; }
     // 找到刚修正的 R 卡并 pulse
     const ids = gachaCards.filter(c=>!c._halluc).map(c=>c.m);
     for(const uid of ids){
@@ -273,6 +279,8 @@ function acceptHalluc(){
   }, 400);
   if(lastRefund>0){ const amt=lastRefund; lastRefund=0; setTimeout(()=>showModal(priceWarHTML(amt)), 400); }
 }
+// 弹窗内联 onclick 需要的全局引用
+window.acceptHalluc = acceptHalluc;
 function rebindFace(el, c){
   const m=MMAP[c.m], r=RARITY[m.r];
   el.classList.toggle('ur', m.r==='UR'||m.r==='UTR');

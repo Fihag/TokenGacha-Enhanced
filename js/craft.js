@@ -1,11 +1,18 @@
-"use strict";
 /* ================================================================
    TokenGacha · 合成台 (craft.js)
    同厂商强制：3×同厂商同稀有度 → 1×同厂商高一档
    同模型×5 → 升星 (上限3，收益+5%/星)
+   逻辑函数返回结果，音效/粒子/渲染由 UI 层处理
    ================================================================ */
+import { MODELS, MMAP, RARITY, TASK_TOKENS, CRAFT_RECIPES, CRAFT_STAR_NEED } from "./config.js";
+import { S, save, $, fmtK, addLedger } from "./state.js";
+import { expectedTaskPay } from "./economy.js";
+import { maybeBest } from "./core.js";
+import { SFX, burst, toast } from "./fx.js";
+import { showModal, closeModal } from "./ui/modals.js";
+import { renderAll } from "./ui/render.js";
 
-function craftVendorsFor(recipe){
+export function craftVendorsFor(recipe){
   const need = recipe.need, from = recipe.from;
   const counts = {};
   for(const c of S.inv){
@@ -16,11 +23,11 @@ function craftVendorsFor(recipe){
   }
   return Object.entries(counts).filter(([v,n])=>n>=need && craftOutputCands(recipe, v).length>0).map(([v])=>v);
 }
-function craftOutputCands(recipe, vendor){
+export function craftOutputCands(recipe, vendor){
   // 限定卡（bannerOnly）不可被合成产出，避免绕过抽卡获取
   return MODELS.filter(m=> m.r===recipe.to && m.vendor===vendor && !m.bannerOnly);
 }
-function doCraft(recipeId, uids){
+export function doCraft(recipeId, uids){
   const recipe = CRAFT_RECIPES.find(r=>r.id===recipeId);
   if(!recipe) return {ok:false, msg:'未知配方'};
   if(!Array.isArray(uids) || uids.length!==recipe.need) return {ok:false, msg:`需选择 ${recipe.need} 张卡`};
@@ -47,7 +54,7 @@ function doCraft(recipeId, uids){
   // 统计
   S.stats.byR[recipe.to]=(S.stats.byR[recipe.to]||0)+1;
   S.dex[m.id]=(S.dex[m.id]||0)+1;
-  if(typeof maybeBest==='function') maybeBest(nc);
+  maybeBest(nc);
   addLedger(`🔧 合成 ${recipe.label} · ${firstV}`, 0);
   if(typeof S.crafts==='object'){
     S.crafts.count=(S.crafts.count||0)+1;
@@ -55,13 +62,9 @@ function doCraft(recipeId, uids){
   }
   if(S.daily) S.daily.crafts=(S.daily.crafts||0)+1;
   save();
-  if(typeof renderAll==='function') renderAll();
-  if(typeof SFX!=='undefined' && SFX.coin) SFX.coin();
-  burst(innerWidth/2, innerHeight/2.8, [RARITY[recipe.to].hex,'#fff'], 70, 6);
-  toast(`🔧 合成成功：${m.name} (${recipe.to})`, 2600);
-  return {ok:true, card:nc};
+  return {ok:true, card:nc, model:m, recipe};
 }
-function canStarUpgrade(uids){
+export function canStarUpgrade(uids){
   if(!Array.isArray(uids)||uids.length!==CRAFT_STAR_NEED) return false;
   const cards=uids.map(uid=>S.inv.find(c=>c.uid===uid)).filter(Boolean);
   if(cards.length!==CRAFT_STAR_NEED) return false;
@@ -70,7 +73,7 @@ function canStarUpgrade(uids){
   // 至少有一张可升星（<3），实际升级时取最高星的那张+1
   return cards.some(c=> (c.stars||0)<3);
 }
-function doStarUpgrade(uids){
+export function doStarUpgrade(uids){
   if(!Array.isArray(uids)||uids.length!==CRAFT_STAR_NEED) return {ok:false,msg:`需选择 ${CRAFT_STAR_NEED} 张同模型`};
   const cards=uids.map(uid=>S.inv.find(c=>c.uid===uid)).filter(Boolean);
   if(cards.length!==CRAFT_STAR_NEED) return {ok:false,msg:'卡片不存在'};
@@ -94,14 +97,10 @@ function doStarUpgrade(uids){
   if(typeof S.crafts==='object'){ S.crafts.stars=(S.crafts.stars||0)+1; }
   if(S.daily) S.daily.crafts=(S.daily.crafts||0)+1;
   save();
-  if(typeof renderAll==='function') renderAll();
-  if(typeof SFX!=='undefined' && SFX.coin) SFX.coin();
-  toast(`⭐ 升星成功：${m.name} ★${nc.stars}`, 2600);
-  burst(innerWidth/2, innerHeight/2.8, ['#f59e0b','#ffd700','#fff'], 90, 7);
-  return {ok:true, card:nc};
+  return {ok:true, card:nc, model:m};
 }
 // 便捷：返回可合成配方列表（按当前卡库）
-function craftAvailable(){
+export function craftAvailable(){
   const list=[];
   for(const r of CRAFT_RECIPES){
     const vendors=craftVendorsFor(r);
@@ -114,7 +113,7 @@ function craftAvailable(){
   if(starable.length) list.push({recipe:{id:'star', label:'升星', desc:`同模型×${CRAFT_STAR_NEED} 升 1 星 (上限3)`}, vendors:starable});
   return list;
 }
-function renderCraft(){
+export function renderCraft(){
   const box=$('craft-recipes');
   if(!box) return;
   box.innerHTML='';
@@ -152,7 +151,7 @@ function renderCraft(){
   box.querySelectorAll('[data-star]').forEach(b=> b.onclick=()=> openCraftPicker('star', b.dataset.star));
 }
 let _craftPick={recipe:null, vendor:null, selected:new Set()};
-function openCraftPicker(recipeId, vendor){
+export function openCraftPicker(recipeId, vendor){
   const need = recipeId==='star' ? CRAFT_STAR_NEED : (CRAFT_RECIPES.find(r=>r.id===recipeId)?.need||3);
   let pool=[];
   if(recipeId==='star'){
@@ -198,6 +197,16 @@ function openCraftPicker(recipeId, vendor){
     if(recipeId==='star') res=doStarUpgrade(uids);
     else res=doCraft(recipeId, uids);
     if(!res.ok){ toast(res.msg||'合成失败'); SFX.bad(); return; }
+    // 成功特效（原在逻辑层, 现归 UI）
+    renderAll();
+    SFX.coin();
+    if(recipeId==='star'){
+      toast(`⭐ 升星成功：${res.model.name} ★${res.card.stars}`, 2600);
+      burst(innerWidth/2, innerHeight/2.8, ['#f59e0b','#ffd700','#fff'], 90, 7);
+    }else{
+      toast(`🔧 合成成功：${res.model.name} (${res.recipe.to})`, 2600);
+      burst(innerWidth/2, innerHeight/2.8, [RARITY[res.recipe.to].hex,'#fff'], 70, 6);
+    }
     closeModal();
   };
 }

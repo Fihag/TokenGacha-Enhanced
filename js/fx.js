@@ -1,13 +1,14 @@
-"use strict";
 /* ================================================================
    TokenGacha · 特效层 (fx.js)
    图标 CDN / 音效 / 粒子 / 飘字
+   粒子画布惰性获取：无 #fx 元素（如测试环境）时静默降级
    ================================================================ */
+import { $, fmt, pick } from "./state.js";
 
 /* ---------- 图标 CDN ---------- */
 const CDN1 = 'https://unpkg.com/@lobehub/icons-static-svg@latest/icons/';
 const CDN2 = 'https://registry.npmmirror.com/@lobehub/icons-static-svg/latest/files/icons/';
-function iconImg(slug, cls=''){
+export function iconImg(slug, cls=''){
   const img = document.createElement('img');
   img.className = cls; img.alt = slug; img.loading = 'lazy';
   img.src = CDN1 + slug + '.svg';
@@ -23,6 +24,9 @@ function iconImg(slug, cls=''){
 
 /* ---------- 音效 ---------- */
 let AC = null, muted = false;
+export function setMuted(v){ muted = !!v; }
+export function isMuted(){ return muted; }
+export function toggleMute(){ muted = !muted; return muted; }
 function ac(){ if(!AC) AC = new (window.AudioContext||window.webkitAudioContext)(); return AC; }
 function beep(freq, dur=.12, type='sine', vol=.15, delay=0){
   if(muted || document.hidden) return; // 后台标签页不发声(工作快进/结算等都在静默下进行)
@@ -49,7 +53,7 @@ function sweep(f0, f1, dur=.5, type='sawtooth', vol=.09, delay=0){
     o.connect(g); g.connect(c.destination); o.start(t); o.stop(t+dur+.05);
   }catch(e){}
 }
-const SFX = {
+export const SFX = {
   click:()=>beep(600,.06,'square',.06),
   pull:()=>{beep(300,.2,'sawtooth',.08);beep(450,.25,'sawtooth',.06,.08);},
   flip:(i)=>beep(500+i*40,.07,'triangle',.09),
@@ -69,11 +73,23 @@ const SFX = {
 };
 
 /* ---------- 粒子 & 飘字 ---------- */
-const fx = document.getElementById('fx'), fctx = fx.getContext('2d');
+let fxEl = null, fctx = null, fxReady = false;
+function fxResize(){ if(fxEl){ fxEl.width=innerWidth; fxEl.height=innerHeight; } }
+// 首次 burst 时获取 #fx 画布并启动渲染循环；拿不到画布(如无 DOM)则永久降级为 no-op
+function ensureFx(){
+  if(fxReady) return !!fctx;
+  fxReady = true;
+  fxEl = document.getElementById('fx');
+  if(!fxEl) return false;
+  fctx = fxEl.getContext('2d');
+  if(!fctx) return false;
+  addEventListener('resize', fxResize); fxResize();
+  requestAnimationFrame(fxLoop);
+  return true;
+}
 let parts = [];
-function fxResize(){ fx.width=innerWidth; fx.height=innerHeight; }
-addEventListener('resize', fxResize); fxResize();
-function burst(x, y, colors, n=60, power=7){
+export function burst(x, y, colors, n=60, power=7){
+  if(!ensureFx()) return;
   if(typeof matchMedia!=='undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches) return;
   for(let i=0;i<n;i++){
     const a=Math.random()*Math.PI*2, v=(Math.random()*.7+.3)*power;
@@ -81,8 +97,8 @@ function burst(x, y, colors, n=60, power=7){
       c:colors[Math.floor(Math.random()*colors.length)],s:2+Math.random()*4});
   }
 }
-(function fxLoop(){
-  fctx.clearRect(0,0,fx.width,fx.height);
+function fxLoop(){
+  fctx.clearRect(0,0,fxEl.width,fxEl.height);
   parts = parts.filter(p=>p.life>0);
   for(const p of parts){
     p.x+=p.vx; p.y+=p.vy; p.vy+=p.g; p.life-=p.decay;
@@ -91,23 +107,24 @@ function burst(x, y, colors, n=60, power=7){
   }
   fctx.globalAlpha=1;
   requestAnimationFrame(fxLoop);
-})();
-function shake(){ if(typeof matchMedia!=='undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches) return; document.body.classList.remove('shake'); void document.body.offsetWidth; document.body.classList.add('shake'); }
-function floater(text, x, y, color){
+}
+export function shake(){ if(typeof matchMedia!=='undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches) return; document.body.classList.remove('shake'); void document.body.offsetWidth; document.body.classList.add('shake'); }
+export function floater(text, x, y, color){
   const d=document.createElement('div'); d.className='floater'; d.textContent=text;
   d.style.left=x+'px'; d.style.top=y+'px'; d.style.color=color;
   document.body.appendChild(d); setTimeout(()=>d.remove(),1350);
 }
 // 出金动画: 中央大字 + 金币飞向余额
-function bigMoneyPop(amt){
+export function bigMoneyPop(amt){
   const d=document.createElement('div');
   d.className='big-money'+(amt<0?' neg':'');
   d.textContent=(amt>=0?'+':'')+fmt(amt);
   document.body.appendChild(d); setTimeout(()=>d.remove(),1650);
 }
-function coinShower(fromRect, amount){
-  const chip=$('h-money').getBoundingClientRect();
-  const tx=chip.left+chip.width/2, ty=chip.top+chip.height/2;
+export function coinShower(fromRect, amount){
+  const chip=$('h-money'); if(!chip) return;
+  const rect=chip.getBoundingClientRect();
+  const tx=rect.left+rect.width/2, ty=rect.top+rect.height/2;
   const neg=amount<0;
   const n=neg?6:Math.min(16, 7+Math.floor(Math.abs(amount)/120));
   for(let i=0;i<n;i++){
@@ -129,7 +146,7 @@ function coinShower(fromRect, amount){
   }
 }
 let toastTimer=null;
-function toast(msg, ms=2200){
+export function toast(msg, ms=2200){
   clearTimeout(toastTimer);
   document.querySelectorAll('.toast').forEach(t=>t.remove());
   const d=document.createElement('div'); d.className='toast'; d.setAttribute('role','status'); d.setAttribute('aria-live','polite'); d.innerHTML=msg;

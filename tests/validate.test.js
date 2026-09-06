@@ -83,19 +83,20 @@ describe("覆盖率补齐：banner/skins/analytics/ui", () => {
     expect(t).toContain("exportLedgerCSV");
     expect(t).toContain("setupLineTooltip");
   });
-  it("ui 7 模块均存在且 boot 最后加载", () => {
+  it("ui 7 模块均存在且经模块图可达", () => {
     const html = fs.readFileSync(path.resolve("index.html"), "utf8");
-    const order = [
-      "ui/router.js",
-      "ui/render.js",
-      "ui/gacha.js",
-      "ui/work.js",
-      "ui/modals.js",
-      "ui/share.js",
-      "ui/boot.js",
-    ];
-    for (const f of order) expect(html).toContain(f);
-    // boot 需在 banner 之前
-    expect(html.indexOf("ui/boot.js")).toBeLessThan(html.indexOf("banner.js"));
+    const main = fs.readFileSync(path.resolve("js/main.js"), "utf8");
+    expect(main).toContain("ui/router.js");
+    expect(main).toContain("ui/render.js");
+    expect(main).toContain("ui/boot.js");
+    // render 可达 gacha/work/modals/share/analytics
+    const render = fs.readFileSync(path.resolve("js/ui/render.js"), "utf8");
+    expect(render).toContain("gacha.js");
+    expect(render).toContain("work.js");
+    expect(render).toContain("modals.js");
+    expect(render).toContain("analytics.js");
+    const share = fs.readFileSync(path.resolve("js/ui/share.js"), "utf8");
+    expect(share).toContain("modals.js");
+    expect(html.match(/<script[^>]*src="js\//g)).toHaveLength(1);
   });
 });

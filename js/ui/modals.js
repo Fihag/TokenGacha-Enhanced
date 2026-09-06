@@ -1,13 +1,22 @@
-"use strict";
 /* ================================================================
    TokenGacha · 弹窗与结局 (拆自 ui.js)
    ================================================================ */
+import { POOLS, MMAP, RARITY, MILESTONES, DAILY_TASKS } from "../config.js";
+import { S, $, save, fmt, fmtK, totalTasks } from "../state.js";
+import { SFX, burst, toast } from "../fx.js";
+import { isBannerActive } from "../banner.js";
+import { pulling, setCooling } from "./gacha.js";
+import { working } from "./work.js";
+import { renderAll } from "./render.js";
+import { dailyResetIfNeeded, dailyTaskProgress } from "../daily.js";
+import { bankruptHTML, milestoneHTML } from "./share.js";
+
 /* ---------- 结局检测 ---------- */
 // 全场最低单抽价（限定池下架时不计入）
-function minPoolPrice(){
+export function minPoolPrice(){
   return Math.min(...Object.values(POOLS).filter(p=>!p.banner||isBannerActive()).map(p=>p.price));
 }
-function checkEnd(){
+export function checkEnd(){
   if(!S.flags.cheated) for(const ms of MILESTONES){
     if(S.money>=ms.at && !S.flags.ms[ms.id]){
       S.flags.ms[ms.id]=true; save();
@@ -20,9 +29,8 @@ function checkEnd(){
   // 破产: token 全部耗尽 且 余额不足以最便宜单抽（先检查是否有可领任务，避免误判）
   const minCost=minPoolPrice();
   if(S.money<minCost && totalTasks()<=0 && S.freeTen<=0 && !pulling && !working){
-    if(typeof dailyResetIfNeeded==='function') dailyResetIfNeeded();
-    const hasClaimable = typeof DAILY_TASKS!=='undefined' && typeof dailyTaskProgress==='function'
-      && DAILY_TASKS.some(t=> dailyTaskProgress(t)>=t.target && !S.daily.claimed[t.id]);
+    dailyResetIfNeeded();
+    const hasClaimable = DAILY_TASKS.some(t=> dailyTaskProgress(t)>=t.target && !S.daily.claimed[t.id]);
     if(hasClaimable){
       toast('💡 还有日常任务可领取，去「活动」页领奖励再战！');
       return;
@@ -33,35 +41,38 @@ function checkEnd(){
 }
 
 /* ---------- 弹窗 ---------- */
-function showModal(html, lock=false){ const b=$('modal-box'); b.innerHTML=html; if(lock) b.dataset.locked='1'; else delete b.dataset.locked; $('modal-mask').classList.add('show'); }
-$('modal-mask').addEventListener('click', e=>{ if(e.target.id==='modal-mask' && !$('modal-box').dataset.locked) $('modal-mask').classList.remove('show'); });
-function closeModal(){ $('modal-mask').classList.remove('show'); }
+export function showModal(html, lock=false){ const b=$('modal-box'); b.innerHTML=html; if(lock) b.dataset.locked='1'; else delete b.dataset.locked; $('modal-mask').classList.add('show'); }
+const _modalMask=$('modal-mask');
+if(_modalMask) _modalMask.addEventListener('click', e=>{ if(e.target.id==='modal-mask' && !$('modal-box').dataset.locked) $('modal-mask').classList.remove('show'); });
+export function closeModal(){ $('modal-mask').classList.remove('show'); }
+// 弹窗 HTML 内联 onclick 需要的全局引用
+window.closeModal = closeModal;
 /* ---------- 抽卡彩蛋: 金闪 / 弹幕 / 冷却 / 返现 / 幻觉 ---------- */
-function goldFlash(){ const g=$('goldflash'); if(!g) return; g.classList.remove('go'); void g.offsetWidth; g.classList.add('go'); }
-function danmaku(text){
+export function goldFlash(){ const g=$('goldflash'); if(!g) return; g.classList.remove('go'); void g.offsetWidth; g.classList.add('go'); }
+export function danmaku(text){
   const d=document.createElement('div'); d.className='danmaku'; d.textContent=text;
   document.body.appendChild(d); setTimeout(()=>d.remove(), 5000);
 }
-function gpuCoolDown(){
-  cooling=true;
-  const el=$('cooling'); if(!el) return;
+export function gpuCoolDown(){
+  setCooling(true);
+  const el=$('cooling'); if(!el){ setCooling(false); return; }
   el.hidden=false;
-  setTimeout(()=>{ el.hidden=true; cooling=false; toast('🧊 冷却完毕，补偿 10 Token 已发放（记在账外）', 3000); }, 3000);
+  setTimeout(()=>{ el.hidden=true; setCooling(false); toast('🧊 冷却完毕，补偿 10 Token 已发放（记在账外）', 3000); }, 3000);
 }
-function priceWarHTML(amt){
+export function priceWarHTML(amt){
   return `<h3>⚔️ 价格战<button class="x" onclick="closeModal()">×</button></h3>
   <p>DeepSeek 挥刀砍价，帮你省了一半！友商沉默，玩家狂喜。</p>
   <p>本次抽卡返现 <b style="color:var(--red)">¥${fmt(amt)}</b> 已退回账户，且不扣成就。</p>
   <button class="big-btn ghost" onclick="closeModal()">收下 →</button>`;
 }
-function hallucHTML(fakeName){
+export function hallucHTML(fakeName){
   return `<h3>🤯 检测到模型幻觉<button class="x" onclick="closeModal()">×</button></h3>
   <p>你抽到的「<b>${fakeName}</b>」其实是模型一本正经地胡说八道——<b>纯纯的幻觉</b>。</p>
   <p>经本站鉴定：<b style="color:var(--blue)">实际结果为 R 档</b>，卡面已强制修正，概不退换。</p>
   <p style="color:var(--faint)">为表歉意，20 万 token 精神损失费已垫进这张卡里。</p>
   <button class="big-btn ghost" onclick="acceptHalluc()">接受现实 →</button>`;
 }
-function claudeBanHTML(){
+export function claudeBanHTML(){
   return `<h3>🚫 Claude 封禁通知<button class="x" onclick="closeModal()">×</button></h3>
   <p>Claude 官方检测到你的账号来自<b>中国境内</b>，触发区域风控，账号封禁。</p>
   <p><b style="color:var(--red)">名下全部 Claude 卡额度已清零</b>——Opus 6 / Opus 5 / Fable 5 / Sonnet 5 / 4.5 Sonnet / Haiku 4.5，备胎一个没留。</p>
@@ -73,7 +84,7 @@ function claudeBanHTML(){
 
 /* ---------- 卡库: 销毁模型卡 ---------- */
 // 手动销毁兜底: 防止「剩 10万 token 无法消耗又清不掉」的残卡永远卡在卡库列表; 任何卡都可销毁
-function destroyCard(uid){
+export function destroyCard(uid){
   const c=S.inv.find(x=>x.uid===uid);
   if(!c) return;
   const m=MMAP[c.m], r=RARITY[m.r];
@@ -83,7 +94,7 @@ function destroyCard(uid){
   <button class="big-btn danger" data-confirm-destroy="${uid}">确认销毁</button>
   <button class="big-btn ghost" onclick="closeModal()">手滑了！留着 →</button>`);
 }
-function confirmDestroy(uid){
+export function confirmDestroy(uid){
   closeModal();
   const i=S.inv.findIndex(x=>x.uid===uid);
   if(i<0) return;
@@ -94,7 +105,7 @@ function confirmDestroy(uid){
   SFX.bad();
   toast(`🗑️ 已销毁 ${m.name}${lost>0?` · ${fmtK(lost)} tokens 化为乌有`:''}`, 3200);
 }
-function toggleLock(uid){
+export function toggleLock(uid){
   const c=S.inv.find(x=>x.uid===uid);
   if(!c) return;
   c.locked=!c.locked;

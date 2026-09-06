@@ -1,10 +1,14 @@
-"use strict";
 /* ================================================================
    TokenGacha · 皮肤/特效系统 (skins.js)
    主题 CSS 变量切换 / 抽卡随机掉落 / 皮肤券兑换
    ================================================================ */
+import { SKINS, PROBS } from "./config.js";
+import { S, save, $, fmt, addLedger } from "./state.js";
+import { SFX, toast } from "./fx.js";
+import { showModal, closeModal, checkEnd } from "./ui/modals.js";
+import { renderAll } from "./ui/render.js";
 
-function applySkin(id){
+export function applySkin(id){
   const skin = SKINS.find(s=>s.id===id);
   if(!skin) return;
   const root=document.documentElement.style;
@@ -16,13 +20,13 @@ function applySkin(id){
   save();
 }
 
-function rollSkinDrop(cards){
-  const rate = (typeof PROBS!=='undefined'?PROBS.SKIN_DROP:SKIN_DROP_RATE);
+export function rollSkinDrop(cards){
+  const rate = PROBS.SKIN_DROP;
   if(Math.random() < rate){
     const owned = new Set(S.skinsOwned);
     const unowned = SKINS.filter(s=>!owned.has(s.id));
     if(unowned.length){
-      const skin = pick(unowned);
+      const skin = unowned[Math.floor(Math.random()*unowned.length)];
       S.skinsOwned.push(skin.id);
       save();
       setTimeout(()=>toast(`🎨 抽卡掉落了新皮肤「${skin.name}」${skin.icon}！去右上角切换吧`, 3200), 600);
@@ -34,7 +38,7 @@ function rollSkinDrop(cards){
   }
 }
 
-function skinPickerHTML(){
+export function skinPickerHTML(){
   const rows=SKINS.map(s=>{
     const owned=S.skinsOwned.includes(s.id);
     const using=S.skin===s.id;
@@ -46,7 +50,7 @@ function skinPickerHTML(){
         : `<button class="mini-btn" data-skin-buy="${s.id}" ${(S.skinTickets||0)<1?'disabled':''}>🎫 兑换</button>`}
     </div>`;
   }).join('');
-  const dropRate = (typeof PROBS!=='undefined'?PROBS.SKIN_DROP:SKIN_DROP_RATE);
+  const dropRate = PROBS.SKIN_DROP;
   const canConvert = (S.skinTickets||0) > 0;
   const html=`<h3>🎨 皮肤中心 <span style="font-size:12px;color:var(--faint)">持有皮肤券 <b id="skin-tk-now" style="color:var(--gold)">${S.skinTickets||0}</b> 张</span><button class="x" onclick="closeModal()">×</button></h3>
   <div class="skin-list">${rows}</div>
@@ -96,20 +100,18 @@ function skinPickerHTML(){
     convertInput.value=v;
   };
 }
-function convertSkinTickets(n){
+export function convertSkinTickets(n){
   n=Math.floor(Number(n));
   if(!n||n<=0){ toast('请输入有效数量'); return false; }
-  if((S.skinTickets||0)<n){ toast('皮肤券不足'); if(typeof SFX!=='undefined'&&SFX.bad) SFX.bad(); return false; }
+  if((S.skinTickets||0)<n){ toast('皮肤券不足'); SFX.bad(); return false; }
   const gain=n*500;
   S.skinTickets-=n;
   S.money+=gain;
   S.stats.earn+=gain;
   if(typeof S.daily==='object') S.daily.earnToday=(S.daily.earnToday||0)+gain;
   addLedger(`🎫 皮肤券转换 ×${n}`, gain);
-  save();
-  if(typeof SFX!=='undefined'&&SFX.coin) SFX.coin();
-  if(typeof renderAll==='function') renderAll();
+  save(); SFX.coin(); renderAll();
   toast(`🎫 已转换 ${n} 张皮肤券 → +${fmt(gain)}`, 2600);
-  if(typeof checkEnd==='function') checkEnd();
+  checkEnd();
   return true;
 }

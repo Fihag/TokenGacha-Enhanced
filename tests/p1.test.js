@@ -69,8 +69,7 @@ describe("P1-3 卡库批量", () => {
     expect(css).toContain("#inv-batch-bar[hidden]");
   });
   it("ui.js 批量逻辑齐全", () => {
-    expect(ui).toContain("_batchMode");
-    expect(ui).toContain("_batchSet");
+    expect(ui).toContain("BatchState");
     expect(ui).toContain("btn-confirm-batch-destroy");
     expect(ui).toContain("updateBatchBar");
   });

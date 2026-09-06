@@ -1,11 +1,23 @@
-"use strict";
 /* ================================================================
    TokenGacha · 渲染 (拆自 ui.js)
    ================================================================ */
+import { POOLS, RARITY, RORDER, PITY_MAX, TASK_TOKENS, BATCH_TASKS, VICTORY_AT, MODELS, MMAP, MILESTONES } from "../config.js";
+import { S, $, fmt, fmtK, totalTokens, totalTasks, usableTokens, usableTasks, lockedTokens, save } from "../state.js";
+import { poolRTP, poolExpectedValue, estValue, usableEstValue, expectedTaskPay } from "../economy.js";
+import { bannerCountdownText, isBannerActive } from "../banner.js";
+import { SFX, toast, iconImg } from "../fx.js";
+import { tryPull } from "./gacha.js";
+import { working } from "./work.js";
+import { showModal } from "./modals.js";
+import { renderCraft } from "../craft.js";
+import { renderMarket } from "../market.js";
+import { renderActivity } from "../daily.js";
+import { renderData } from "../analytics.js";
+
 // 批量操作封装：避免散落的 window._batch* 全局
-const BatchState = { mode:false, set:new Set(), updateBar:null };
+export const BatchState = { mode:false, set:new Set(), updateBar:null };
 /* ---------- 渲染: 购买Token ---------- */
-function renderBuy(){
+export function renderBuy(){
   const box=$('pool-cards'); box.innerHTML='';
   for(const [k,p] of Object.entries(POOLS)){
     if(p.banner && !isBannerActive()) continue; // 活动结束下架
@@ -61,7 +73,7 @@ function renderBuy(){
 }
 
 /* ---------- 渲染: 工作页 ---------- */
-function renderWork(){
+export function renderWork(){
   const tk=usableTokens(), tasks=usableTasks(), tot=totalTokens(), locked=lockedTokens();
   const hasLocked = (S.inv.some(c=>c.locked));
   $('w-tokens').innerHTML=fmtK(tk)+(hasLocked?` <small style="color:var(--faint)">/ ${fmtK(tot)}</small>`:'')+' <small>tokens</small>';
@@ -95,10 +107,7 @@ function renderWork(){
   $('auto-sub').textContent = tasks>0 ? `全部 ${tasks} 单一次清完 · ${fmtK(tk)} tokens` : '没有可用 token';
   const sb=$('btn-skip'); if(sb) sb.hidden = !working;
 }
-function renderWorkLog(){
-  // 日志只在会话内保留，渲染由 addWorkLog 完成
-}
-function addWorkLog(label, amt){
+export function addWorkLog(label, amt){
   const log=$('work-log');
   const row=document.createElement('div'); row.className='row';
   row.innerHTML=`<span class="evt">${label}</span><span class="amt ${amt>=0?'pos':'neg'}">${amt>=0?'+':''}${fmt(amt)}</span>`;
@@ -106,7 +115,7 @@ function addWorkLog(label, amt){
 }
 
 /* ---------- 渲染: 余额页 ---------- */
-function renderBalance(){
+export function renderBalance(){
   $('b-money').textContent=fmt(S.money);
   $('b-cheat').textContent = S.flags.cheated ? '💳 作弊模式 · 成就已关闭' : '';
   $('b-cheat').style.cssText = S.flags.cheated ? 'font-size:10px;background:#fef2f2;color:#b91c1c;padding:2px 8px;border-radius:8px;border:1px solid #fecaca;font-weight:700' : '';
@@ -119,8 +128,8 @@ function renderBalance(){
   if(!S.ledger.length){ ll.innerHTML='<div class="ledger-empty">暂无收支记录</div>'; }
   else ll.innerHTML=S.ledger.map(l=>`<div class="lrow"><span class="lab"><small>${l.ts}</small>${l.label}</span><span class="amt ${l.amt>=0?'pos':'neg'}">${l.amt>=0?'+':''}${fmt(l.amt)}</span></div>`).join('');
   const best=S.stats.best?MMAP[S.stats.best]:null;
-const hasNB=(S.dex.fihagv1||0)>0;
-    const dexTotal=MODELS.filter(m=>m.id!=='fihagv1'||hasNB).length;
+  const hasNB=(S.dex.fihagv1||0)>0;
+  const dexTotal=MODELS.filter(m=>m.id!=='fihagv1'||hasNB).length;
   const cells=[
     ['总抽数',S.stats.pulls],['工作单数',S.stats.tasks],['大成功',S.stats.greats],['删库事故',S.stats.disasters],
     ['最佳出货',best?best.name:'无'],['图鉴',`${Object.keys(S.dex).length}/${dexTotal}`],
@@ -228,11 +237,8 @@ const hasNB=(S.dex.fihagv1||0)>0;
       if(destroyBtn) destroyBtn.disabled=!hasSel;
     };
     BatchState.updateBar=updateBatchBar;
-    // 兼容旧 window 引用（boot.js 过渡期）
-    window._batchMode = BatchState.mode; window._batchSet = BatchState.set; window._updateBatchBar = updateBatchBar;
     btnBatchToggle.onclick=()=>{
       BatchState.mode=!BatchState.mode;
-      window._batchMode = BatchState.mode;
       if(!BatchState.mode) BatchState.set.clear();
       btnBatchToggle.textContent = BatchState.mode ? '✖️ 退出批量' : '☑️ 批量';
       btnBatchToggle.classList.toggle('on', BatchState.mode);
@@ -303,7 +309,7 @@ const hasNB=(S.dex.fihagv1||0)>0;
 }
 
 /* ---------- 渲染: 成就墙 ---------- */
-function renderAchievements(){
+export function renderAchievements(){
   const grid=$('achieve-grid'), prog=$('achieve-progress');
   if(!grid) return;
   const unlocked = MILESTONES.filter(m=> S.flags.ms && S.flags.ms[m.id]).length;
@@ -328,11 +334,12 @@ function renderAchievements(){
 
 /* ---------- 渲染: 头部 ---------- */
 let shownMoney = S.money;
-function renderHeader(){
+export function syncShownMoney(){ shownMoney = S.money; } // 换档/重置时同步显示基准
+export function renderHeader(){
   $('h-tokens').textContent=fmtK(totalTokens());
   $('h-pulls').textContent=S.stats.pulls;
 }
-function tweenMoney(){
+export function tweenMoney(){
   const el=$('h-money');
   const from=shownMoney, to=S.money;
   if(Math.abs(to-from)<0.5){ shownMoney=to; el.textContent=fmt(to); return; }
@@ -346,10 +353,10 @@ function tweenMoney(){
     if(k<1) requestAnimationFrame(step); else shownMoney=to;
   })(t0);
 }
-function renderAll(){
+export function renderAll(){
   renderHeader(); tweenMoney(); renderBuy(); renderWork(); renderBalance(); renderAchievements();
-  if(typeof renderCraft==='function') renderCraft();
-  if(typeof renderMarket==='function') renderMarket();
-  if(typeof renderActivity==='function') renderActivity();
-  if(typeof renderData==='function') renderData();
+  renderCraft();
+  renderMarket();
+  renderActivity();
+  renderData();
 }
