@@ -12,8 +12,10 @@ import { renderAll } from "./ui/render.js";
 import { initRouter } from "./ui/router.js";
 import { bindUI, boot, bannerCountdownTick } from "./ui/boot.js";
 import { applySkin } from "./skins.js";
+import { initTrack } from "./track.js";
 
 /* ---------- 启动序列（与原 script 加载顺序等价） ---------- */
+initTrack();               // 埋点最先就位（page_view/nav/pull/...）
 setMuted(!!S.flags.muted); // 静音偏好先于任何音效调用
 syncBanner();              // 限定池对齐当前赛季后再进渲染
 ensureMarket();            // 黑市首刷

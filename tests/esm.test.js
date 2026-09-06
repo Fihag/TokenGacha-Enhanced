@@ -142,7 +142,7 @@ describe("核心循环冒烟 (逻辑层, 无 DOM)", () => {
     expect(S.market.orders.length).toBe(6);
     for (const o of S.market.orders) {
       // 造满足条件的卡
-      const pool = MODELS.filter(m => m.r === o.r && m.vendor === o.vendor && !m.bannerOnly);
+      const pool = MODELS.filter(m => m.r === o.r && m.vendor === o.vendor);
       for (let i = 0; i < o.need && pool.length; i++) {
         const m = pool[i % pool.length];
         S.inv.push({

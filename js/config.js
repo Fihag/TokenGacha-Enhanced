@@ -169,6 +169,9 @@ export const BATCH_TASKS = 10;
 export const VICTORY_AT = 50000;
 export const START_MONEY = 800;
 export const SITE_URL = 'https://tokengacha.pages.dev';
+/* Cloudflare Web Analytics 站点 token：在 CF Pages 控制台开启 Web Analytics 后回填；
+   留空 = 纯控制台埋点（零网络请求），填入后 tgTrack 自动注入 beacon 并上报自定义事件 */
+export const TG_CF_TOKEN = '';
 export const MILESTONES = [
   {id:'m5k',   at:5000,   title:'🌱 初入江湖', tag:'余额突破 ¥5,000',   hype:'第一桶金到手，中转站开始注意你了。'},
   {id:'m10k',  at:10000,  title:'🎉 小有所成', tag:'余额突破 ¥10,000',  hype:'从电子垃圾堆里爬了出来，开始人模狗样。'},

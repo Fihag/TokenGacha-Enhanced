@@ -47,7 +47,8 @@ describe("P3-2 SEO/运营", () => {
   it("og meta 与 analytics 钩子", () => {
     expect(html).toContain('property="og:image"');
     expect(html).toContain("og.png");
-    expect(html).toContain("tgTrack");
+    const mainSrc = fs.readFileSync(path.resolve("js/main.js"), "utf8");
+    expect(mainSrc).toContain("track.js");
     expect(html).toContain("serviceWorker");
   });
 });
@@ -88,6 +89,18 @@ describe("拆分与校验", () => {
     expect(sw).toContain("js/main.js");
     expect(sw).toContain("ui/router.js");
     expect(sw).toContain("ui/boot.js");
+  });
+  it("sw.js 资产清单与 js 模块一致（sync:sw 产物防漂移）", () => {
+    const list = [];
+    (function walk(dir) {
+      for (const f of fs.readdirSync(dir)) {
+        const full = path.join(dir, f);
+        if (fs.statSync(full).isDirectory()) walk(full);
+        else if (f.endsWith(".js")) list.push(full.split(path.sep).join("/"));
+      }
+    })("js");
+    expect(list.length).toBeGreaterThanOrEqual(20);
+    for (const f of list) expect(sw).toContain(f);
   });
   it("validate.js 与 economy.js 存在且经 main/模块图引入并被 sw 缓存", () => {
     expect(fs.existsSync(path.resolve("js/validate.js"))).toBe(true);

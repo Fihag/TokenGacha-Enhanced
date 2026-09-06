@@ -454,16 +454,7 @@
       if ("serviceWorker" in navigator) {
         window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js").catch(() => {}));
       }
-      // 极简埋点（控制台可见，预留 Cloudflare GA）
-      window.tgTrack = function (evt, data) {
-        try {
-          console.debug("[TG]", evt, data || "");
-        } catch (e) {}
-      };
-      document.addEventListener("DOMContentLoaded", () =>
-        window.tgTrack("page_view", { hash: location.hash || "#buy" })
-      );
-      window.addEventListener("hashchange", () => window.tgTrack("nav", { hash: location.hash }));
+      // 埋点在 js/track.js 内定义（控制台可见, 配置 TG_CF_TOKEN 后转发 Cloudflare Web Analytics）
     </script>
   </body>
 </html>

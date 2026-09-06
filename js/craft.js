@@ -225,6 +225,7 @@ export function openCraftPicker(recipeId, vendor){
     else res=doCraft(recipeId, uids);
     if(!res.ok){ toast(res.msg||'合成失败'); SFX.bad(); return; }
     // 成功特效（原在逻辑层, 现归 UI）
+    if(window.tgTrack) window.tgTrack('craft', {recipe:recipeId, to:res.recipe?.to||'star'});
     renderAll();
     SFX.coin();
     if(recipeId==='star'){

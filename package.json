@@ -12,7 +12,8 @@
     "format:check": "prettier --check \"**/*.{js,json,css,html,md}\"",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "sync:sw": "node tools/sync-sw.mjs"
   },
   "devDependencies": {
     "eslint": "^8.57.0",

@@ -204,6 +204,7 @@ export function renderMarket(){
         SFX.coin();
         burst(innerWidth/2, innerHeight/3, ['#16a34a','#f59e0b','#fff'], 80, 7);
         toast(`🏦 成交 +${fmt(res.payout)} (溢价×${res.order.premium})`, 2600);
+        if(window.tgTrack) window.tgTrack('market_sell', {premium:res.order.premium, payout:res.payout});
       });
     }
   }
@@ -232,6 +233,7 @@ export function renderMarket(){
         SFX.coin();
         burst(innerWidth/2, innerHeight/3, ['#3b82f6','#f59e0b','#fff'], 70, 6);
         toast(`🛒 已购入 ${res.model.name}（- ${fmt(res.listing.price)}）`, 2600);
+        if(window.tgTrack) window.tgTrack('market_buy', {mid:res.model.id, price:res.listing.price});
       });
     }
   }

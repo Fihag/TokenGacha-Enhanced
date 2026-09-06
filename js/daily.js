@@ -109,6 +109,7 @@ export function renderActivity(){
     if(res.already){ toast('今天已经签过到啦！明天再来'); SFX.bad(); return; }
     if(!res.ok) return;
     renderAll();
+    if(window.tgTrack) window.tgTrack('sign', {streak:res.streak});
     SFX.coin();
     burst(innerWidth/2, innerHeight/3, ['#f59e0b','#2f6bff','#fff'], 90, 8);
     toast(`📅 签到成功！第 ${res.streak} 天 +${fmt(res.amt)}`, 2600);
@@ -138,6 +139,7 @@ export function renderActivity(){
     const res=claimDailyTask(b.dataset.task);
     if(!res.ok){ if(res.msg) toast(res.msg); if(!res.msg || res.msg==='任务还没完成呢') SFX.bad(); return; }
     const t=res.t;
+    if(window.tgTrack) window.tgTrack('task_claim', {id:t.id});
     renderAll();
     SFX.coin();
     burst(innerWidth/2, innerHeight/3, ['#16a34a','#f59e0b','#fff'], 80, 7);
