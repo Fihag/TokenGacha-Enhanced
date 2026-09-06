@@ -1,46 +1,23 @@
 import { describe, it, expect } from "vitest";
-import fs from "fs";
-import path from "path";
 
-// 纯前端逻辑在浏览器中通过全局变量串联，这里在 Node 侧复刻关键公式做回归保护
-// 若未来改动 config/state/core 的数值，测试会立刻失败，提示同步更新期望
+// 经济公式单一数据源：直接 import economy.js 真函数断言，
+// payoutParams 是 taskPayout(core.js) 抽样与 expectedTaskPay 期望的共同来源
+import {
+  payFactor,
+  payoutParams,
+  taskPayEvents,
+  expectedTaskPay,
+  poolExpectedValue,
+  poolRTP,
+  estValue,
+  usableEstValue,
+} from "../js/economy.js";
+import { RARITY, TASK_TOKENS, MMAP, POOLS, PROBS, LIMITED_ALL } from "../js/config.js";
+import { S, defaultState, setState } from "../js/state.js";
+import { taskPayout } from "../js/core.js";
 
-const configText = fs.readFileSync(path.resolve("js/config.js"), "utf8");
-const economyText = fs.readFileSync(path.resolve("js/economy.js"), "utf8");
-const coreText = fs.readFileSync(path.resolve("js/core.js"), "utf8");
-
-// 从 config 提取的简化 RARITY（与生产一致）
-const RARITY = {
-  N: { tasks: 4, basePay: 3.2, min: 10, max: 27 },
-  R: { tasks: 8, basePay: 7.2, min: 28, max: 39 },
-  SR: { tasks: 12, basePay: 15.5, min: 40, max: 46 },
-  SSR: { tasks: 16, basePay: 35, min: 47, max: 54 },
-  UR: { tasks: 20, basePay: 80, min: 55, max: 63 },
-  UTR: { tasks: 24, basePay: 420, min: 64, max: 99 },
-  NB: { tasks: 30, basePay: 640, min: 64, max: 100 },
-};
-const PAY_BOOST = 1.3;
-const LIMITED = new Set(["dsv5pro", "dsv5fl", "opus6", "gem4pro", "glm6", "qwen5max"]);
-
-function payFactor(m) {
-  const t = RARITY[m.r];
-  const span = Math.max(1, t.max - t.min);
-  return 0.8 + 0.4 * Math.min(1, Math.max(0, (m.idx - t.min) / span));
-}
-function expectedTaskPay(m, stars = 0) {
-  if (m && m.stars != null && !stars) stars = m.stars;
-  let pay = RARITY[m.r].basePay * payFactor(m);
-  if (LIMITED.has(m.id)) pay *= 2;
-  if (stars) pay *= 1 + stars * 0.05;
-  const pG = 0.02 + m.idx / 800;
-  const pR = Math.min(0.25, Math.max(0.04, 0.25 - m.idx / 250));
-  const pD = Math.min(0.02, Math.max(0, (28 - m.idx) / 1200));
-  const pO = Math.max(0, 1 - pG - pR - pD);
-  return PAY_BOOST * (pO * pay + pG * pay * 2.5 + pR * pay * 0.4 - pD * 50 * PAY_BOOST);
-}
-
-describe("经济公式回归", () => {
-  it("payFactor 在档位边界内为 0.8~1.2", () => {
+describe("payFactor 档位线性", () => {
+  it("档位边界内为 0.8~1.2", () => {
     for (const r of Object.keys(RARITY)) {
       const t = RARITY[r];
       expect(payFactor({ r, idx: t.min })).toBeCloseTo(0.8, 2);
@@ -48,8 +25,51 @@ describe("经济公式回归", () => {
       expect(payFactor({ r, idx: (t.min + t.max) / 2 })).toBeCloseTo(1.0, 1);
     }
   });
+});
 
-  it("expectedTaskPay 限定卡翻倍、星级+5%/星", () => {
+describe("payoutParams 单一数据源", () => {
+  it("概率随智能指数单调变化且落在定义域", () => {
+    const low = payoutParams({ idx: 7 });
+    const high = payoutParams({ idx: 72 });
+    expect(low.pGreat).toBeCloseTo(0.02 + 7 / 800);
+    expect(high.pGreat).toBeCloseTo(0.02 + 72 / 800);
+    // pRework: clamp 在 0.04~0.25, idx=7 → 0.25-0.028=0.222
+    expect(low.pRework).toBeCloseTo(0.25 - 7 / 250);
+    expect(low.pRework).toBeLessThanOrEqual(0.25);
+    expect(high.pRework).toBeCloseTo(0.04);
+    // pDisaster: 高分无事故
+    expect(low.pDisaster).toBeGreaterThan(0);
+    expect(high.pDisaster).toBe(0);
+    // 四事件概率和 ≤ 1
+    for (const p of [low, high]) {
+      expect(p.pGreat + p.pRework + p.pDisaster).toBeLessThanOrEqual(1);
+    }
+  });
+  it("taskPayEvents: 限定×2、星级 +5%/星", () => {
+    const base = taskPayEvents({ id: "opus5", r: "UR", idx: 63 });
+    const star3 = taskPayEvents({ id: "opus5", r: "UR", idx: 63, stars: 3 });
+    expect(star3.ok).toBeCloseTo(base.ok * 1.15, 6);
+    const lim = taskPayEvents({ id: "dsv5pro", r: "UTR", idx: 72 });
+    const nonLim = taskPayEvents({ r: "UTR", idx: 72, id: "fake-nonlim" });
+    expect(lim.ok).toBeCloseTo(nonLim.ok * 2, 6);
+    expect(taskPayEvents({ id: "gpt4", r: "N", idx: 7 }).disaster).toBe(-50 * 1.3);
+  });
+  it("expectedTaskPay = Σ p×amt（与 taskPayEvents 同源）", () => {
+    for (const m of [
+      { id: "gpt4", r: "N", idx: 7 },
+      { id: "opus5", r: "UR", idx: 63 },
+    ]) {
+      const p = payoutParams(m);
+      const ev = taskPayEvents(m);
+      const pOk = 1 - p.pGreat - p.pRework - p.pDisaster;
+      const manual = pOk * ev.ok + p.pGreat * ev.great + p.pRework * ev.rework + p.pDisaster * ev.disaster;
+      expect(expectedTaskPay(m)).toBeCloseTo(manual, 10);
+    }
+  });
+});
+
+describe("expectedTaskPay 数值回归", () => {
+  it("限定卡翻倍、星级+5%/星", () => {
     const base = { id: "opus5", r: "UR", idx: 63 };
     const limited = { id: "dsv5pro", r: "UTR", idx: 72 };
     const vBase = expectedTaskPay(base);
@@ -68,26 +88,15 @@ describe("经济公式回归", () => {
     expect(h3).toBeCloseTo(h0 * 1.15, 2);
   });
 
-  it("economy.js 的 expectedTaskPay 含 LIMITED_ALL 与星级逻辑", () => {
-    expect(economyText).toContain("LIMITED_ALL");
-    expect(economyText).toContain("stars");
-    expect(economyText).toMatch(/payFactor/);
-    expect(economyText).toMatch(/PAY_BOOST/);
-  });
-
-  it("poolExpectedValue 包含 0731 独立 1.5% 与限定过滤", () => {
-    expect(economyText).toContain("poolExpectedValue");
-    expect(economyText).toContain("DSV73");
-    expect(economyText).toContain("bannerOnly");
-    expect(economyText).toContain("LIMITED_IDS");
-  });
-
-  it("core.js taskPayout 事件概率与 payFactor 一致", () => {
-    expect(coreText).toContain("pGreat");
-    expect(coreText).toContain("pRework");
-    expect(coreText).toContain("pDisaster");
-    expect(coreText).toContain("PAY_BOOST");
-    expect(coreText).toContain("taskPayout");
+  it("抽样均值收敛到 expectedTaskPay（同源验证, 含删库修正后一致）", () => {
+    const m = { id: "dsv4fl", r: "SR", idx: 42 };
+    const ev = expectedTaskPay(m);
+    let sum = 0;
+    const N = 60000;
+    for (let i = 0; i < N; i++) sum += taskPayout(m).amt;
+    const mean = sum / N;
+    // 大样本下均值与期望偏差 < 1.5%
+    expect(Math.abs(mean - ev) / Math.abs(ev)).toBeLessThan(0.015);
   });
 
   it("各档位 expectedTaskPay 单调：垃圾 < 普通 < 精锐 < 传说 < 神话 < 超神话", () => {
@@ -104,21 +113,54 @@ describe("经济公式回归", () => {
       expect(vals[i]).toBeGreaterThan(vals[i - 1]);
     }
   });
+});
 
-  it("config.js 中 PROBS/TUNING 集中常量存在", () => {
-    expect(configText).toContain("PROBS");
-    expect(configText).toContain("TUNING");
-    expect(configText).toMatch(/DSV73:\s*0\.015/);
-    expect(configText).toMatch(/FIHAG:\s*0\.0001/);
-    expect(configText).toMatch(/SKIN_DROP/);
+describe("卡池期望与回本率", () => {
+  it("poolExpectedValue/RTP 为正且白银池 RTP 已公示区间", () => {
+    for (const k of Object.keys(POOLS)) {
+      const ev = poolExpectedValue(k);
+      expect(ev).toBeGreaterThan(0);
+      const rtp = poolRTP(k);
+      expect(rtp).toBeGreaterThan(0.3);
+      expect(rtp).toBeLessThan(2.5);
+    }
   });
+  it("0731 独立出货计入期望（关掉 PROBS.DSV73 则期望下降）", () => {
+    const with73 = poolExpectedValue("standard");
+    const keep = PROBS.DSV73;
+    PROBS.DSV73 = 0;
+    const without73 = poolExpectedValue("standard");
+    PROBS.DSV73 = keep;
+    expect(with73).toBeGreaterThan(without73);
+  });
+});
 
-  it("消耗 token 必须整除 TASK_TOKENS（避免残卡）", () => {
-    expect(economyText).toContain("TASK_TOKENS");
-    expect(coreText).toContain("Math.floor");
-    expect(coreText).toContain("TASK_TOKENS");
-    // economy.js 与 core.js 都应有规整逻辑
-    expect((economyText.match(/TASK_TOKENS/g) || []).length).toBeGreaterThan(2);
-    expect((coreText.match(/TASK_TOKENS/g) || []).length).toBeGreaterThan(2);
+describe("估值层", () => {
+  it("estValue/usableEstValue 与卡库 token 一致且锁定卡被剔除", () => {
+    setState(defaultState());
+    S.inv.push(
+      {
+        uid: 1,
+        m: "opus5",
+        tokens: 20 * TASK_TOKENS,
+        max: 20 * TASK_TOKENS,
+        half: false,
+        stars: 0,
+        locked: false,
+      },
+      {
+        uid: 2,
+        m: "gpt4",
+        tokens: 10 * TASK_TOKENS,
+        max: 10 * TASK_TOKENS,
+        half: false,
+        stars: 0,
+        locked: true,
+      }
+    );
+    const full = ((20 * TASK_TOKENS) / TASK_TOKENS) * expectedTaskPay(MMAP.opus5);
+    expect(estValue()).toBeCloseTo(full + ((10 * TASK_TOKENS) / TASK_TOKENS) * expectedTaskPay(MMAP.gpt4), 6);
+    expect(usableEstValue()).toBeCloseTo(full, 6);
+    expect(LIMITED_ALL.has("dsv5pro")).toBe(true);
   });
 });

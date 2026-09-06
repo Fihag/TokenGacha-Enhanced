@@ -3,9 +3,9 @@
    抽卡核心 (含 UTR / 限定池 / 0731 独立爆率) / 工作核心 (含限定翻倍)
    纯逻辑层：只改 S 与存档，不触 UI（渲染/音效由调用方处理）
    ================================================================ */
-import { POOLS, PITY_MAX, RORDER, RORDER_DESC, MODELS, MMAP, RARITY, TASK_TOKENS, PAY_BOOST, PROBS, LIMITED_IDS, LIMITED_ALL } from "./config.js";
+import { POOLS, PITY_MAX, RORDER, RORDER_DESC, MODELS, MMAP, RARITY, TASK_TOKENS, PROBS, LIMITED_IDS, LIMITED_ALL } from "./config.js";
 import { S, save } from "./state.js";
-import { payFactor } from "./economy.js";
+import { payFactor, payoutParams } from "./economy.js";
 import { dailyResetIfNeeded } from "./daily.js";
 import { rollSkinDrop } from "./skins.js";
 
@@ -158,14 +158,12 @@ export function taskPayout(model, stars){
   const boosted = LIMITED_ALL.has(model.id);
   if(boosted) pay *= 2; // 限定卡加成: 永久限定集合，跨季不失效
   if(stars) pay *= (1 + stars*0.05); // 星级 +5%/星
+  const {pGreat, pRework, pDisaster, mult, okRange, disasterPenalty, boost} = payoutParams(model);
   const roll = Math.random();
-  const pGreat = .02 + model.idx/800;
-  const pRework = Math.min(.25,Math.max(.04,.25-model.idx/250));
-  const pDisaster = Math.min(.02,Math.max(0,(28-model.idx)/1200));
-  if(roll<pDisaster) return {amt:-50*PAY_BOOST, evt:'disaster', boosted};
-  if(roll<pDisaster+pRework) return {amt:pay*.4*PAY_BOOST, evt:'rework', boosted};
-  if(roll>1-pGreat) return {amt:pay*2.5*PAY_BOOST, evt:'great', boosted};
-  return {amt:pay*(.85+Math.random()*.3)*PAY_BOOST, evt:'ok', boosted};
+  if(roll<pDisaster) return {amt:-disasterPenalty, evt:'disaster', boosted};
+  if(roll<pDisaster+pRework) return {amt:pay*mult.rework*boost, evt:'rework', boosted};
+  if(roll>1-pGreat) return {amt:pay*mult.great*boost, evt:'great', boosted};
+  return {amt:pay*(okRange[0]+Math.random()*(okRange[1]-okRange[0]))*boost, evt:'ok', boosted};
 }
 export function bestCard(){
   let best=null;
