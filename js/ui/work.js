@@ -1,7 +1,7 @@
 /* ================================================================
    TokenGacha · 工作流 (拆自 ui.js)
    ================================================================ */
-import { TUNING, BATCH_TASKS, CLIENT_REQS, MEME_LINES, MID_REQS, OK_LINES } from "../config.js";
+import { TUNING, BATCH_TASKS, CLIENT_REQS, MEME_LINES, MID_REQS, OK_LINES, EVT_TXT } from "../config.js";
 import { S, $, save, fmt2, addLedger, totalTasks, pick } from "../state.js";
 import { consumeTasks } from "../core.js";
 import { SFX, bigMoneyPop, coinShower, burst, shake, toast } from "../fx.js";
@@ -85,12 +85,14 @@ export function runLines(lines, interval, onDone){
       fastFwd('> ⏳ 后台静默完成 · 全部订单已结算');
       return;
     }
+    const L=lines[i];
     let next=interval;
+    // 模型出字速度影响该行停留时长 (spd tok/s: 快模型间隔短, 慢模型间隔长, 120 为基准)
+    if(L.spd) next=Math.max(MIN_INTERVAL, next*Math.min(1.8, Math.max(0.55, 120/L.spd)));
     if(i>=ACCEL_START){
       if(!boosted){ boosted=true; SFX.boost(); } // 进入加速段: 播加速音效
       next=Math.max(MIN_INTERVAL, interval*Math.pow(ACCEL_DECAY, Math.floor((i-ACCEL_START)/ACCEL_BLOCK)));
     }
-    const L=lines[i];
     tp.line(L.text);
     if(tprog && tbar && ttxt){ tbar.style.width=(i/lines.length*100).toFixed(1)+'%'; ttxt.textContent=`${i+1}/${lines.length}`; }
     const now=performance.now();
@@ -124,7 +126,8 @@ export function composeLines(items, {rich=true, maxDetail=Infinity}={}){
       L.push({text:`> …其余 ${n-i} 单全速交付中…`});
     }
     const tag=(it.res.boosted?'🚀 限定×2 ':'')+({great:'🤩 大成功', ok:'✅ 交付', rework:'🔧 返工', disaster:'💥 删库'}[it.res.evt]);
-    L.push({text:`  → [${i+1}/${n}] ${it.m.name} 结算 ${it.res.amt>=0?'+':''}${fmt2(it.res.amt)} ｜ ${tag}`, amt:it.res.amt, evt:it.res.evt});
+    L.push({text:`  → [${i+1}/${n}] ${it.m.name} 结算 ${it.res.amt>=0?'+':''}${fmt2(it.res.amt)} ｜ ${tag}`, amt:it.res.amt, evt:it.res.evt, spd:it.m.spd});
+    if(rich){ const evts=EVT_TXT[it.res.evt]; if(evts) L.push({text:pick(evts), spd:it.m.spd}); }
   });
   return L;
 }

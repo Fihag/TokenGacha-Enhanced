@@ -138,6 +138,7 @@ export function doMarketSell(orderId){
   S.market.orders=S.market.orders.filter(o=>o.id!==orderId);
   S.money+=payout;
   S.stats.earn+=payout;
+  S.stats.markets=(S.stats.markets||0)+1;
   S.daily.earnToday=(S.daily.earnToday||0)+payout;
   S.daily.markets=(S.daily.markets||0)+1;
   addLedger(`🏦 黑市成交 · ${order.vendor} ${order.r}×${order.need} 溢价×${order.premium}`, payout);
@@ -154,6 +155,7 @@ export function doMarketBuy(listingId){
   if(S.money < li.price) return {ok:false, msg:'余额不足，买不起'};
   S.money-=li.price;
   S.stats.spent+=li.price;
+  S.stats.buys=(S.stats.buys||0)+1;
   const quota=Math.floor((m.quota||RARITY[m.r].quota)/TASK_TOKENS)*TASK_TOKENS;
   const nc={uid:S.uid++, m:m.id, tokens:quota, max:quota, half:false, stars:0, locked:false};
   S.inv.push(nc);

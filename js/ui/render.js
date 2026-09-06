@@ -43,7 +43,11 @@ export function renderBuy(){
     const fr=card.querySelector('.featured-row');
     for(const mid of p.featured){ fr.appendChild(iconImg(MMAP[mid].icon)); }
     fr.insertAdjacentHTML('beforeend','<span>UP 渠道</span>');
-    if(p.banner) fr.insertAdjacentHTML('beforeend',`<span style="color:#ff2d55;font-weight:800" id="banner-countdown">⏳ ${bannerCountdownText()}</span>`);
+    if(p.banner){
+      fr.insertAdjacentHTML('beforeend',`<span style="color:#ff2d55;font-weight:800" id="banner-countdown">⏳ ${bannerCountdownText()}</span>`);
+      const seasonTag = `<span style="color:var(--faint);font-size:10.5px">本赛季已抽 ${S.bannerPulls||0} 抽 · 大保底还剩 ${Math.max(0,(p.pityMax||PITY_MAX)-(S.pity.banner||0))} 抽 · 限定已出 ${S.bannerLimited||0} 张</span>`;
+      fr.insertAdjacentHTML('beforeend', seasonTag);
+    }
     box.appendChild(card);
   }
   $('buy-tokens').textContent = fmtK(totalTokens())+' tokens';
@@ -314,20 +318,21 @@ export function renderAchievements(){
   const unlocked = MILESTONES.filter(m=> S.flags.ms && S.flags.ms[m.id]).length;
   if(prog) prog.textContent = `${unlocked}/${MILESTONES.length} · 下一档 ${(() => {
     const nxt = MILESTONES.find(m=> !(S.flags.ms && S.flags.ms[m.id]));
-    return nxt ? fmt(nxt.at) : '已全部解锁';
+    return nxt ? (nxt.at!=null ? fmt(nxt.at) : nxt.tag) : '已全部解锁';
   })()}`;
   // 若作弊，提示关闭
   if(S.flags.cheated){
     grid.innerHTML = `<div style="grid-column:1/-1;color:var(--faint);font-size:12px;padding:8px 2px;text-align:center">💳 作弊模式已开启，成就系统关闭（已解锁 ${unlocked} 项保留）</div>` + MILESTONES.map(m=>{
       const ok = !!(S.flags.ms && S.flags.ms[m.id]);
-      return `<div class="achieve-card ${ok?'unlocked':'locked'}"><div class="ac-ic">${m.title.split(' ')[0]}</div><div class="ac-title">${m.title}</div><div class="ac-tag">${m.tag}</div><div class="ac-hype">${m.hype}</div><div class="ac-at">${fmt(m.at)}</div></div>`;
+      return `<div class="achieve-card ${ok?'unlocked':'locked'}"><div class="ac-ic">${m.title.split(' ')[0]}</div><div class="ac-title">${m.title}</div><div class="ac-tag">${m.tag}</div><div class="ac-hype">${m.hype}</div><div class="ac-at">${m.at!=null?fmt(m.at):m.tag}</div></div>`;
     }).join('');
     return;
   }
   grid.innerHTML = MILESTONES.map(m=>{
     const ok = !!(S.flags.ms && S.flags.ms[m.id]);
-    const pct = Math.min(100, Math.max(0, S.money / m.at * 100));
-    return `<div class="achieve-card ${ok?'unlocked':'locked'}" title="${m.hype}\n${ok?'已解锁':'进度 '+pct.toFixed(0)+'%'}"><div class="ac-ic">${m.title.split(' ')[0]}</div><div class="ac-title">${m.title}</div><div class="ac-tag">${m.tag}</div><div class="ac-hype">${m.hype}</div><div class="ac-at">${fmt(m.at)}${ok?' · 已达成':''}</div>${!ok?`<div style="margin-top:6px;height:4px;background:var(--panel2);border:1px solid var(--line);border-radius:4px;overflow:hidden"><i style="display:block;height:100%;width:${pct.toFixed(1)}%;background:linear-gradient(90deg,var(--gold),#f59e0b)"></i></div>`:''}</div>`;
+    const prog = m.check ? m.check(S) : Math.min(1, Math.max(0, S.money / m.at));
+    const pct = Math.min(100, Math.max(0, prog * 100));
+    return `<div class="achieve-card ${ok?'unlocked':'locked'}" title="${m.hype}\n${ok?'已解锁':'进度 '+pct.toFixed(0)+'%'}"><div class="ac-ic">${m.title.split(' ')[0]}</div><div class="ac-title">${m.title}</div><div class="ac-tag">${m.tag}</div><div class="ac-hype">${m.hype}</div><div class="ac-at">${m.at!=null?fmt(m.at):m.tag}${ok?' · 已达成':''}</div>${!ok?`<div style="margin-top:6px;height:4px;background:var(--panel2);border:1px solid var(--line);border-radius:4px;overflow:hidden"><i style="display:block;height:100%;width:${pct.toFixed(1)}%;background:linear-gradient(90deg,var(--gold),#f59e0b)"></i></div>`:''}</div>`;
   }).join('');
 }
 

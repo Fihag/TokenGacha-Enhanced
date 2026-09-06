@@ -17,7 +17,9 @@ export function minPoolPrice(){
 }
 export function checkEnd(){
   if(!S.flags.cheated) for(const ms of MILESTONES){
-    if(S.money>=ms.at && !S.flags.ms[ms.id]){
+    // 余额型成就按 at 判定, 谓词型成就按 check 返回 0~1 进度判定
+    const hit = ms.check ? ms.check(S)>=1 : S.money>=ms.at;
+    if(hit && !S.flags.ms[ms.id]){
       S.flags.ms[ms.id]=true; save();
       SFX.win();
       burst(innerWidth/2, innerHeight/3, ['#f59e0b','#2f6bff','#ff5f6d','#fff'], ms.at>=100000?320:200, ms.at>=100000?13:11);

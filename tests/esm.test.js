@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 
 // ESM 化冒烟：整条模块链可 import，核心循环可在无渲染环境下跑通
-import { MODELS, RARITY, MMAP } from "../js/config.js";
+import { MODELS, RARITY, MMAP, MILESTONES } from "../js/config.js";
 import { validateConfig } from "../js/validate.js";
 import { S, defaultState, setState, totalTasks } from "../js/state.js";
 import { doPulls, consumeTasks, taskPayout } from "../js/core.js";
@@ -27,6 +27,25 @@ describe("ESM 模块链", () => {
     const r = validateConfig();
     expect(r.errors).toEqual([]);
     expect(r.ok).toBe(true);
+  });
+});
+
+describe("谓词型成就", () => {
+  const craft10 = MILESTONES.find(m => m.id === "mCraft10");
+  const star5 = MILESTONES.find(m => m.id === "mStar5");
+  it("工匠成就按合成/升星进度判定", () => {
+    expect(craft10 && star5).toBeTruthy();
+    setState(defaultState());
+    expect(craft10.check(S)).toBe(0);
+    S.crafts.count = 5;
+    expect(craft10.check(S)).toBeCloseTo(0.5);
+    S.crafts.count = 10;
+    expect(craft10.check(S)).toBe(1);
+    S.crafts.stars = 5;
+    expect(star5.check(S)).toBe(1);
+  });
+  it("validateConfig 兼容无 at 的谓词成就", () => {
+    expect(validateConfig().ok).toBe(true);
   });
 });
 

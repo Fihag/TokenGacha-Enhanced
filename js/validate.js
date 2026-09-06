@@ -29,8 +29,12 @@ export function validateConfig() {
   }
   for (const r of RORDER) if (!RARITY[r]) errors.push(`RARITY 缺 ${r}`);
   if (MILESTONES.length === 0) errors.push("MILESTONES 为空");
-  // 单调递增
-  for (let i = 1; i < MILESTONES.length; i++) if (MILESTONES[i].at <= MILESTONES[i-1].at) errors.push(`MILESTONES 非递增: ${MILESTONES[i-1].id} -> ${MILESTONES[i].id}`);
+  // 单调递增（仅余额型 at 成就; 谓词型成就无 at）
+  const ats = MILESTONES.filter(m => m.at != null);
+  for (let i = 1; i < ats.length; i++) if (ats[i].at <= ats[i-1].at) errors.push(`MILESTONES 非递增: ${ats[i-1].id} -> ${ats[i].id}`);
+  for (const m of MILESTONES) {
+    if (m.at == null && typeof m.check !== "function") errors.push(`MILESTONES ${m.id} 既无 at 也无 check`);
+  }
   return { ok: errors.length === 0, errors };
 }
 

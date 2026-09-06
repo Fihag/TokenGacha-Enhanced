@@ -30,15 +30,17 @@ describe("config.js 数据完整性", () => {
     expect(configText).toContain("const MMAP = Object.fromEntries");
   });
 
-  it("RARITY 档位完整且 quota/tasks 合理", () => {
+  it("RARITY 档位完整且 quota 递增合理", () => {
     expect(configText).toContain("RARITY");
     for (const r of ["N", "R", "SR", "SSR", "UR", "UTR", "NB"]) {
       expect(configText).toContain(`${r}:`);
     }
-    // N tasks 4, UTR 24, NB 30
-    expect(configText).toMatch(/N:\s*\{[^}]*tasks:\s*4/);
-    expect(configText).toMatch(/UTR:\s*\{[^}]*tasks:\s*24/);
-    expect(configText).toMatch(/NB:\s*\{[^}]*tasks:\s*30/);
+    // 无消费方的 tasks/secret 字段已清理
+    expect(configText).not.toMatch(/tasks:\s*\d+/);
+    expect(configText).not.toContain("secret:true");
+    expect(configText).toMatch(/N:\s*\{[^}]*quota:800000/);
+    expect(configText).toMatch(/UTR:\s*\{[^}]*quota:6000000/);
+    expect(configText).toMatch(/NB:\s*\{[^}]*quota:100000000/);
   });
 
   it("RORDER 与 RORDER_DESC 互为逆序", () => {
@@ -113,11 +115,23 @@ describe("config.js 数据完整性", () => {
     expect(count).toBe(5);
   });
 
-  it("成就墙 10 档覆盖 5k~500k", () => {
+  it("成就墙 10 档余额型覆盖 5k~500k + 2 档谓词型工匠成就", () => {
     const body = extractArray("MILESTONES");
     const ids = [...body.matchAll(/id:\s*'([^']+)'/g)].map(x => x[1]);
-    expect(ids.length).toBe(10);
-    expect(ids).toEqual(["m5k", "m10k", "m20k", "m35k", "m50k", "m75k", "m100k", "m150k", "m250k", "m500k"]);
+    expect(ids.length).toBe(12);
+    expect(ids.slice(0, 10)).toEqual([
+      "m5k",
+      "m10k",
+      "m20k",
+      "m35k",
+      "m50k",
+      "m75k",
+      "m100k",
+      "m150k",
+      "m250k",
+      "m500k",
+    ]);
+    expect(ids.slice(10)).toEqual(["mCraft10", "mStar5"]);
     expect(body).toContain("500000");
   });
 

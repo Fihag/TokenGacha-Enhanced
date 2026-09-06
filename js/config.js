@@ -18,7 +18,7 @@
  * @property {string} cost - 卡面标价（展示用）
  * @property {number} spd - 出字速度 tok/s
  * @property {string} quote - 趣味文案
- * @typedef {Record<Rarity, {name:string,label:string,hex:string,min:number,max:number,tasks:number,basePay:number,quota:number}>} RarityMap
+ * @typedef {Record<Rarity, {name:string,label:string,hex:string,min:number,max:number,basePay:number,quota:number}>} RarityMap
  * @typedef {Record<string, {name:string,sub:string,color:string,price:number,tenPrice:number,pityMax?:number,rates:Partial<Record<Rarity,number>>,half?:boolean,banner?:boolean,note:string,featured:string[],limited?:string[]}>} PoolMap
  */
 
@@ -101,13 +101,13 @@ export const MMAP = Object.fromEntries(MODELS.map(m=>[m.id,m]));
 
 /* ---------- 稀有度 & 经济参数 (与蒙特卡洛模拟一致) ---------- */
 export const RARITY = {
-  N:  {name:'N',  label:'垃圾', hex:'#94a3b8', min:10,max:27, tasks:4,  basePay:3.2, quota:800000},
-  R:  {name:'R',  label:'普通', hex:'#3b82f6', min:28,max:39, tasks:8,  basePay:7.2, quota:1600000},
-  SR: {name:'SR', label:'精锐', hex:'#9333ea', min:40,max:46, tasks:12, basePay:15.5,quota:2400000},
-  SSR:{name:'SSR',label:'传说', hex:'#f59e0b', min:47,max:54, tasks:16, basePay:35,  quota:3200000},
-  UR: {name:'UR', label:'神话', hex:'#ec4899', min:55,max:63, tasks:20, basePay:80,  quota:4000000},
-  UTR:{name:'UTR',label:'超神话',hex:'#ff2d55',min:64,max:99, tasks:24, basePay:420, quota:6000000},
-  NB: {name:'NB', label:'神迹', hex:'#ff6ec7', min:64,max:100, tasks:30, basePay:640,  quota:100000000, secret:true},
+  N:  {name:'N',  label:'垃圾', hex:'#94a3b8', min:10,max:27,  basePay:3.2, quota:800000},
+  R:  {name:'R',  label:'普通', hex:'#3b82f6', min:28,max:39,  basePay:7.2, quota:1600000},
+  SR: {name:'SR', label:'精锐', hex:'#9333ea', min:40,max:46, basePay:15.5,quota:2400000},
+  SSR:{name:'SSR',label:'传说', hex:'#f59e0b', min:47,max:54, basePay:35,  quota:3200000},
+  UR: {name:'UR', label:'神话', hex:'#ec4899', min:55,max:63, basePay:80,  quota:4000000},
+  UTR:{name:'UTR',label:'超神话',hex:'#ff2d55',min:64,max:99, basePay:420, quota:6000000},
+  NB: {name:'NB', label:'神迹', hex:'#ff6ec7', min:64,max:100, basePay:640,  quota:100000000},
 };
 export const RORDER = ['N','R','SR','SSR','UR','UTR','NB'];
 export const RORDER_DESC = ['NB','UTR','UR','SSR','SR','R','N']; // 抽卡概率累加用(高→低)
@@ -136,11 +136,11 @@ export const BANNER_SEASONS = [
     rates:{N:0,R:0,SR:.62,SSR:.295,UR:.075,UTR:.01}, half:false, pityMax:100, banner:true,
     note:'⏳ 限定卡池！UTR 超神话 DeepSeek V5 Pro 专属。100 抽大保底必出限定 UTR，赛季结束自动轮换。',
     featured:['dsv5pro','dsv5fl'], limited:['dsv5pro','dsv5fl'] },
-  { id:'cog', name:'神话回响池', sub:'限定 UP · Claude Opus 6 & Gemini 4 Pro · 仅此期间', color:'#8b5cf6', price:900, tenPrice:8550, rec:true,
+  { id:'cog', name:'神话回响池', sub:'限定 UP · Claude Opus 6 & Gemini 4 Pro · 仅此期间', color:'#8b5cf6', price:900, tenPrice:8550, oldPrice:950, oldTenPrice:9025, rec:true,
     rates:{N:0,R:0,SR:.62,SSR:.295,UR:.075,UTR:.01}, half:false, pityMax:100, banner:true,
     note:'⏳ 限定卡池！神秘的克劳德先生与 Gemini 4 Pro 降临。100 抽大保底必出限定 UTR，赛季结束自动轮换。',
     featured:['opus6','gem4pro'], limited:['opus6','gem4pro'] },
-  { id:'oss', name:'开源之光池', sub:'限定 UP · GLM-6 & Qwen5 Max 双开源神话 · 与神话回响同价', color:'#22c55e', price:900, tenPrice:8550, rec:true,
+  { id:'oss', name:'开源之光池', sub:'限定 UP · GLM-6 & Qwen5 Max 双开源神话 · 与神话回响同价', color:'#22c55e', price:900, tenPrice:8550, oldPrice:950, oldTenPrice:9025, rec:true,
     rates:{N:0,R:0,SR:.60,SSR:.31,UR:.08,UTR:.01}, half:false, pityMax:100, banner:true,
     note:'⏳ 限定卡池！智谱 GLM-6 与阿里 Qwen5 Max 双开源神话同台，国产之光×2。100 抽大保底必出限定 UTR，赛季结束自动轮换。',
     featured:['glm6','qwen5max','glm53','qwen38'], limited:['glm6','qwen5max'] },
@@ -180,6 +180,9 @@ export const MILESTONES = [
   {id:'m150k', at:150000, title:'🌌 星辰大海', tag:'余额突破 ¥150,000', hype:'你已在中转站食物链顶端，下一步是把中转站买下来。'},
   {id:'m250k', at:250000, title:'🏛️ 庄家克星', tag:'余额突破 ¥250,000', hype:'庄家连夜改概率，针对的就是你。'},
   {id:'m500k', at:500000, title:'🌈 神之一手', tag:'余额突破 ¥500,000', hype:'抽到 Fihag V1 的欧皇也不过如此。全服公告：神来了。'},
+  // 谓词型成就 (非余额): check 判定, progress 返回 0~1
+  {id:'mCraft10', title:'🔧 工匠入门', tag:'累计合成 10 次', check:s=>Math.min(1,(s.crafts&&s.crafts.count||0)/10), hype:'交易工坊的常客, 电子垃圾回收站的对立面。'},
+  {id:'mStar5', title:'⭐ 铸星者', tag:'累计升星 5 次', check:s=>Math.min(1,(s.crafts&&s.crafts.stars||0)/5), hype:'五合一星, 星星之火可以燎原。'},
 ];
 
 /* ---------- 合成台 (同厂商强制) ---------- */

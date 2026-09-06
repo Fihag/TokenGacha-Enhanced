@@ -9,7 +9,7 @@ export let S = null;
 export function defaultState(){
   return { ver:4, money:START_MONEY, inv:[], uid:1, freeTen:1,
     pity:{newbie:0,standard:0,flagship:0,banner:0}, ledger:[],
-    stats:{pulls:0,earn:0,spent:0,tasks:0,best:'',disasters:0,greats:0,byR:{N:0,R:0,SR:0,SSR:0,UR:0,UTR:0,NB:0}},
+    stats:{pulls:0,earn:0,spent:0,tasks:0,best:'',disasters:0,greats:0,markets:0,buys:0,byR:{N:0,R:0,SR:0,SSR:0,UR:0,UTR:0,NB:0}},
     dex:{}, flags:{welcomed:false,ms:{},muted:false,cheated:false,autoSkip:false},
     daily:{lastSign:null,streak:0,day:null,earnToday:0,pulls:0,tasks:0,crafts:0,markets:0,claimed:{}},
     skin:'classic', skinsOwned:['classic'], skinTickets:0,
@@ -27,6 +27,8 @@ export function load(){
       if(!Array.isArray(s.ledger)) s.ledger=[];
       if(!s.stats.byR) s.stats.byR={N:0,R:0,SR:0,SSR:0,UR:0};
       if(s.stats.greats==null) s.stats.greats=0;
+      if(s.stats.markets==null) s.stats.markets=0;
+      if(s.stats.buys==null) s.stats.buys=0;
       delete s.sel;
       // 迁移: GPT-4o → GPT-4
       if(Array.isArray(s.inv)) for(const c of s.inv) if(c.m==='gpt4o') c.m='gpt4';

@@ -5,6 +5,7 @@
 import { MMAP, RARITY, RORDER, POOLS, BANNER_SEASONS, START_MONEY, MODELS } from "./config.js";
 import { S, $, fmt } from "./state.js";
 import { toast, SFX } from "./fx.js";
+import { validateResult } from "./validate.js";
 
 export function renderData(){
   drawBarChart();
@@ -13,11 +14,36 @@ export function renderData(){
   drawDexChart();
   drawVendorChart();
   renderHist();
+  renderCraftStats();
+  renderValidateStatus();
   // 绑定导出按钮（仅一次）
   const bl=$('btn-export-ledger');
   if(bl && !bl.dataset.bound){ bl.dataset.bound='1'; bl.onclick=()=>{ SFX.click(); exportLedgerCSV(); }; }
   const bh=$('btn-export-hist');
   if(bh && !bh.dataset.bound){ bh.dataset.bound='1'; bh.onclick=()=>{ SFX.click(); exportHistCSV(); }; }
+}
+
+// 交易工坊统计: 累计合成/升星/最近产出/黑市买卖（消费 S.crafts 与 S.stats.markets/buys）
+function renderCraftStats(){
+  const box=$('craft-stats');
+  if(!box) return;
+  const last=S.crafts && S.crafts.last ? (MMAP[S.crafts.last]?.name||S.crafts.last) : '—';
+  const cells=[
+    ['🔧 累计合成', S.crafts?.count||0],
+    ['⭐ 累计升星', S.crafts?.stars||0],
+    ['🧪 最近产出', last],
+    ['🏦 黑市卖出', `${S.stats.markets||0} 单`],
+    ['🛒 黑市买入', `${S.stats.buys||0} 单`],
+  ];
+  box.innerHTML=cells.map(([l,v])=>`<div style="background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:8px 12px;min-width:110px"><div style="font-size:10.5px;color:var(--faint)">${l}</div><div style="font-size:14px;font-weight:800;margin-top:2px">${v}</div></div>`).join('');
+}
+
+// 配置自检结果（validate.js 启动时导出）
+function renderValidateStatus(){
+  const el=$('validate-status');
+  if(!el) return;
+  if(!validateResult.ok) el.textContent=`⚠️ 配置自检异常 ${validateResult.errors.length} 项（详见控制台）`;
+  else el.textContent='配置自检 ✓';
 }
 
 export function renderHist(){
