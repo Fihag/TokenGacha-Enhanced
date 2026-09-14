@@ -180,11 +180,11 @@ describe("合成规则", () => {
       b = card("gpt56lun"),
       c = card("gem36fl"),
       d = card("qwen3827b"),
-      e = card("gem31pro");
+      e = card("glm52");
     S.inv.push(a, b, c, d, e);
     expect(doCraft("ssr2ur", [a.uid, b.uid, c.uid, d.uid, e.uid]).ok).toBe(true); // 基线可用
     setState(defaultState());
-    const bad = card("opus5"); // UR 冒充 SSR
+    const bad = card("fable5"); // UR 冒充 SSR
     const ids2 = [card("mspark11"), card("gpt56lun"), card("gem36fl"), card("qwen3827b"), bad];
     S.inv.push(...ids2);
     expect(
@@ -224,8 +224,8 @@ describe("黑市做市", () => {
     S.market.next = Date.now() + 3600000;
     const o = { id: "mtest", r: "UR", vendor: "Anthropic", need: 1, premium: 1.5, ts: Date.now() };
     S.market.orders = [o];
-    const low = card("opus5", { stars: 0 });
-    const high = card("opus5", { stars: 2 });
+    const low = card("fable5", { stars: 0 });
+    const high = card("fable5", { stars: 2 });
     S.inv.push(high, low);
     const money0 = S.money;
     const est = Math.round(marketEstForCards([low]) * 1.5);
@@ -261,8 +261,8 @@ describe("黑市做市", () => {
       expect(li.price).toBeGreaterThan(0);
     }
     // 价格 = 估值 × [buyMin, buyMax] 区间内（固定模型采样, 用真期望函数算界）
-    const m = MMAP.gem31pro; // SSR 固定样本
-    const quota = Math.floor((m.quota || RARITY.SSR.quota) / TASK_TOKENS) * TASK_TOKENS;
+    const m = MMAP.gem31pro; // 固定样本（档位随榜单分段浮动）
+    const quota = Math.floor((m.quota || RARITY[m.r].quota) / TASK_TOKENS) * TASK_TOKENS;
     const est = (quota / TASK_TOKENS) * expectedTaskPay(m);
     for (let i = 0; i < 50; i++) {
       const p = listingPrice(m);
@@ -299,7 +299,7 @@ describe("黑市做市", () => {
     expect(S.stats.spent).toBe(5000);
     const got = S.inv.find(c => c.uid === res.card.uid);
     expect(got.m).toBe("gem31pro");
-    expect(got.tokens).toBe(MMAP.gem31pro.quota || RARITY.SSR.quota);
+    expect(got.tokens).toBe(MMAP.gem31pro.quota || RARITY[MMAP.gem31pro.r].quota);
     expect(S.market.listings.length).toBe(0);
     expect(S.daily.markets).toBe(1); // 买卖双方都算成交
     expect(S.ledger[0].label).toContain("黑市购入");

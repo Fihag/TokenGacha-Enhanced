@@ -26,7 +26,8 @@ export function payoutParams(m){
   return {
     pGreat: .02 + m.idx/800,
     pRework: Math.min(.25, Math.max(.04, .25 - m.idx/250)),
-    pDisaster: Math.min(.02, Math.max(0, (28 - m.idx)/1200)),
+    // 15 = N 档上限(AA v4.3 分段)，除数按新旧跨度等比缩放，保持"只有垃圾档会删库"
+    pDisaster: Math.min(.02, Math.max(0, (15 - m.idx)/500)),
     mult: { great: 2.5, rework: .4 },
     okRange: [.85, 1.15],          // ok 事件随机区间（期望取中点 1.0）
     disasterPenalty: 50 * PAY_BOOST,

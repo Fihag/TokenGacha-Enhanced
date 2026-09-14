@@ -8,7 +8,7 @@
 
 一家虚构的「LLM API 中转站」——它不按量计费,只卖**盲盒**。你花真金白银(游戏货币)抽卡,抽到顶级模型还是电子垃圾全看命;抽到的模型卡会变成 token 额度,拿去接 vibe coding 私活变现,形成「抽卡 → 工作 → 赚钱 → 再抽卡」的循环
 
-稀有度依据 [Artificial Analysis Intelligence Index v4.1.1](https://artificialanalysis.ai/evaluations/artificial-analysis-intelligence-index) 分档，模型数据为实测/估算智能指数
+稀有度依据 [Artificial Analysis Intelligence Index v4.3](https://artificialanalysis.ai/evaluations/artificial-analysis-intelligence-index) 分档，模型数据取榜单 `intelligenceIndex` 真实值（卡面指数保留两位）。v4.3 相对旧 v4.1.1 为非均匀压缩（榜首 63.05 → 53.37），分段线按实测压缩曲线折算，档位分布与旧版基本一致
 
 ## 与原始项目的区别
 
@@ -16,7 +16,7 @@
 
 ### 全新内容
 
-- **UTR 超神话档位**(智能指数 ≥64):高于 UR 的新稀有度,专属红金配色与音效
+- **UTR 超神话档位**(智能指数 ≥50.5):高于 UR 的新稀有度,专属红金配色与音效
 - **限定活动卡池「限定池」**:每赛季 1 天自动轮换,到期自动换下一批限定模型(DeepSeek 赛季单抽已涨价至 ¥950,十连 ¥9025,卡面会显示划掉的原价)。赛季按 **DeepSeek V5 系列 → 神话回响 Claude Opus 6 / Gemini 4 Pro → 开源之光 GLM-6 / Qwen5 Max** 循环;100 抽大保底必出当期限定 UTR
 - **限定卡加成**:使用限定模型接单,该单收入 **×2**（永久限定集，跨季不失效，删库赔偿不翻倍）
 - **黑市双边做市**:除「求购」收卡（估值 ×1.10~~1.50 溢价）外,新增「挂单」买入侧——庄家每小时挂 3 单出货,定价随行就市（估值 ×0.9~~1.4）,余额可直接买卡,买卖均计入黑市成交任务
@@ -30,7 +30,7 @@
 
 ### 模型与数值更新
 
-- 模型库扩充至 **63 个**(新增 Grok 4.6、Muse Spark 1.1/1.2、Gemini 3.7 Flash、DeepSeek V4 Pro 0813、Qwen3.8 27B、限定 Claude Opus 6 / Gemini 4 Pro / GLM-6 / Qwen5 Max、GLM-5.3 及 9 张 R 档补强卡等),智能指数按 2026-08 最新数据校准(卡面指数取整显示)
+- 模型库扩充至 **70 个**(新增 Claude Fable 5.1、GPT-6 Astra、Muse Spark 1.3、GLM-5.3-Flash、Gemini 3.8 Flash、Qwen3.8-Flash-Next、DeepSeek V4.1 Flash),全卡池切换到 AA v4.3 标定:52 张有榜单出处的卡取真实分数,6 张自创限定卡与 4 张非榜单国产卡按压缩曲线折算,稀有度分段同步重划为 UTR≥50.5 / UR 38.3-50.5 / SSR 32-38.3 / SR 26-32 / R 15-26 / N<15(卡面指数保留两位)
 - DeepSeek V4 Flash 拆分为 **Preview(R)** 与 **0731** 两张卡
 - 卡池概率、价格、回本率全部按概率公式重新计算并公示
 

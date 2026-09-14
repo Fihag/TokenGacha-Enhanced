@@ -108,12 +108,12 @@ export function ratesHTML(){
       ${['N','R','SR','SSR','UR','UTR'].map(r=>`<td>${p.rates[r]?rtCell(r)+'<br>'+((p.rates[r]||0)*100).toFixed(1)+'%':'—'}</td>`).join('')}
       <td>${(poolRTP(k)*100).toFixed(0)}%</td></tr>`;
   }
-  const verStr='v4.1.1';
+  const verStr='v4.3';
   return `<h3>📊 概率公示（像正规抽卡游戏一样诚实）<button class="x" onclick="closeModal()">×</button></h3>
   <table><tr><th>卡池</th><th>N 垃圾</th><th>R 普通</th><th>SR 精锐</th><th>SSR 传说</th><th>UR 神话</th><th>UTR 超神话</th><th>期望回本率</th></tr>${rows}</table>
 <div class="note">
   · ⚠️ 卡池页展示的「回本率」为宣传口径，你懂的；上表才是实测数学期望。本站保留最终解释权。<br>
-  · 稀有度按 <a href="https://artificialanalysis.ai/leaderboards/models" target="_blank">Artificial Analysis 智能指数 ${verStr}</a> 分档：UTR≥64 / UR 55-63 / SSR 47-54 / SR 40-46 / R 28-39 / N&lt;28<br>
+  · 稀有度按 <a href="https://artificialanalysis.ai/leaderboards/models" target="_blank">Artificial Analysis 智能指数 ${verStr}</a> 分档：UTR≥50.5 / UR 38.3-50.5 / SSR 32-38.3 / SR 26-32 / R 15-26 / N&lt;15<br>
   · 卡面标价（如 $0.09/任务）仅为角色设定，不参与结算；结算按稀有度 basePay 驱动。<br>
   · 全池另有 <b>DeepSeek V4 Flash 0731 独立 1.5%</b> 出货（记入 SSR，表内概率不含此项，故 SSR 实际略高于表列）<br>
   · 全池另有 0.01% 隐藏神卡概率（比 SSR 稀有得多，抽到自然知道）<br>
@@ -134,7 +134,7 @@ export function dexHTML(){
   const html=`<h3>📖 模型图鉴 ${got}/${visible.length}<button class="x" onclick="closeModal()">×</button></h3>
   <div class="dex-legend">${RORDER.filter(r=> r!=='NB' || ownNB).map(r=>`<span style="color:${RARITY[r].hex}">■</span> ${r} ${RARITY[r].label} ×${counts[r]}`).join('　')}</div>
   <div class="dex-grid" id="dex-grid"></div>
-  <div class="note" style="margin-top:10px">收录 ${vendorList} 等 ${vendorCount} 家厂商。排名参考 Artificial Analysis 智能指数 v4.1.1。</div>`;
+  <div class="note" style="margin-top:10px">收录 ${vendorList} 等 ${vendorCount} 家厂商。排名参考 Artificial Analysis 智能指数 v4.3。</div>`;
   showModal(html);
   const grid=$('dex-grid');
   const sorted=[...visible].sort((a,b)=>RORDER.indexOf(b.r)-RORDER.indexOf(a.r)||b.idx-a.idx);
@@ -179,7 +179,7 @@ export function milestoneHTML(ms){
 export function welcomeHTML(){
   return `<h3>🎰 欢迎来到 TokenGacha</h3>
   <p>这是一家神秘的 <b>LLM API 中转站</b>。它不按量计费，只卖<b>盲盒</b>——</p>
-  <p>你可能抽到 <b>Claude Opus 6</b>（限定超神话，智能指数 79，接单收入翻倍），也可能抽到<b>豆包</b>（72 tok/s 够快，可惜队友总喊“再便宜点”）。</p>
+  <p>你可能抽到 <b>Claude Opus 6</b>（限定超神话，智能指数 65，接单收入翻倍），也可能抽到<b>豆包</b>（72 tok/s 够快，可惜队友总喊“再便宜点”）。</p>
   <p>💰 启动资金 <b>${fmt(START_MONEY)}</b> 已到账，另赠<b>白银盲盒免费十连 ×1</b>。<br>三个页面完成整个循环：<b>购买Token → 工作 → 余额</b>。是破产收场还是财富自由，看你的命了。</p>
   <button class="big-btn" id="btn-start">🎁 收下启动资金，开抽！</button>`;
 }

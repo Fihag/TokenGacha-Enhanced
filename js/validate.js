@@ -19,6 +19,10 @@ export function validateConfig() {
     if (!m.vendor) errors.push(`Model ${m.id} 缺 vendor`);
     if (typeof m.idx !== "number" || m.idx < 0 || m.idx > 100) errors.push(`Model ${m.id} idx 非法: ${m.idx}`);
     if (!RORDER.includes(m.r)) errors.push(`Model ${m.id} 稀有度非法: ${m.r}`);
+    else {
+      const t = RARITY[m.r];
+      if (m.idx < t.min || m.idx > t.max) errors.push(`Model ${m.id} 指数 ${m.idx} 不在 ${m.r} 档 ${t.min}~${t.max} 区间`);
+    }
     if (m.quota != null && (m.quota % TASK_TOKENS !== 0)) errors.push(`Model ${m.id} quota 非 ${TASK_TOKENS} 倍数: ${m.quota}`);
   }
   for (const [k, p] of Object.entries(POOLS)) {

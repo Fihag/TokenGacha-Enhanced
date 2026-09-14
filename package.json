@@ -1,6 +1,6 @@
 {
   "name": "tokengacha",
-  "version": "4.2.0",
+  "version": "4.2.1",
   "description": "TokenGacha · LLM API 抽卡模拟器 - 纯前端无构建版",
   "type": "module",
   "scripts": {
